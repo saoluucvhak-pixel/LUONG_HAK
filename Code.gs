@@ -1,11 +1,27 @@
 // ================= CẤU HÌNH THÔNG SỐ HỆ THỐNG =================
-// ⚠️ Thay ID Google Sheet của bạn vào đây trước khi dùng.
-// Lấy ID trong URL của Sheet: docs.google.com/spreadsheets/d/<ID_NÀY>/edit
-const SPREADSHEET_ID = "1AsilXeDTZ-Q2psgNitrrCceKF__M0_14eXMHqL2oB-4";   
-
-// Mỗi ĐƠN VỊ x KỲ LƯƠNG nên dùng 1 Google Sheet riêng (đúng như 2 file Excel
+// ⚠️ KIẾN TRÚC 5 FILE GOOGLE SHEET RIÊNG BIỆT (không còn dùng 1 Sheet duy nhất):
+//   1. File DANH MỤC — DM_* (mức lương/phụ cấp/tăng ca/hỗ trợ/BHXH/thuế... có
+//      hiệu lực theo NGÀY, ít thay đổi, đọc nhiều — xem Mục "Danh mục có hiệu lực")
+//   2. File DRAFT — bảng nháp NHAP_* (tạm thời, xoá sau khi Xác nhận nạp/Hủy)
+//   3. File DATA — dữ liệu đã xác nhận nạp: NL_NHANSU, NL_CHAMCONG, DL_SANLUONG...
+//   4. File XỬ LÝ — báo cáo/chứng từ của KỲ ĐANG LÀM: RP_BANGLUONG, RP_BHXH,
+//      RP_THUETNCN, báo cáo chấm công, phân bổ sản lượng, phiếu hạch toán...
+//      → bấm "Lưu trữ" ở cuối kỳ để copy sang File LƯU TRỮ rồi xoá sạch làm kỳ mới
+//   5. File LƯU TRỮ — nơi giữ lại lịch sử tất cả các kỳ đã "chốt"
+//
+// Cách cấu hình: dán URL hoặc ID của mỗi file vào 5 hằng số dưới đây (lấy ID
+// trong URL: docs.google.com/spreadsheets/d/<ID_NÀY>/edit) — HOẶC cấu hình
+// ngay trên webapp (tab "Hướng dẫn sử dụng" → "Cài đặt liên kết file", không
+// cần sửa code) — nếu cấu hình qua webapp thì giá trị đó ĐƯỢC ƯU TIÊN hơn các
+// hằng số dưới đây. Xem chi tiết ánh xạ sheet↔file ở `LienKetFile.gs`.
+const SPREADSHEET_ID_DANHMUC = "1oQSvFWtCkXs7Ge5XmuLNJby6RVDFGqriQ8SFSoo8O88";
+const SPREADSHEET_ID_DRAFT = "1hDIHwZY3X-j0eyEEpBJpdju4yHMmyMuVqpZtmc5jAgc";            
+const SPREADSHEET_ID_DATA = "1Hc_fwJCj-pwYc3OTTR_fueNvzwjfD4yZztqq1hAgGe0";         
+const SPREADSHEET_ID_XULY = "10YpRp9k7lvTSlOSl_Lmoh5q0Z5dA-zuljaAKI3buCaw";          
+const SPREADSHEET_ID_LUUTRU = "1BOBJ3rzYZosPBEEyK2iHx84pw6WKnAnLENxOlCcoU90";  
+// Mỗi ĐƠN VỊ x KỲ LƯƠNG nên dùng 1 bộ 5 file riêng (đúng như 2 file Excel
 // "DL_LUONG_<đơn vị>_<kỳ>" + "Luong<kỳ>_<đơn vị>" hiện tại của HAK Group) —
-// webapp này gộp cả 2 vai trò (dữ liệu vào + tính toán + kiểm tra) vào 1 Sheet.
+// webapp này gộp cả 2 vai trò (dữ liệu vào + tính toán + kiểm tra) vào 5 Sheet.
 
 // ---------- TÊN CÁC SHEET (TAB) ----------
 // Nhóm A — DỮ LIỆU VÀO (người dùng tự nhập tay hoặc import từ file Excel cũ)
@@ -39,6 +55,16 @@ const SHEET_KIEMTRA_LOG = "KIEMTRA_LOG";
 // Nhóm D — BẢNG NHÁP (tạm thời, xoá sau khi Xác nhận nạp hoặc Hủy — xem NhapLieu.gs)
 const SHEET_NHAP_CHAMCONG = "NHAP_CHAMCONG";
 const SHEET_NHAP_SANLUONG = "NHAP_SANLUONG";
+const SHEET_NHAP_UNGLUONG = "NHAP_UNGLUONG";
+
+// Nhóm E — báo cáo/chứng từ MỚI thuộc File Xử lý (ngoài RP_BANGLUONG/RP_BHXH/
+// RP_THUETNCN/KIEMTRA_LOG đã có) — đều là bản "CHỐT" (snapshot) của 1 kỳ, khác
+// với các báo cáo cũ (Phân bổ sản lượng, Bù sản lượng ở BaoCao.gs) vốn tính
+// "live" mỗi lần bấm xem, không lưu lại.
+const SHEET_BC_CHAMCONG = "RP_CHAMCONG"; // báo cáo chấm công đã chốt của 1 kỳ
+const SHEET_BC_PHANBOSL = "RP_PHANBOSL"; // phân bổ sản lượng đã chốt của 1 kỳ
+const SHEET_HACHTOAN = "RP_HACHTOAN"; // bảng hạch toán chi phí lương theo TK kế toán
+const SHEET_PHIEUCHI = "RP_PHIEUCHI"; // phiếu chi lương/tạm ứng
 
 // ---------- TIÊU ĐỀ CỘT (HEADER) — dùng để tự tạo sheet nếu chưa có ----------
 
@@ -94,13 +120,13 @@ const HEADER_BANDAM = HEADER_SANLUONG; // cùng cấu trúc, dùng cho hoạt đ
 const HEADER_TIENCOM = ["Ngày", "Mã NV", "Số suất cơm", "Ghi chú"];
 
 const HEADER_DM_LUONG = [
-  "Ngày cập nhật", "Mã lương", "Mã hình thức lương", "Hình thức lương",
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã lương", "Mã hình thức lương", "Hình thức lương",
   "Số tiền khoán", "Lương phụ", "Ngưỡng truy thu BH (công)",
   "ĐK_Bù lương (công tối thiểu)", "Đơn giá bù lương", "Đơn giá bơm dăm", "Cách tính"
 ];
 
 const HEADER_DM_PHUCAP = [
-  "Ngày cập nhật", "Mã phụ cấp", "Tên phụ cấp", "Số tiền", "Tỷ lệ",
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã phụ cấp", "Tên phụ cấp", "Số tiền", "Tỷ lệ",
   "Tham chiếu", "Cách tính"
 ];
 
@@ -109,27 +135,27 @@ const HEADER_DM_PHUCAP = [
 // Power Query thật của HAK Group (xem references/kien_truc_powerquery_powerpivot.md
 // trong skill hak-group-tinh-luong để biết đầy đủ ý nghĩa từng mã).
 const HEADER_DM_TANGCA = [
-  "Ngày cập nhật", "Mã tăng ca", "Nội dung tăng ca", "Hệ số tăng ca",
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã tăng ca", "Nội dung tăng ca", "Hệ số tăng ca",
   "Tiền tăng ca (nếu tính cố định)", "Cách tính"
 ];
 
 const HEADER_DM_HOTRO = [
-  "Ngày cập nhật", "Mã hỗ trợ", "Tên hỗ trợ", "Số tiền", "Cách tính"
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã hỗ trợ", "Tên hỗ trợ", "Số tiền", "Cách tính"
 ];
 
 const HEADER_DM_BAOHIEM = [
-  "Ngày cập nhật", "Mã bảo hiểm", "Nội dung",
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã bảo hiểm", "Nội dung",
   "DN.BHXH", "DN.BHYT", "DN.BHTN", "DN.KPCD",
   "NLD.BHXH", "NLD.BHYT", "NLD.BHTN", "NLD.KPCD"
 ];
 
 const HEADER_DM_TNCN = [
-  "Ngày cập nhật", "Bậc", "Nội dung khấu trừ", "Tỷ lệ đóng thuế",
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Bậc", "Nội dung khấu trừ", "Tỷ lệ đóng thuế",
   "Thu nhập tháng (Min)", "Thu nhập tháng (Max)"
 ];
 
 const HEADER_DM_GTTNCN = [
-  "Ngày cập nhật", "Mã giảm trừ", "Số người", "Số tiền"
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã giảm trừ", "Số người", "Số tiền"
 ];
 
 const HEADER_DM_PHONGBAN = ["Ngày cập nhật", "Mã phòng ban", "Tên phòng ban", "Tài khoản chi phí"];
@@ -143,14 +169,15 @@ const HEADER_BANGLUONG = [
   "Tổng công", "Công Chủ nhật", "Công tăng ca", "Tiền tăng ca",
   "Phụ cấp", "Phụ cấp công tác", "Lương hỗ trợ", "Ngày cơm", "Tiền cơm", "Thưởng", "Thu nhập khác",
   "Tổng thu nhập (trước trừ)",
-  "BHXH/BHYT/BHTN trừ NLĐ", "Thuế TNCN", "Trừ khác", "Tạm ứng",
+  "BHXH/BHYT/BHTN trừ NLĐ", "Truy thu bảo hiểm", "Thuế TNCN", "Trừ khác", "Tạm ứng",
   "Thực lĩnh"
 ];
 
 const HEADER_BHXH = [
   "Mã NV", "Họ và tên", "Phòng ban", "Lương đóng BHXH",
   "CTY.BHXH", "CTY.BHYT", "CTY.BHTN", "CTY.KPCĐ", "Cộng BH công ty đóng",
-  "NLĐ.BHXH", "NLĐ.BHYT", "NLĐ.BHTN", "Cộng BH NLĐ đóng", "Ghi chú ngưỡng công"
+  "NLĐ.BHXH", "NLĐ.BHYT", "NLĐ.BHTN", "Cộng BH NLĐ đóng",
+  "Truy thu bảo hiểm", "Ghi chú ngưỡng công"
 ];
 
 const HEADER_TNCN = [
@@ -170,19 +197,46 @@ function headerNhapChamCong_() {
   return headerChamCongDayDu_().concat(["✔ Kiểm tra"]);
 }
 const HEADER_NHAP_SANLUONG = HEADER_SANLUONG.concat(["✔ Kiểm tra"]);
+const HEADER_NHAP_UNGLUONG = HEADER_UNGLUONG.concat(["✔ Kiểm tra"]);
 
-/** Mở spreadsheet cấu hình — dùng chung cho mọi file .gs khác. */
+// ---------- Header cho Nhóm E (báo cáo/chứng từ mới) ----------
+const HEADER_BC_CHAMCONG = [
+  "Kỳ", "Mã NV", "Họ và tên", "Mã phòng ban", "Tên phòng ban",
+  "Tổng công", "Công Chủ nhật", "Công tăng ca", "Công lễ", "Công phép", "Công cơm"
+];
+const HEADER_BC_PHANBOSL = [
+  "Kỳ", "Loại", "Mã NV", "Họ và tên", "Mã phòng ban", "Tên phòng ban",
+  "Tổng sản lượng (tấn)", "Số phiếu cân"
+];
+// "Tài khoản Nợ"/"Tài khoản Có" lấy theo đúng "Tài khoản chi phí" đã khai trong
+// DM_PHONGBAN (Nợ) đối ứng các tài khoản phải trả chuẩn (Có) — xem BaoCaoHachToan.gs
+const HEADER_HACHTOAN = [
+  "Kỳ", "Tài khoản Nợ", "Tên tài khoản Nợ", "Tài khoản Có", "Tên tài khoản Có",
+  "Diễn giải", "Số tiền"
+];
+const HEADER_PHIEUCHI = [
+  "Kỳ", "Số phiếu", "Ngày chi", "Mã NV", "Họ và tên", "Loại chi", "Số tiền",
+  "Hình thức TT", "Người nhận", "Ghi chú"
+];
+
+/**
+ * ⚠️ ĐÃ CHUYỂN SANG KIẾN TRÚC 5 FILE — hàm này GIỮ LẠI để tương thích ngược cho
+ * bất kỳ đoạn code cũ nào lỡ còn gọi trực tiếp, nhưng KHÔNG NÊN dùng nữa. Dùng
+ * `moSheetChoBang_(tenSheet)` (LienKetFile.gs) để mở ĐÚNG file chứa sheet đó.
+ */
 function moSheet_() {
-  return SpreadsheetApp.openById(SPREADSHEET_ID);
+  return moSheetChoBang_(SHEET_THAMSO);
 }
 
 /**
- * Lấy 1 sheet theo tên; tự tạo + ghi header nếu chưa tồn tại.
+ * Lấy 1 sheet theo tên; tự tạo + ghi header nếu chưa tồn tại. Tự mở ĐÚNG file
+ * trong số 5 file (Danh mục/Draft/Data/Xử lý/Lưu trữ) chứa sheet đó — xem
+ * `moSheetChoBang_()` ở LienKetFile.gs.
  * @param {string} tenSheet
  * @param {string[]} header
  */
 function layHoacTaoSheet_(tenSheet, header) {
-  const ss = moSheet_();
+  const ss = moSheetChoBang_(tenSheet);
   let sh = ss.getSheetByName(tenSheet);
   if (!sh) {
     sh = ss.insertSheet(tenSheet);
@@ -194,7 +248,7 @@ function layHoacTaoSheet_(tenSheet, header) {
 
 /** Đọc toàn bộ dữ liệu 1 sheet (trừ dòng header) thành mảng object {TênCột: giá trị}. */
 function docSheetThanhObject_(tenSheet, header) {
-  const ss = moSheet_();
+  const ss = moSheetChoBang_(tenSheet);
   const sh = ss.getSheetByName(tenSheet);
   if (!sh || sh.getLastRow() < 2) return [];
   const soHang = sh.getLastRow() - 1;
@@ -226,7 +280,7 @@ function ghiDeSheet_(tenSheet, header, danhSachObject) {
  * ở cột tenCotMa. Trả về -1 nếu không tìm thấy.
  */
 function timHangTheoMa_(tenSheet, header, tenCotMa, giaTriMa) {
-  const sh = moSheet_().getSheetByName(tenSheet);
+  const sh = moSheetChoBang_(tenSheet).getSheetByName(tenSheet);
   if (!sh || sh.getLastRow() < 2) return -1;
   const idxCot = header.indexOf(tenCotMa) + 1;
   const soHang = sh.getLastRow() - 1;

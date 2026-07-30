@@ -5,6 +5,24 @@
 // RP_THUETNCN (chi tiết thuế TNCN).
 
 /**
+ * Parse 1 giá trị số có thể ở dạng số thuần (0.5) HOẶC chuỗi phần trăm ("50%").
+ * ⚠ PHÁT HIỆN QUA DỮ LIỆU THẬT: cột "Hệ số tăng ca" trong DM_TANGCA của HAK_DN
+ * lưu dạng chuỗi "50%" (không phải số 0.5) — dùng thẳng Number("50%") sẽ ra NaN,
+ * làm tiền tăng ca luôn tính ra 0đ. Hàm này xử lý cả 2 dạng.
+ */
+function soTuChuoiPhanTram_(giaTri) {
+  if (giaTri === "" || giaTri === null || giaTri === undefined) return 0;
+  if (typeof giaTri === "number") return giaTri;
+  const chuoi = String(giaTri).trim();
+  if (chuoi.endsWith("%")) {
+    const so = parseFloat(chuoi.slice(0, -1).replace(",", "."));
+    return isNaN(so) ? 0 : so / 100;
+  }
+  const so = parseFloat(chuoi.replace(",", "."));
+  return isNaN(so) ? 0 : so;
+}
+
+/**
  * @param {string} nam vd "2026"
  * @param {number} thang vd 6
  * @param {string} phuongPhapBu "NGAY" (đối chiếu ngưỡng bù sản lượng theo TỪNG
@@ -23,15 +41,15 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
   const chiTietNSMap = {};
   chiTietNSList.forEach(r => { chiTietNSMap[r["Mã nhân viên"]] = r; });
 
-  const dmLuong = docDanhMucLuong_();
-  const dmPhuCap = docDanhMucPhuCap_();
-  const dmTangCa = docDanhMucTangCa_();
-  const dmHoTro = docDanhMucHoTro_();
-  const dmBaoHiem = docDanhMucBaoHiem_();
+  const dmLuong = docDanhMucLuong_(namSo, thang);
+  const dmPhuCap = docDanhMucPhuCap_(namSo, thang);
+  const dmTangCa = docDanhMucTangCa_(namSo, thang);
+  const dmHoTro = docDanhMucHoTro_(namSo, thang);
+  const dmBaoHiem = docDanhMucBaoHiem_(namSo, thang);
   const dmPhongBan = docDanhMucPhongBan_();
   const dmChucVu = docDanhMucChucVu_();
-  const bieuThue = docBieuThueTNCN_();
-  const dmGiamTru = docDanhMucGiamTruTNCN_();
+  const bieuThue = docBieuThueTNCN_(namSo, thang);
+  const dmGiamTru = docDanhMucGiamTruTNCN_(namSo, thang);
 
   // 2) Dữ liệu phát sinh trong kỳ
   const chamCongMap = tongHopChamCong_(namSo, thang);
@@ -60,14 +78,19 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
     const kyTinhLuong = new Date(namSo, thang - 1, 1);
     if (ngayNghi instanceof Date && ngayNghi < kyTinhLuong) return;
 
-    const congInfo = chamCongMap[maNV] || { tongCong: 0, congChuNhat: 0, congTangCa: 0, congTheoHinhThuc: {}, nhanTheoNgay: {} };
+    const congInfo = chamCongMap[maNV] || { tongCong: 0, congChuNhat: 0, congTangCa: 0, congCom: 0, congTheoHinhThuc: {}, nhanTheoNgay: {} };
     const congChuan = layCongChuan_(ns, thang, namSo, dmLuong, congInfo.tongCong); // xem hàm bên dưới — tuỳ mã lương/hình thức HĐ
     const luongThoaThuan = Number(ns["Lương thỏa thuận"]) || 0;
 
     // ----- Xác định hình thức lương TRƯỚC (để tính đúng công thức theo mã) -----
     const dmLuongInfo = dmLuong[ns["Mã tiền lương 1"]] || dmLuong[ns["Mã tiền lương 2"]] || null;
     const maTL1 = ns["Mã tiền lương 1"] || "";
-    const laLuongSanLuong = !!(dmLuongInfo && dmLuongInfo["Mã hình thức lương"] === "SP");
+    // ⚠ PHÁT HIỆN QUA DỮ LIỆU THẬT: giá trị thật của "Mã hình thức lương" cho lương
+    // sản phẩm là "LSP" (không phải "SP" trơn như suy đoán ban đầu — "SP" là "Mã
+    // lương", "LSP" mới là "Mã hình thức lương") — dùng so khớp === "SP" trước đây
+    // SẼ KHÔNG BAO GIỜ đúng với dữ liệu thật, khiến toàn bộ nhánh lương sản lượng
+    // không kích hoạt. Đã sửa dùng regex khớp cả "SP" và "LSP".
+    const laLuongSanLuong = !!(dmLuongInfo && /SP/i.test(dmLuongInfo["Mã hình thức lương"] || ""));
 
     // ----- Lương thời gian -----
     // ⚠ ĐÃ SỬA LẦN 2 sau khi đọc được nguyên văn công thức thật (Power Query thuần,
@@ -168,7 +191,7 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
         const tienCoDinh = Number(dmTangCaInfo["Tiền tăng ca (nếu tính cố định)"]) || 0;
         tienTangCa = Math.round((tienCoDinh / congChuan) * congInfo.congTangCa);
       } else if (dmTangCaInfo) {
-        const heSo = Number(dmTangCaInfo["Hệ số tăng ca"]) || 0;
+        const heSo = soTuChuoiPhanTram_(dmTangCaInfo["Hệ số tăng ca"]);
         const congTinhTangCa = tinhHeSoTangCa_(
           ns["Mã tăng ca"], congInfo.tongCong, congInfo.congTrungChuyen, congInfo.congLe,
           congChuan, congInfo.congChuNhat, congInfo.congTangCa, heSo, congInfo.congPhep, congInfo.congDiChuyen
@@ -190,7 +213,7 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
       const soTienPC = Number(phuCapInfo["Số tiền"]) || 0;
       const laCoDinh = /cố định/i.test(String(phuCapInfo["Cách tính"] || "")) || !phuCapInfo["Cách tính"];
       if (laCoDinh) {
-        tienPhuCap = soTienPC || Math.round(luongThoaThuan * (Number(phuCapInfo["Tỷ lệ"]) || 0));
+        tienPhuCap = soTienPC || Math.round(luongThoaThuan * soTuChuoiPhanTram_(phuCapInfo["Tỷ lệ"]));
       } else if (congChuan > 0) {
         const thamChieu = Number(phuCapInfo["Tham chiếu"]) || 0;
         const nguongDu = congChuan - thamChieu;
@@ -213,13 +236,15 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
       }
     }
 
-    // ----- Tiền cơm (dùng "Mã hỗ trợ", đơn giá × Ngày cơm từ DL_TIENCOM) -----
-    // ⚠ PHÁT HIỆN MỚI: "Ngày cơm" là SỐ NHẬP TAY RIÊNG (sheet DL_TIENCOM), KHÔNG
-    // PHẢI lúc nào cũng bằng tổng công chấm công — xác minh công thức qua dữ liệu
-    // thật: 20.000đ × 26 ngày = 520.000đ, khớp chính xác. Bản trước tính "Hỗ trợ"
-    // bằng Số tiền CỐ ĐỊNH (không nhân số ngày) — đã sửa lại đúng công thức.
+    // ----- Tiền cơm (dùng "Mã hỗ trợ", đơn giá × Ngày cơm) -----
+    // ⚠ "Ngày cơm" lấy từ 2 NGUỒN CỘNG LẠI (đơn vị chỉ cần dùng 1 trong 2, cộng
+    // chung để không sót nếu lỡ dùng cả 2 nguồn cho các tháng khác nhau):
+    //   1. Hình thức công "CC" (Công tính cơm) ngay trong NL_CHAMCONG — ĐÃ XÁC NHẬN
+    //      với người dùng đây là 1 trong 5 hình thức công chính thức dùng thật.
+    //   2. Sheet DL_TIENCOM (nhập tay riêng, dùng khi không muốn thêm dòng "CC"
+    //      vào bảng chấm công).
     const hoTro1Info = dmHoTro[ns["Mã hỗ trợ"]];
-    const ngayCom = tienComTheoNgayMap[maNV] || 0;
+    const ngayCom = (congInfo.congCom || 0) + (tienComTheoNgayMap[maNV] || 0);
     const tienCom = hoTro1Info ? Math.round(ngayCom * (Number(hoTro1Info["Số tiền"]) || 0)) : 0;
 
     // ----- Phụ cấp công tác theo NHÃN chấm công (PHÁT HIỆN MỚI từ dữ liệu thật) -----
@@ -254,30 +279,41 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
     const bhInfo = dmBaoHiem[ns["Mã BHXH"]];
     const luongDongBH = Number(ns["Lương cơ bản"]) || luongThoaThuan;
     let bhTruNLD = 0;
+    let truyThuBaoHiem = 0;
     if (bhInfo) {
       const tyLeNLD = (Number(bhInfo["NLD.BHXH"]) || 0) + (Number(bhInfo["NLD.BHYT"]) || 0) + (Number(bhInfo["NLD.BHTN"]) || 0);
       // Chỉ trừ BH nếu đạt ngưỡng công đóng BH quy định trong DM_LUONG — nếu không có
       // ngưỡng khai báo, mặc định coi như đủ điều kiện để KHÔNG bỏ sót (an toàn hơn).
       const nguongBH = dmLuongInfo ? Number(dmLuongInfo["Ngưỡng truy thu BH (công)"]) : null;
       const duNguong = !nguongBH || congInfo.tongCong >= nguongBH;
+      const congTyDong = Math.round(luongDongBH * ((Number(bhInfo["DN.BHXH"]) || 0) + (Number(bhInfo["DN.BHYT"]) || 0) + (Number(bhInfo["DN.BHTN"]) || 0) + (Number(bhInfo["DN.KPCD"]) || 0)));
       if (duNguong) {
         bhTruNLD = Math.round(luongDongBH * tyLeNLD);
-        ketQuaBHXH.push({
-          "Mã NV": maNV, "Họ và tên": ns["Họ và tên"],
-          "Phòng ban": tenPhongBan_(ns["Mã PB"], dmPhongBan),
-          "Lương đóng BHXH": luongDongBH,
-          "CTY.BHXH": Math.round(luongDongBH * (Number(bhInfo["DN.BHXH"]) || 0)),
-          "CTY.BHYT": Math.round(luongDongBH * (Number(bhInfo["DN.BHYT"]) || 0)),
-          "CTY.BHTN": Math.round(luongDongBH * (Number(bhInfo["DN.BHTN"]) || 0)),
-          "CTY.KPCĐ": Math.round(luongDongBH * (Number(bhInfo["DN.KPCD"]) || 0)),
-          "Cộng BH công ty đóng": Math.round(luongDongBH * ((Number(bhInfo["DN.BHXH"]) || 0) + (Number(bhInfo["DN.BHYT"]) || 0) + (Number(bhInfo["DN.BHTN"]) || 0) + (Number(bhInfo["DN.KPCD"]) || 0))),
-          "NLĐ.BHXH": Math.round(luongDongBH * (Number(bhInfo["NLD.BHXH"]) || 0)),
-          "NLĐ.BHYT": Math.round(luongDongBH * (Number(bhInfo["NLD.BHYT"]) || 0)),
-          "NLĐ.BHTN": Math.round(luongDongBH * (Number(bhInfo["NLD.BHTN"]) || 0)),
-          "Cộng BH NLĐ đóng": bhTruNLD,
-          "Ghi chú ngưỡng công": duNguong ? "Đủ ngưỡng" : "Chưa đủ ngưỡng — NLĐ tự đóng 100% (không trừ ở đây)"
-        });
+      } else {
+        // ⚠ PHÁT HIỆN MỚI, TRƯỚC ĐÂY CHƯA LẬP TRÌNH: nếu KHÔNG đủ ngưỡng công, công ty
+        // TRUY THU LẠI toàn bộ phần đã đóng thay người lao động (= "Cộng BH công ty
+        // đóng" đã tạm ứng đóng trước đó) — khoản này bị TRỪ VÀO THỰC LĨNH của người
+        // lao động (xem references/cong_thuc_that_pure_powerquery.md Mục 5). Bản
+        // trước đây khi thiếu ngưỡng chỉ đơn giản KHÔNG trừ gì cả (bỏ sót hoàn toàn
+        // khoản truy thu này), khiến thực lĩnh bị tính CAO HƠN thực tế.
+        truyThuBaoHiem = congTyDong;
       }
+      ketQuaBHXH.push({
+        "Mã NV": maNV, "Họ và tên": ns["Họ và tên"],
+        "Phòng ban": tenPhongBan_(ns["Mã PB"], dmPhongBan),
+        "Lương đóng BHXH": luongDongBH,
+        "CTY.BHXH": Math.round(luongDongBH * (Number(bhInfo["DN.BHXH"]) || 0)),
+        "CTY.BHYT": Math.round(luongDongBH * (Number(bhInfo["DN.BHYT"]) || 0)),
+        "CTY.BHTN": Math.round(luongDongBH * (Number(bhInfo["DN.BHTN"]) || 0)),
+        "CTY.KPCĐ": Math.round(luongDongBH * (Number(bhInfo["DN.KPCD"]) || 0)),
+        "Cộng BH công ty đóng": congTyDong,
+        "NLĐ.BHXH": Math.round(luongDongBH * (Number(bhInfo["NLD.BHXH"]) || 0)),
+        "NLĐ.BHYT": Math.round(luongDongBH * (Number(bhInfo["NLD.BHYT"]) || 0)),
+        "NLĐ.BHTN": Math.round(luongDongBH * (Number(bhInfo["NLD.BHTN"]) || 0)),
+        "Cộng BH NLĐ đóng": bhTruNLD,
+        "Truy thu bảo hiểm": truyThuBaoHiem,
+        "Ghi chú ngưỡng công": duNguong ? "Đủ ngưỡng" : ("Chưa đủ ngưỡng (" + congInfo.tongCong + "/" + nguongBH + " công) — truy thu " + truyThuBaoHiem.toLocaleString("vi-VN") + "đ")
+      });
     }
 
     // ----- Thuế TNCN -----
@@ -336,7 +372,8 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
     // ⚠ PHÁT HIỆN MỚI: công thức thật làm tròn "Tiền lương còn nhận" về HÀNG NGHÌN
     // (Power Query: Number.Round(chênhLệch, -3)) — nếu âm thì để 0 (không âm lương).
     // Trước đây webapp không làm tròn, có thể lệch vài trăm đồng so với số thật.
-    const chenhLech = tongThuNhap - bhTruNLD - thueTNCN - truKhac - tamUng;
+    // Đã bổ sung trừ "Truy thu bảo hiểm" (xem phần BHXH ở trên) — trước đây bị bỏ sót.
+    const chenhLech = tongThuNhap - bhTruNLD - truyThuBaoHiem - thueTNCN - truKhac - tamUng;
     const thucLinh = chenhLech >= 0 ? Math.round(chenhLech / 1000) * 1000 : 0;
     tongThucLinh += thucLinh;
 
@@ -357,7 +394,7 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
       "Lương hỗ trợ": luongHoTro, "Ngày cơm": ngayCom, "Tiền cơm": tienCom,
       "Thưởng": Number(ps["Thưởng"]) || 0, "Thu nhập khác": Number(ps["Thu nhập khác"]) || 0,
       "Tổng thu nhập (trước trừ)": tongThuNhap,
-      "BHXH/BHYT/BHTN trừ NLĐ": bhTruNLD, "Thuế TNCN": thueTNCN,
+      "BHXH/BHYT/BHTN trừ NLĐ": bhTruNLD, "Truy thu bảo hiểm": truyThuBaoHiem, "Thuế TNCN": thueTNCN,
       "Trừ khác": truKhac, "Tạm ứng": tamUng,
       "Thực lĩnh": thucLinh
     });

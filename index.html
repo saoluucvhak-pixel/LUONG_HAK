@@ -157,6 +157,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Nhập liệu
       </button>
+      <button class="navitem" data-tab="giaodich" onclick="doiTab('giaodich')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Ứng lương &amp; Bơm dăm
+      </button>
 
       <div class="navgroup-label">Kiểm soát</div>
       <button class="navitem" data-tab="kiemtra" onclick="doiTab('kiemtra')">
@@ -180,6 +184,18 @@
       <button class="navitem" data-tab="baocaotncn" onclick="doiTab('baocaotncn')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Báo cáo thuế TNCN
+      </button>
+      <button class="navitem" data-tab="baocaosanluong" onclick="doiTab('baocaosanluong')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+        Phân bổ sản lượng
+      </button>
+      <button class="navitem" data-tab="baocaobusanluong" onclick="doiTab('baocaobusanluong')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+        Bù sản lượng
+      </button>
+      <button class="navitem" data-tab="chungtu" onclick="doiTab('chungtu')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Chứng từ &amp; Lưu trữ
       </button>
 
       <div class="navgroup-label">Trợ giúp</div>
@@ -345,6 +361,106 @@
       </div>
     </section>
 
+    <section id="panelGiaoDich" class="panel">
+      <div class="pageheader"><div><h1>Ứng lương &amp; Bơm dăm</h1><p class="sub">Tải file lên (qua bảng nháp) HOẶC nhập/sửa/xoá từng dòng thủ công — dùng cách nào tiện hơn tuỳ số lượng giao dịch.</p></div></div>
+
+      <div class="card">
+        <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Ứng lương (tạm ứng)</div>
+
+        <p class="card-sub"><b>Cách 1 — Tải file lên</b> (nhiều giao dịch cùng lúc): tiêu đề cột cần có Ngày hạch toán, Mã NV, Tạm ứng (và tuỳ chọn Số phiếu chi, Người nhận, Diễn giải, Tài khoản, TK đối ứng, Thanh toán TM).</p>
+        <div class="row">
+          <div class="field"><label>File</label><input type="file" id="fileUngLuong" accept=".xlsx,.xls,.csv"></div>
+          <button class="secondary" onclick="taiMauUngLuong()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Tải file mẫu</button>
+          <button onclick="xemTruocUngLuong()">Tải lên → Tạo bảng nháp</button>
+        </div>
+        <div id="ketQuaUngLuong" class="result"></div>
+        <div id="nhapUngLuongPreview" style="display:none; margin-top:14px;">
+          <div class="toolbar">
+            <span class="card-sub" style="margin:0;" id="ghiChuXemTruocUngLuong"></span>
+            <button class="secondary small" onclick="moSheetNhap('NHAP_UNGLUONG')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Mở nháp trong Sheet để sửa tay</button>
+          </div>
+          <div class="tablewrap"><div class="tablewrap-scroll">
+            <table id="bangNhapUngLuong"><thead><tr><th>Ngày hạch toán</th><th>Mã NV</th><th>Người nhận</th><th>Diễn giải</th><th>Tạm ứng</th><th>✔ Kiểm tra</th></tr></thead><tbody></tbody></table>
+          </div></div>
+          <div class="row" style="margin-top:10px;">
+            <button class="secondary" onclick="doiChieuLaiUngLuong()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/></svg>Đối chiếu lại</button>
+            <div class="field"><label>Chế độ nạp</label><select id="cheDoUngLuong"><option value="THEM">Thêm vào cuối</option><option value="GHIDE">Ghi đè toàn bộ</option></select></div>
+            <button id="btnXacNhanUngLuong" onclick="xacNhanUngLuong()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Xác nhận nạp vào NL_UNGLUONG</button>
+            <button class="danger" onclick="huyNhapUngLuong()">Hủy (xoá nháp)</button>
+          </div>
+        </div>
+
+        <div class="toolbar" style="margin-top:22px; padding-top:16px; border-top:1px dashed var(--border);">
+          <strong>Cách 2 — Danh sách &amp; nhập thủ công từng dòng</strong>
+          <div class="row" style="margin:0;">
+            <input type="number" id="namUL" value="2026" style="width:80px" placeholder="Năm">
+            <select id="thangUL"><option value="">Cả năm</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select>
+            <button class="secondary small" onclick="taiDsUngLuong()">Lọc</button>
+            <button onclick="moFormThemUngLuong()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm giao dịch</button>
+          </div>
+        </div>
+        <div id="ketQuaDsUngLuong" class="result"></div>
+        <div class="tablewrap"><div class="tablewrap-scroll">
+          <table id="bangDsUngLuong"><thead><tr><th>Ngày hạch toán</th><th>Mã NV</th><th>Người nhận</th><th>Diễn giải</th><th>Tạm ứng</th><th>Thao tác</th></tr></thead><tbody></tbody></table>
+        </div></div>
+
+        <div id="formUngLuong" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border);">
+          <div class="card-title" id="tieuDeFormUngLuong" style="margin-bottom:12px;">Thêm ứng lương</div>
+          <input type="hidden" id="ulSoDong">
+          <div class="form-grid">
+            <div><label>Ngày hạch toán *</label><input type="date" id="ulNgay"></div>
+            <div><label>Mã NV *</label><input id="ulMaNV" list="dsNhanVienDL"></div>
+            <div><label>Người nhận</label><input id="ulNguoiNhan"></div>
+            <div class="full"><label>Diễn giải</label><input id="ulDienGiai"></div>
+            <div><label>Số phiếu chi</label><input id="ulSoPhieu"></div>
+            <div><label>Tạm ứng *</label><input type="number" id="ulTamUng"></div>
+            <div><label>Thanh toán TM</label><input type="number" id="ulThanhToanTM"></div>
+            <div><label>Tài khoản</label><input id="ulTaiKhoan"></div>
+            <div><label>TK đối ứng</label><input id="ulTKDoiUng"></div>
+          </div>
+          <div class="row" style="margin-top:12px;"><button onclick="luuUngLuong()">Lưu</button><button class="secondary" onclick="dongFormUngLuong()">Hủy</button></div>
+          <div id="ketQuaFormUngLuong" class="result"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>Bơm dăm</div>
+        <p class="card-sub">Tải file lên nhiều dòng cùng lúc: vào tab <b>Nhập liệu</b> → "Phiếu cân sản lượng" → chọn Loại "Bơm dăm". Ở đây chỉ để nhập/sửa/xoá TỪNG dòng lẻ thủ công.</p>
+        <div class="toolbar">
+          <div class="row" style="margin:0;">
+            <input type="number" id="namBD" value="2026" style="width:80px" placeholder="Năm">
+            <select id="thangBD"><option value="">Cả năm</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select>
+            <button class="secondary small" onclick="taiDsBanDam()">Lọc</button>
+          </div>
+          <button onclick="moFormThemBanDam()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm chuyến bơm dăm</button>
+        </div>
+        <div id="ketQuaDsBanDam" class="result"></div>
+        <div class="tablewrap"><div class="tablewrap-scroll">
+          <table id="bangDsBanDam"><thead><tr><th>Ngày cân</th><th>Biển số</th><th>KL hàng (Tấn)</th><th>Mã phòng ban</th><th>Mã NV</th><th>Thao tác</th></tr></thead><tbody></tbody></table>
+        </div></div>
+
+        <div id="formBanDam" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border);">
+          <div class="card-title" id="tieuDeFormBanDam" style="margin-bottom:12px;">Thêm chuyến bơm dăm</div>
+          <input type="hidden" id="bdSoDong">
+          <div class="form-grid">
+            <div><label>Ngày cân *</label><input type="date" id="bdNgay"></div>
+            <div><label>Giờ cân</label><input id="bdGio" placeholder="08:30"></div>
+            <div><label>Biển số</label><input id="bdBienSo"></div>
+            <div><label>Cân lần 1</label><input type="number" id="bdCanLan1"></div>
+            <div><label>Cân lần 2</label><input type="number" id="bdCanLan2"></div>
+            <div><label>KL hàng (Tấn) *</label><input type="number" step="0.01" id="bdKLHang"></div>
+            <div><label>Mã phòng ban *</label><select id="bdMaPB"></select></div>
+            <div><label>Mã NV (nếu có)</label><input id="bdMaNV" list="dsNhanVienDL"></div>
+            <div><label>Phiếu cân</label><input id="bdPhieuCan"></div>
+          </div>
+          <div class="row" style="margin-top:12px;"><button onclick="luuBanDam()">Lưu</button><button class="secondary" onclick="dongFormBanDam()">Hủy</button></div>
+          <div id="ketQuaFormBanDam" class="result"></div>
+        </div>
+      </div>
+
+      <datalist id="dsNhanVienDL"></datalist>
+    </section>
+
     <section id="panelDanhMuc" class="panel">
       <div class="pageheader"><div><h1>Danh mục</h1><p class="sub">Quy định tính lương dạng mã hoá — dùng cho các dropdown ở tab Nhân sự.</p></div></div>
       <div class="card">
@@ -364,6 +480,7 @@
           </div>
           <div class="row" style="margin:0;">
             <button class="secondary" onclick="khoiTaoDuLieuMauDanhMuc()">Khởi tạo dữ liệu mẫu</button>
+            <button class="secondary" onclick="khoiTaoQuyCheLuongHienHanh()">Khởi tạo Quy chế lương hiện hành</button>
             <button onclick="moFormThemDanhMuc()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm dòng</button>
           </div>
         </div>
@@ -458,7 +575,7 @@
       <div class="stats-row" id="statBaoCaoBHXH"></div>
       <div class="card">
         <div class="card-title">Chi tiết theo nhân viên</div>
-        <div class="tablewrap"><div class="tablewrap-scroll"><table id="bangBaoCaoBHXH"><thead><tr><th>Mã NV</th><th>Họ và tên</th><th>Phòng ban</th><th>Lương đóng BHXH</th><th>Cộng BH công ty đóng</th><th>Cộng BH NLĐ đóng</th><th>Ghi chú</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="tablewrap"><div class="tablewrap-scroll"><table id="bangBaoCaoBHXH"><thead><tr><th>Mã NV</th><th>Họ và tên</th><th>Phòng ban</th><th>Lương đóng BHXH</th><th>Cộng BH công ty đóng</th><th>Cộng BH NLĐ đóng</th><th>Truy thu</th><th>Ghi chú</th></tr></thead><tbody></tbody></table></div></div>
       </div>
     </section>
 
@@ -475,14 +592,168 @@
       </div>
     </section>
 
+    <section id="panelBaocaosanluong" class="panel">
+      <div class="pageheader">
+        <div><h1>Phân bổ sản lượng</h1><p class="sub">Sản lượng gỗ keo (hoặc bơm dăm) đã phân bổ theo phòng ban và từng công nhân — đối chiếu trước khi Tính lương.</p></div>
+        <button class="secondary no-print" onclick="window.print()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>In báo cáo</button>
+      </div>
+
+      <div class="card">
+        <div class="row no-print">
+          <div class="field"><label>Năm</label><input id="namPBSL" type="number" value="2026" style="width:90px"></div>
+          <div class="field">
+            <label>Tháng</label>
+            <select id="thangPBSL"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select>
+          </div>
+          <div class="field"><label>Loại</label><select id="loaiPBSL"><option value="SANLUONG">Sản lượng chính</option><option value="BANDAM">Bơm dăm</option></select></div>
+          <button onclick="taiBaoCaoPhanBoSanLuong()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/></svg>Xem báo cáo</button>
+        </div>
+      </div>
+
+      <div id="ketQuaBaoCaoPBSL" class="result"></div>
+      <div class="stats-row" id="statBaoCaoPBSL"></div>
+
+      <div class="card">
+        <div class="card-title">Tổng hợp theo phòng ban</div>
+        <div class="tablewrap"><table id="bangPBSLPhongBan"><thead><tr><th>Mã phòng ban</th><th>Tên phòng ban</th><th>Tổng sản lượng (tấn)</th><th>Số phiếu cân</th><th>Số công nhân</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Chi tiết theo công nhân</div>
+        <div class="tablewrap"><div class="tablewrap-scroll"><table id="bangPBSLCongNhan"><thead><tr><th>Mã NV</th><th>Họ và tên</th><th>Phòng ban</th><th>Tổng sản lượng (tấn)</th><th>Số phiếu cân</th><th>Tỷ trọng trong PB (%)</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Phiếu cân CHƯA gán người (cần bổ sung Mã NV)</div>
+        <div class="tablewrap"><div class="tablewrap-scroll"><table id="bangPBSLChuaGan"><thead><tr><th>Phiếu cân</th><th>Ngày cân</th><th>Biển số</th><th>KL hàng (Tấn)</th><th>Phòng ban</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+    </section>
+
+    <section id="panelBaocaobusanluong" class="panel">
+      <div class="pageheader">
+        <div><h1>Bù sản lượng</h1><p class="sub">Chi tiết công thức bù lương sản lượng — kiểm tra TRƯỚC khi Tính lương, không chỉ xem 1 con số cuối.</p></div>
+        <button class="secondary no-print" onclick="window.print()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>In báo cáo</button>
+      </div>
+
+      <div class="card">
+        <div class="row no-print">
+          <div class="field"><label>Năm</label><input id="namBSL" type="number" value="2026" style="width:90px"></div>
+          <div class="field">
+            <label>Tháng</label>
+            <select id="thangBSL"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select>
+          </div>
+          <div class="field"><label>Phương pháp bù</label>
+            <select id="phuongPhapBSL">
+              <option value="THANG">Theo tháng (bình quân cả tháng)</option>
+              <option value="NGAY">Theo ngày (đối chiếu từng ngày)</option>
+            </select>
+          </div>
+          <button onclick="taiBaoCaoBuSanLuong()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/></svg>Xem bảng tính bù</button>
+        </div>
+        <p class="card-sub" style="margin-top:8px;">Chỉ liệt kê người có Mã hình thức lương chứa "SP" (trả lương theo sản lượng). Cùng công thức đang dùng ở tab Bảng lương — chọn đúng "Phương pháp bù" bạn định dùng khi Tính lương để xem số khớp trước.</p>
+      </div>
+
+      <div id="ketQuaBaoCaoBSL" class="result"></div>
+      <div class="stats-row" id="statBaoCaoBSL"></div>
+
+      <div class="card">
+        <div class="card-title">Bảng tính bù — tổng hợp theo người</div>
+        <div class="tablewrap"><div class="tablewrap-scroll"><table id="bangBSLThang"><thead><tr><th>Mã NV</th><th>Họ và tên</th><th>Phòng ban</th><th>Sản lượng (tấn)</th><th>Tổng công</th><th>SL bình quân/công</th><th>Ngưỡng</th><th>Dưới ngưỡng?</th><th>Lương sản lượng</th><th>Đơn giá bù</th><th>Lương bù</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+
+      <div class="card" id="cardBSLNgay" style="display:none;">
+        <div class="card-title">Chi tiết theo từng ngày (chỉ hiện khi chọn "Theo ngày")</div>
+        <div class="tablewrap"><div class="tablewrap-scroll"><table id="bangBSLNgay"><thead><tr><th>Mã NV</th><th>Họ và tên</th><th>Ngày</th><th>Sản lượng ngày (tấn)</th><th>Công ngày</th><th>SL bình quân/công</th><th>Ngưỡng</th><th>Dưới ngưỡng?</th><th>Lương bù ngày</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+    </section>
+
+    <section id="panelChungtu" class="panel">
+      <div class="pageheader"><div><h1>Chứng từ &amp; Lưu trữ</h1><p class="sub">Chốt báo cáo chấm công/sản lượng, lập phiếu hạch toán, và lưu trữ kỳ khi đã xong xuôi.</p></div></div>
+
+      <div class="card">
+        <div class="row">
+          <div class="field"><label>Năm</label><input id="namCT" type="number" value="2026" style="width:90px"></div>
+          <div class="field"><label>Tháng</label><select id="thangCT"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div>
+        </div>
+        <p class="card-sub" style="margin-top:6px;">Áp dụng cho toàn bộ thao tác bên dưới trong tab này — chọn đúng kỳ trước khi bấm bất kỳ nút nào.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">1. Chốt báo cáo (ghi thành bản ghi thật, không đổi dù dữ liệu gốc bị sửa sau này)</div>
+        <div class="row">
+          <button class="secondary" onclick="chotBaoCaoChamCong()">Chốt báo cáo chấm công</button>
+          <button class="secondary" onclick="chotBaoCaoPhanBoSanLuong()">Chốt phân bổ sản lượng</button>
+        </div>
+        <div id="ketQuaChot" class="result"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">2. Phiếu hạch toán</div>
+        <p class="card-sub">Cần chạy "Tính lương" cho đúng kỳ này trước (ở tab Bảng lương) — phiếu hạch toán đọc từ RP_BANGLUONG/RP_BHXH.</p>
+        <div class="row">
+          <button onclick="taoBangHachToan()">Lập bảng hạch toán chi phí lương</button>
+          <div class="field"><label>Phiếu chi</label><select id="loaiPhieuChi"><option value="CA_HAI">Lương + Tạm ứng</option><option value="LUONG">Chỉ lương</option><option value="TAMUNG">Chỉ tạm ứng</option></select></div>
+          <button onclick="taoPhieuChi()">Lập phiếu chi</button>
+          <button class="secondary no-print" onclick="window.print()">In chứng từ</button>
+        </div>
+        <div id="ketQuaChungTu" class="result"></div>
+
+        <div class="tablewrap" style="margin-top:14px;"><div class="tablewrap-scroll">
+          <table id="bangHachToan"><thead><tr><th>TK Nợ</th><th>Tên TK Nợ</th><th>TK Có</th><th>Tên TK Có</th><th>Diễn giải</th><th>Số tiền</th></tr></thead><tbody></tbody></table>
+        </div></div>
+        <div class="tablewrap" style="margin-top:14px;"><div class="tablewrap-scroll">
+          <table id="bangPhieuChi"><thead><tr><th>Số phiếu</th><th>Ngày chi</th><th>Mã NV</th><th>Họ và tên</th><th>Loại chi</th><th>Số tiền</th><th>Người nhận</th><th>Ghi chú</th></tr></thead><tbody></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">3. Lưu trữ (chốt kỳ — KHÔNG THỂ HOÀN TÁC)</div>
+        <p class="card-sub">Copy TOÀN BỘ dữ liệu hiện có ở File Xử lý (bảng lương, BHXH, thuế TNCN, báo cáo chấm công/phân bổ sản lượng đã chốt, phiếu hạch toán, nhật ký kiểm tra) sang File Lưu trữ — CỘNG DỒN với các kỳ trước đã lưu, không ghi đè — rồi XOÁ SẠCH File Xử lý để bắt đầu kỳ mới. Chỉ bấm khi đã chắc chắn kỳ này xong xuôi (đã tính lương, đã kiểm tra, đã in/tải mọi báo cáo cần).</p>
+        <button class="danger" onclick="luuTruKy()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>Lưu trữ kỳ này</button>
+        <div id="ketQuaLuuTru" class="result"></div>
+      </div>
+    </section>
+
     <section id="panelHuongdan" class="panel">
       <div class="pageheader"><div><h1>Hướng dẫn sử dụng</h1><p class="sub">Quy trình lập bảng lương hàng tháng và cách dùng từng tab.</p></div></div>
+
+      <div class="card">
+        <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Cài đặt liên kết 5 file (làm TRƯỚC TIÊN)</div>
+        <p class="card-sub">Hệ thống trải trên <b>5 Google Sheet riêng biệt</b>: Danh mục, Draft (bảng nháp), Data (dữ liệu đã nạp), Xử lý (báo cáo/chứng từ kỳ đang làm), Lưu trữ (lịch sử các kỳ đã chốt). Tạo sẵn 5 Google Sheet trống (đặt tên gì cũng được), copy URL mỗi file dán vào đúng ô bên dưới rồi bấm Lưu — làm 1 LẦN DUY NHẤT khi setup, sau đó mới bấm "Khởi tạo cấu trúc bảng" ở card kế tiếp.</p>
+        <div id="ketQuaLienKetFile" class="result"></div>
+        <div class="tablewrap"><table id="bangLienKetFile">
+          <thead><tr><th>File</th><th>Trạng thái</th><th>Dán URL/ID Google Sheet</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><b>Danh mục</b></td><td id="tt_DANHMUC">—</td><td><input id="url_DANHMUC" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;"></td><td><button class="small" onclick="luuLienKetFile('DANHMUC')">Lưu</button></td></tr>
+            <tr><td><b>Draft</b></td><td id="tt_DRAFT">—</td><td><input id="url_DRAFT" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;"></td><td><button class="small" onclick="luuLienKetFile('DRAFT')">Lưu</button></td></tr>
+            <tr><td><b>Data</b></td><td id="tt_DATA">—</td><td><input id="url_DATA" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;"></td><td><button class="small" onclick="luuLienKetFile('DATA')">Lưu</button></td></tr>
+            <tr><td><b>Xử lý</b></td><td id="tt_XULY">—</td><td><input id="url_XULY" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;"></td><td><button class="small" onclick="luuLienKetFile('XULY')">Lưu</button></td></tr>
+            <tr><td><b>Lưu trữ</b></td><td id="tt_LUUTRU">—</td><td><input id="url_LUUTRU" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;"></td><td><button class="small" onclick="luuLienKetFile('LUUTRU')">Lưu</button></td></tr>
+          </tbody>
+        </table></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="secondary small" onclick="taiCauHinhLienKetFile()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/></svg>Tải lại trạng thái</button>
+        </div>
+        <p class="card-sub" style="margin-top:10px;">⚠ Apps Script project (Extensions → Apps Script) nên GẮN VÀO FILE XỬ LÝ — mở File Xử lý trên Google Sheet để menu "⚙️ HAK Group" và các trigger tự động hoạt động đúng.</p>
+      </div>
 
       <div class="card">
         <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Cài đặt lần đầu — khởi tạo cấu trúc bảng</div>
         <p class="card-sub">Bấm nút này 1 LẦN DUY NHẤT khi mới dùng webapp cho 1 Google Sheet — tự tạo đủ toàn bộ sheet (dữ liệu vào, danh mục, đầu ra) đúng cấu trúc, có định dạng tiêu đề, đúng thứ tự. Chạy lại nhiều lần vẫn an toàn — sheet đã có dữ liệu sẽ KHÔNG bị đụng tới, chỉ tạo thêm sheet còn thiếu.</p>
         <button onclick="khoiTaoCauTrucBang()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Khởi tạo cấu trúc bảng</button>
         <div id="ketQuaKhoiTao" class="result"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Nhập dữ liệu ban đầu (đã có sẵn file cũ)</div>
+        <p class="card-sub">Nếu đơn vị đã có sẵn file dữ liệu cũ (kiểu "DL_LUONG_&lt;đơn vị&gt;_&lt;kỳ&gt;.xlsx" — nhiều sheet trong 1 file), tải NGUYÊN FILE lên đây — webapp tự nhận diện các sheet quen thuộc (Nhân sự, Chi tiết nhân sự, Chấm công, Sản lượng, Bơm dăm, Phát sinh lương, Ứng lương) và nạp thẳng vào đúng chỗ, không cần tách ra nạp riêng từng phần. Sheet nào không nhận diện được sẽ báo rõ tên để bạn tự kiểm tra/nạp tay.</p>
+        <p class="card-sub">⚠ Nạp THẲNG vào bảng chính (không qua bảng nháp) — vì đây là dữ liệu khởi tạo ban đầu. Sau khi nạp xong, LUÔN chạy tab "Kiểm tra bảng lương" trước khi Tính lương lần đầu.</p>
+        <div class="row">
+          <div class="field"><label>File dữ liệu gốc (.xlsx)</label><input type="file" id="fileBanDau" accept=".xlsx,.xls"></div>
+          <div class="field"><label>Chế độ nạp</label><select id="cheDoBanDau"><option value="THEM">Thêm vào cuối</option><option value="GHIDE">Ghi đè toàn bộ</option></select></div>
+          <button onclick="nhapDuLieuBanDau()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Nhập dữ liệu ban đầu</button>
+        </div>
+        <div id="ketQuaBanDau" class="result"></div>
       </div>
 
       <div class="card">
@@ -499,6 +770,111 @@
           <li><b>Xem báo cáo</b><span>Vào các tab <b>Báo cáo</b> (tiền lương / nhân sự / bảo hiểm / thuế TNCN) để xem tổng hợp, in ra nếu cần nộp hoặc lưu trữ.</span></li>
           <li><b>Đối chiếu chứng từ giấy (thủ công)</b><span>Đối chiếu RP_BANGLUONG với ảnh/PDF chấm công vân tay, giấy xác nhận tăng ca, bảng cơm nếu có — webapp chưa tự động hoá được bước này.</span></li>
         </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Quy chế lương — Cách tính theo bộ phận</div>
+        <p class="card-sub">Bảng dưới đây tổng hợp cách tính lương và phụ cấp hiện hành theo từng bộ phận. Khởi tạo lần đầu qua tab <b>Danh mục</b> → "Khởi tạo Quy chế lương hiện hành"; khi có điều chỉnh mức lương/phụ cấp, cập nhật trực tiếp các dòng tương ứng trong tab Danh mục — không cần sửa lại nội dung hướng dẫn này.</p>
+
+        <div class="tablewrap"><table>
+          <thead><tr><th>Bộ phận (Mã PB)</th><th>Cách tính lương chính</th><th>Phụ cấp trách nhiệm</th><th>Ghi chú</th></tr></thead>
+          <tbody>
+            <tr><td>Văn phòng, Kế toán (01.01)</td><td>Lương thời gian — chia theo ngày công (TG1-TG4, tuỳ người)</td><td>—</td><td>Có thể hưởng Tiền cơm (HT.01) nếu có gán mã hỗ trợ</td></tr>
+            <tr><td>Trạm cân (01.02)</td><td>Lương thời gian, thường chia ca (TG2/TG3 — không trừ hoặc trừ ít ngày CN)</td><td>—</td><td>Làm theo ca, chấm công đủ 3 ca/ngày</td></tr>
+            <tr><td>Quản đốc (01.03)</td><td>Lương thời gian (TG1) hoặc Lương cố định (CĐ)</td><td><b>TN.03</b> — 1.000.000đ/tháng, cố định</td><td>Phụ cấp quản lý cố định, không theo công</td></tr>
+            <tr><td>Tạp vụ (01.04)</td><td>Lương công nhật (CN1/CN2) — đơn giá/ngày × công thực tế</td><td>—</td><td>Ngưỡng đóng BH: đủ 15 công/tháng</td></tr>
+            <tr><td>Bảo vệ (01.05)</td><td>Lương thời gian hoặc công nhật, tuỳ ca trực</td><td>—</td><td>—</td></tr>
+            <tr><td>Kinh doanh (01.06)</td><td>Lương thời gian (TG1)</td><td><b>TN.04</b> — 570.000đ/tháng, cố định</td><td>—</td></tr>
+            <tr><td>KCS (01.07)</td><td>Lương thời gian, chia ca (TG2/TG3)</td><td>—</td><td>Làm ca giống Trạm cân</td></tr>
+            <tr><td>Cơ khí (01.08)</td><td>Lương thời gian hoặc công nhật</td><td><b>TN.01</b> — đủ công chuẩn: 300.000đ; thiếu: 300.000×(công/công chuẩn)</td><td>Phụ cấp tỷ lệ theo công, không cố định</td></tr>
+            <tr><td>Cơ giới (01.09)</td><td>Lương thời gian, chia ca</td><td>—</td><td>Có thể hưởng <b>HT.02</b> (hỗ trợ lương cơ giới) nếu công &lt; công chuẩn</td></tr>
+            <tr><td>Thủ kho (01.10)</td><td>Lương thời gian (TG1)</td><td>—</td><td>—</td></tr>
+            <tr><td>Ben hàng (01.11)</td><td>Lương thời gian hoặc công nhật</td><td>—</td><td>—</td></tr>
+            <tr><td>Tổ 1/2 — CN sản xuất (02.01/02.02)</td><td><b>Lương sản phẩm (SP)</b> — 6.000đ/tấn sản lượng, có bù nếu thiếu ngưỡng</td><td><b>TN.02</b> — đủ (công chuẩn−5): 200.000đ; thiếu: tỷ lệ theo công</td><td>Ngưỡng đóng BH: đủ 15 công. Có thể hưởng thêm Bơm dăm (10.000đ/xe, dùng chung "Lương phụ")</td></tr>
+            <tr><td>Tổ 1/2 — CN công nhật (02.03/02.04)</td><td>Lương công nhật (CN1/CN2) — đơn giá/ngày × công thực tế</td><td>—</td><td>Ngưỡng đóng BH: đủ 15 công/tháng</td></tr>
+            <tr><td>Vận tải (04.06)</td><td>Lương khoán cố định (CĐ) theo thâm niên/tuyến</td><td>—</td><td>Không chia theo công (trừ khi có ghi chú riêng)</td></tr>
+          </tbody>
+        </table></div>
+
+        <p class="card-sub" style="margin-top:16px;"><b>4 công thức lương nền (áp dụng theo Mã tiền lương 1 của từng người, không phải cố định theo bộ phận):</b></p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Mã</th><th>Tên</th><th>Công thức</th></tr></thead>
+          <tbody>
+            <tr><td>CĐ</td><td>Cố định</td><td>Lương thời gian = Lương thỏa thuận (không đổi theo công)</td></tr>
+            <tr><td>TG1</td><td>Thời gian 1</td><td>Công chuẩn = số ngày trong tháng − số Chủ nhật. Lương = (Lương thỏa thuận / Công chuẩn) × Công tính TG</td></tr>
+            <tr><td>TG2</td><td>Thời gian 2</td><td>Công chuẩn = số ngày trong tháng (không trừ CN) — dùng cho khối làm ca liên tục</td></tr>
+            <tr><td>TG3 / TG4</td><td>Thời gian 3 / 4</td><td>Công chuẩn = số ngày trong tháng − 4 (TG3) hoặc − 2 (TG4)</td></tr>
+            <tr><td>CN1 / CN2</td><td>Công nhật</td><td>Công chuẩn = công thực tế (luôn khớp) → Lương = Lương thỏa thuận (đơn giá/ngày) × Công thực tế</td></tr>
+            <tr><td>SP</td><td>Sản phẩm</td><td>Lương sản lượng = 6.000đ × số tấn; NẾU có Lương thời gian song song thì vẫn cộng thêm theo công thức CN ở trên (đơn giá/ngày × công)</td></tr>
+          </tbody>
+        </table></div>
+
+        <p class="card-sub" style="margin-top:16px;"><b>Phụ cấp công tác (tự động theo NHÃN chấm công, không cần gán riêng cho từng người):</b></p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Nhãn (ghi kèm số công, vd "1QC")</th><th>Ý nghĩa</th><th>Đơn giá/ngày</th></tr></thead>
+          <tbody>
+            <tr><td>QC</td><td>Công tác điểm QC</td><td>100.000đ</td></tr>
+            <tr><td>QS</td><td>Công tác điểm QS</td><td>120.000đ</td></tr>
+            <tr><td>ĐH</td><td>Công tác điểm ĐH</td><td>30.000đ</td></tr>
+            <tr><td>ĐN</td><td>Công tác điểm ĐN</td><td>120.000đ</td></tr>
+            <tr><td>DQ1</td><td>Công tác điểm DQ</td><td>500.000đ</td></tr>
+          </tbody>
+        </table></div>
+        <p class="card-sub">Ví dụ: chấm công ngày ghi "1QC" = 1 công bình thường + tự động cộng thêm 100.000đ phụ cấp công tác cho ngày đó — không cần khai riêng.</p>
+
+        <p class="card-sub" style="margin-top:16px;"><b>Hỗ trợ (2 loại, dùng 2 mã khác nhau trên hồ sơ mỗi người):</b></p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Mã</th><th>Tên</th><th>Công thức</th></tr></thead>
+          <tbody>
+            <tr><td>HT.01 (gán ở "Mã hỗ trợ")</td><td>Tiền cơm</td><td>20.000đ × Ngày cơm (từ hình thức công "CC" hoặc DL_TIENCOM)</td></tr>
+            <tr><td>HT.02 (gán ở "Mã hỗ trợ 2")</td><td>Hỗ trợ lương cơ giới</td><td>Nếu công thực tế &lt; công chuẩn: (công chuẩn − công thực tế) × 150.000đ</td></tr>
+          </tbody>
+        </table></div>
+
+        <p class="card-sub" style="margin-top:16px;"><b>Tăng ca (5 mã, hệ số 50% trừ TC5 là lương khoán):</b></p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Mã</th><th>Công thức</th></tr></thead>
+          <tbody>
+            <tr><td>TC1</td><td>(Công tính lương − Công lễ − công trung chuyển − ngày phép − công tăng ca − công chuẩn) × 50% + công tăng ca × 50%</td></tr>
+            <tr><td>TC2</td><td>Như TC1, trừ thêm Công di chuyển</td></tr>
+            <tr><td>TC3</td><td>(Công tăng ca + Công chủ nhật) × 50%</td></tr>
+            <tr><td>TC4</td><td>Công tăng ca × 50%</td></tr>
+            <tr><td>TC5</td><td>Lương khoán cố định 6.000.000đ, chia công chuẩn rồi nhân công tăng ca (không dùng hệ số %)</td></tr>
+          </tbody>
+        </table></div>
+
+        <p class="card-sub" style="margin-top:16px;"><b>Bảo hiểm &amp; Thuế TNCN:</b></p>
+        <ul style="margin:0; padding-left:18px; color:var(--text-mute); font-size:12.8px; line-height:1.7;">
+          <li><b>Ngưỡng đóng BHXH</b>: khối Sản xuất/Công nhật/Sản phẩm/Bơm dăm cần đủ 15 công/tháng; khối còn lại cần đủ 20 công/tháng — thiếu ngưỡng thì công ty truy thu lại phần đã đóng.</li>
+          <li><b>Tỷ lệ BHXH đầy đủ (BH_KPCD.01)</b>: Công ty đóng 17,5% BHXH + 3% BHYT + 1% BHTN + 2% KPCĐ; Người lao động đóng 8% BHXH + 1,5% BHYT + 1% BHTN + 0,5% KPCĐ.</li>
+          <li><b>Thuế TNCN theo "Mã TNCN"</b> của từng người: <b>TNCN0</b> = miễn thuế; <b>TNCN1</b> = khấu trừ cố định 10% trên tổng thu nhập gộp (hợp đồng ngắn hạn); <b>TNCN2</b>/không khai = tính luỹ tiến 7 bậc theo luật (giảm trừ bản thân 11.000.000đ, mỗi người phụ thuộc 4.400.000đ).</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>Chi tiết: Lương sản lượng, Tiền bơm dăm, Bù sản lượng, Phụ cấp</div>
+
+        <p class="card-sub"><b>1. Lương sản lượng (mã "SP")</b></p>
+        <p class="card-sub">Công thức: <b>Lương sản lượng = Sản lượng cá nhân trong kỳ (tấn) × Đơn giá</b> (6.000đ/tấn theo mức hiện hành, khai ở cột "Số tiền khoán" trong DM_LUONG). Sản lượng cá nhân lấy từ các phiếu cân trong tháng (sheet DL_SANLUONG) — nếu 1 phiếu cân chia cho nhiều người cùng ca thì phải tách thành nhiều dòng, mỗi dòng ghi đúng phần sản lượng của người đó. Nhập phiếu cân qua tab <b>Nhập liệu</b> (tải file, chọn Loại "Sản lượng chính") hoặc tab <b>Ứng lương &amp; Bơm dăm</b> (thêm tay từng phiếu).</p>
+
+        <p class="card-sub" style="margin-top:12px;"><b>2. Tiền bơm dăm</b></p>
+        <p class="card-sub">Công thức: <b>Lương bơm dăm = Số xe bơm dăm trong kỳ × Đơn giá</b> (10.000đ/xe theo mức hiện hành — lưu ý kỹ thuật: dùng chung cột "Lương phụ" trong DM_LUONG của mã "SP", không phải cột riêng). Đây là khoản <b>CỘNG THÊM RIÊNG</b>, tính độc lập với lương sản lượng, cùng cộng vào tổng thu nhập. Dữ liệu số xe lấy từ DL_BANDAM — nhập qua tab Nhập liệu (chọn Loại "Bơm dăm") hoặc tab Ứng lương &amp; Bơm dăm.</p>
+
+        <p class="card-sub" style="margin-top:12px;"><b>3. Bù sản lượng (khi sản lượng thấp)</b></p>
+        <p class="card-sub">Chỉ áp dụng cho người mã "SP" — nếu sản lượng bình quân mỗi công THẤP HƠN ngưỡng tối thiểu (15 tấn/công theo mức hiện hành), được bù thêm 200.000đ/công thiếu (cột "Đơn giá bù lương" trong DM_LUONG). Webapp có <b>2 phương án tính</b> (chọn ở dropdown "Phương pháp bù sản lượng" tại tab Bảng lương):</p>
+        <ul style="margin:0 0 8px; padding-left:18px; color:var(--text-mute); font-size:12.8px; line-height:1.7;">
+          <li><b>Theo tháng</b> (mặc định): so bình quân CẢ THÁNG (tổng sản lượng ÷ tổng công) với ngưỡng.</li>
+          <li><b>Theo ngày</b>: so sản lượng/công của TỪNG NGÀY với ngưỡng rồi cộng dồn phần bù — chính xác hơn khi sản lượng không đều giữa các ngày trong tháng.</li>
+        </ul>
+        <p class="card-sub">Mức ngưỡng và đơn giá bù có thể thay đổi theo quyết định của công ty — khi điều chỉnh, sửa trực tiếp 2 cột "ĐK_Bù lương (công tối thiểu)" và "Đơn giá bù lương" ở dòng mã "SP" trong tab <b>Danh mục</b> → chọn "Hình thức lương".</p>
+
+        <p class="card-sub" style="margin-top:12px;"><b>4. Phụ cấp — 2 kiểu tính, phân biệt qua chữ "cố định" trong "Cách tính"</b></p>
+        <ul style="margin:0; padding-left:18px; color:var(--text-mute); font-size:12.8px; line-height:1.7;">
+          <li><b>Cố định hàng tháng</b> (vd TN.03, TN.04): luôn nhận đủ số tiền, không phụ thuộc số công đi làm trong tháng.</li>
+          <li><b>Tỷ lệ theo công</b> (vd TN.01, TN.02): nếu tổng công ≥ ngưỡng (= công chuẩn − số công ghi ở cột "Tham chiếu") thì nhận đủ 100% số tiền; nếu thiếu thì nhận theo tỷ lệ <code>Số tiền ÷ Công chuẩn × Tổng công thực tế</code>.
+            <br>Ví dụ TN.02 (Phụ cấp trách nhiệm BP SX, 200.000đ, Tham chiếu=5, công chuẩn=27): ngưỡng đủ = 27−5 = 22 công. Nếu người đó chỉ đi 18 công (chưa đủ 22) → phụ cấp = 200.000 ÷ 27 × 18 ≈ <b>133.333đ</b> (không phải 200.000đ).</li>
+          <li><b>Phụ cấp công tác</b> (QC/QS/ĐH/ĐN/DQ1): tính riêng theo NHÃN chấm công (xem bảng ở trên), không thuộc 2 kiểu trên — luôn tính theo số ngày có nhãn × đơn giá, không phụ thuộc tổng công cả tháng.</li>
+        </ul>
       </div>
 
       <div class="card">
@@ -533,6 +909,32 @@
 </div>
 
 <script>
+  function nhapDuLieuBanDau() {
+    const fileInput = document.getElementById('fileBanDau');
+    if (!fileInput.files.length) { alert('Chọn file trước đã.'); return; }
+    const file = fileInput.files[0];
+    const cheDo = document.getElementById('cheDoBanDau').value;
+    const kq = document.getElementById('ketQuaBanDau');
+    kq.innerHTML = 'Đang đọc file và nhận diện các sheet — có thể mất chút thời gian nếu file lớn...';
+    docFileThanhBase64_(file, function (base64) {
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+        let html = '<span class="ok">✔ Đã nhận diện và nạp ' + r.ketQua.length + ' sheet:</span><br>';
+        r.ketQua.forEach(function (m) {
+          html += '&nbsp;&nbsp;• <b>' + m.sheet + '</b> ← "' + m.nguon + '": ' + m.soDong + ' dòng';
+          if (m.ghiChu) html += ' <span class="warn">(' + m.ghiChu + ')</span>';
+          html += '<br>';
+        });
+        if (r.boQua && r.boQua.length) {
+          html += '<span class="warn">⚠ Không nhận diện được (bỏ qua): ' + r.boQua.join(', ') + '</span><br>';
+        }
+        html += 'Nhớ vào tab <b>Kiểm tra bảng lương</b> chạy kiểm tra trước khi Tính lương lần đầu.';
+        kq.innerHTML = html;
+      }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; })
+        .guiNhapDuLieuBanDau(base64, file.name, file.type, cheDo);
+    });
+  }
+
   function khoiTaoCauTrucBang() {
     if (!confirm('Khởi tạo cấu trúc bảng ngay? Thao tác này an toàn — không xoá dữ liệu đã có, chỉ tạo thêm sheet còn thiếu và chỉnh lại định dạng tiêu đề.')) return;
     const kq = document.getElementById('ketQuaKhoiTao');
@@ -547,10 +949,43 @@
     }).guiKhoiTaoTatCaSheet();
   }
 
+  // ---------- Cài đặt liên kết 5 file ----------
+  function taiCauHinhLienKetFile() {
+    const kq = document.getElementById('ketQuaLienKetFile');
+    kq.innerHTML = 'Đang tải...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = '';
+      r.data.forEach(function (f) {
+        const td = document.getElementById('tt_' + f.loai);
+        if (!td) return;
+        if (f.idDangDung) {
+          td.innerHTML = '<span class="tag tag-dangLam">Đã liên kết</span> <a href="' + f.url + '" target="_blank" style="font-size:11px;">mở file</a>';
+        } else {
+          td.innerHTML = '<span class="tag tag-loi">Chưa cấu hình</span>';
+        }
+      });
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiDanhSachLinkFile();
+  }
+
+  function luuLienKetFile(loai) {
+    const url = document.getElementById('url_' + loai).value;
+    if (!url) { alert('Dán URL hoặc ID Google Sheet trước đã.'); return; }
+    const kq = document.getElementById('ketQuaLienKetFile');
+    kq.innerHTML = 'Đang lưu...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (r.ok) { kq.innerHTML = '<span class="ok">✔ Đã lưu liên kết.</span>'; taiCauHinhLienKetFile(); }
+      else { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; }
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiDatIdFile(loai, url);
+  }
+
   const PANEL_ID = {
-    luong: 'panelLuong', nhansu: 'panelNhanSu', danhmuc: 'panelDanhMuc', nhaplieu: 'panelNhapLieu', kiemtra: 'panelKiemTra',
+    luong: 'panelLuong', nhansu: 'panelNhanSu', danhmuc: 'panelDanhMuc', nhaplieu: 'panelNhapLieu',
+    giaodich: 'panelGiaoDich', kiemtra: 'panelKiemTra',
     baocaoluong: 'panelBaocaoluong', baocaonhansu: 'panelBaocaonhansu', baocaobhxh: 'panelBaocaobhxh',
-    baocaotncn: 'panelBaocaotncn', huongdan: 'panelHuongdan'
+    baocaotncn: 'panelBaocaotncn', baocaosanluong: 'panelBaocaosanluong', baocaobusanluong: 'panelBaocaobusanluong',
+    chungtu: 'panelChungtu',
+    huongdan: 'panelHuongdan'
   };
   const DA_TAI = {};
   function doiTab(ten) {
@@ -562,11 +997,15 @@
       DA_TAI[ten] = true;
       if (ten === 'nhansu') taiDanhSachNhanSu();
       if (ten === 'danhmuc') taiDanhMuc();
+      if (ten === 'giaodich') { taiDsUngLuong(); taiDsBanDam(); taiDanhSachNhanVienDL_(); }
       if (ten === 'kiemtra') taiLog();
       if (ten === 'baocaoluong') taiBaoCaoLuong();
       if (ten === 'baocaonhansu') taiBaoCaoNhanSu();
       if (ten === 'baocaobhxh') taiBaoCaoBHXH();
       if (ten === 'baocaotncn') taiBaoCaoTNCN();
+      if (ten === 'baocaosanluong') taiBaoCaoPhanBoSanLuong();
+      if (ten === 'baocaobusanluong') taiBaoCaoBuSanLuong();
+      if (ten === 'huongdan') taiCauHinhLienKetFile();
     }
   }
 
@@ -820,19 +1259,278 @@
     }).guiHuyNhapSanLuong();
   }
 
+  // ---------- TAB "Ứng lương & Bơm dăm" — Cách 1: tải file lên qua bảng nháp ----------
+  let _nhapUngLuongList = null;
+
+  function taiMauUngLuong() {
+    const header = ['Ngày hạch toán', 'Số phiếu chi', 'Mã NV', 'Người nhận', 'Diễn giải', 'Tài khoản', 'TK đối ứng', 'Tạm ứng', 'Thanh toán TM'];
+    const vd1 = ['01/06/2026', 'PC001', '012345678901', 'Nguyễn Văn A', 'Tạm ứng lương tháng 6', '1111', '334', '2000000', '2000000'];
+    taiXuongCSV_([header, vd1], 'mau_ung_luong.csv');
+  }
+
+  function xemTruocUngLuong() {
+    const fileInput = document.getElementById('fileUngLuong');
+    if (!fileInput.files.length) { alert('Chọn file trước đã.'); return; }
+    const file = fileInput.files[0];
+    const kq = document.getElementById('ketQuaUngLuong');
+    kq.innerHTML = 'Đang đọc file...';
+    document.getElementById('nhapUngLuongPreview').style.display = 'none';
+    docFileThanhBase64_(file, function (base64) {
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+        _nhapUngLuongList = r.list;
+        hienThiBangNhapUngLuong_(r.list);
+        capNhatKetQuaNhapUI_('UngLuong', r);
+        document.getElementById('nhapUngLuongPreview').style.display = 'block';
+      }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; })
+        .guiXemTruocUngLuong(base64, file.name, file.type);
+    });
+  }
+
+  function hienThiBangNhapUngLuong_(list) {
+    const tbody = document.querySelector('#bangNhapUngLuong tbody');
+    tbody.innerHTML = '';
+    list.slice(0, 50).forEach(function (row) {
+      tbody.innerHTML += '<tr><td>' + dinhDangNgayHienThi_(row['Ngày hạch toán']) + '</td><td>' + (row['Mã NV'] || '') + '</td><td>' + (row['Người nhận'] || '') + '</td><td>' + (row['Diễn giải'] || '') + '</td><td>' + tien_(row['Tạm ứng']) + '</td><td>' + veBangKiemTra_(row['✔ Kiểm tra']) + '</td></tr>';
+    });
+  }
+
+  function doiChieuLaiUngLuong() {
+    const kq = document.getElementById('ketQuaUngLuong');
+    kq.innerHTML = 'Đang đối chiếu lại...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      hienThiBangNhapUngLuong_(r.list);
+      capNhatKetQuaNhapUI_('UngLuong', r);
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiDoiChieuLaiNhapUngLuong();
+  }
+
+  function xacNhanUngLuong() {
+    const cheDo = document.getElementById('cheDoUngLuong').value;
+    const kq = document.getElementById('ketQuaUngLuong');
+    kq.innerHTML = 'Đang xác nhận nạp...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (r.ok) {
+        kq.innerHTML = '<span class="ok">✔ Đã nạp ' + r.soDong + ' dòng vào NL_UNGLUONG. Bảng nháp đã được xoá.</span>';
+        document.getElementById('nhapUngLuongPreview').style.display = 'none';
+        document.getElementById('fileUngLuong').value = '';
+        taiDsUngLuong();
+      } else {
+        kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>';
+      }
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiXacNhanNapUngLuongTuNhap(cheDo);
+  }
+
+  function huyNhapUngLuong() {
+    if (!confirm('Xoá sạch bảng nháp Ứng lương? Sẽ KHÔNG ghi gì vào NL_UNGLUONG.')) return;
+    google.script.run.withSuccessHandler(function () {
+      document.getElementById('nhapUngLuongPreview').style.display = 'none';
+      document.getElementById('fileUngLuong').value = '';
+      document.getElementById('ketQuaUngLuong').innerHTML = 'Đã xoá bảng nháp.';
+    }).guiHuyNhapUngLuong();
+  }
+
+  // ---------- TAB "Ứng lương & Bơm dăm" — Cách 2: danh sách + nhập/sửa/xoá thủ công ----------
+  function taiDanhSachNhanVienDL_() {
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) return;
+      const dl = document.getElementById('dsNhanVienDL');
+      dl.innerHTML = '';
+      r.data.forEach(function (nv) {
+        const opt = document.createElement('option');
+        opt.value = nv['Mã nhân viên']; opt.label = nv['Họ và tên'];
+        dl.appendChild(opt);
+      });
+    }).guiDanhSachNhanSu(false);
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) return;
+      const sel = document.getElementById('bdMaPB');
+      sel.innerHTML = '<option value="">(chọn phòng ban)</option>';
+      r.data.forEach(function (pb) {
+        const opt = document.createElement('option');
+        opt.value = pb['Mã phòng ban']; opt.textContent = pb['Mã phòng ban'] + ' — ' + pb['Tên phòng ban'];
+        sel.appendChild(opt);
+      });
+    }).guiLayDanhMuc('PHONGBAN');
+  }
+
+  function taiDsUngLuong() {
+    const nam = document.getElementById('namUL').value;
+    const thang = document.getElementById('thangUL').value;
+    const kq = document.getElementById('ketQuaDsUngLuong');
+    kq.innerHTML = 'Đang tải...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = r.data.length + ' giao dịch.';
+      const tbody = document.querySelector('#bangDsUngLuong tbody');
+      tbody.innerHTML = '';
+      r.data.forEach(function (gd) {
+        tbody.innerHTML += '<tr><td>' + dinhDangNgayHienThi_(gd['Ngày hạch toán']) + '</td><td>' + (gd['Mã NV'] || '') + '</td><td>' + (gd['Người nhận'] || '') + '</td><td>' + (gd['Diễn giải'] || '') + '</td><td>' + tien_(gd['Tạm ứng']) + '</td><td><button class="small btn-xem" onclick="moFormSuaUngLuong(' + gd._soDong + ')">Sửa</button> <button class="small danger" onclick="xoaUngLuong(' + gd._soDong + ')">Xoá</button></td></tr>';
+      });
+      window._dsUngLuong = r.data;
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiLayGiaoDich('UNGLUONG', nam, thang);
+  }
+
+  function moFormThemUngLuong() {
+    document.getElementById('tieuDeFormUngLuong').textContent = 'Thêm ứng lương';
+    document.querySelectorAll('#formUngLuong input').forEach(function (el) { el.value = ''; });
+    document.getElementById('ulSoDong').value = '';
+    document.getElementById('ketQuaFormUngLuong').innerHTML = '';
+    document.getElementById('formUngLuong').style.display = 'block';
+    document.getElementById('formUngLuong').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function moFormSuaUngLuong(soDong) {
+    const gd = (window._dsUngLuong || []).find(function (x) { return x._soDong === soDong; });
+    if (!gd) return;
+    document.getElementById('tieuDeFormUngLuong').textContent = 'Sửa ứng lương';
+    document.getElementById('ulSoDong').value = soDong;
+    document.getElementById('ulNgay').value = dinhDangNgayInput_(gd['Ngày hạch toán']);
+    document.getElementById('ulMaNV').value = gd['Mã NV'] || '';
+    document.getElementById('ulNguoiNhan').value = gd['Người nhận'] || '';
+    document.getElementById('ulDienGiai').value = gd['Diễn giải'] || '';
+    document.getElementById('ulSoPhieu').value = gd['Số phiếu chi'] || '';
+    document.getElementById('ulTamUng').value = gd['Tạm ứng'] || '';
+    document.getElementById('ulThanhToanTM').value = gd['Thanh toán TM'] || '';
+    document.getElementById('ulTaiKhoan').value = gd['Tài khoản'] || '';
+    document.getElementById('ulTKDoiUng').value = gd['TK đối ứng'] || '';
+    document.getElementById('ketQuaFormUngLuong').innerHTML = '';
+    document.getElementById('formUngLuong').style.display = 'block';
+    document.getElementById('formUngLuong').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function dongFormUngLuong() { document.getElementById('formUngLuong').style.display = 'none'; }
+
+  function luuUngLuong() {
+    const soDong = document.getElementById('ulSoDong').value;
+    const d = {
+      'Ngày hạch toán': thuGiaTri_('ulNgay'), 'Mã NV': thuGiaTri_('ulMaNV'),
+      'Người nhận': thuGiaTri_('ulNguoiNhan'), 'Diễn giải': thuGiaTri_('ulDienGiai'),
+      'Số phiếu chi': thuGiaTri_('ulSoPhieu'), 'Tạm ứng': thuGiaTri_('ulTamUng'),
+      'Thanh toán TM': thuGiaTri_('ulThanhToanTM'), 'Tài khoản': thuGiaTri_('ulTaiKhoan'),
+      'TK đối ứng': thuGiaTri_('ulTKDoiUng')
+    };
+    if (!d['Ngày hạch toán'] || !d['Mã NV'] || !d['Tạm ứng']) { alert('Vui lòng nhập đủ Ngày hạch toán, Mã NV, Tạm ứng'); return; }
+    document.getElementById('ketQuaFormUngLuong').innerHTML = 'Đang lưu...';
+    luuUngLuongThatSu_(soDong, d);
+  }
+
+  function luuUngLuongThatSu_(soDong, d) {
+    const kq = document.getElementById('ketQuaFormUngLuong');
+    const xongThi = function (r) {
+      if (r.ok) { kq.innerHTML = '<span class="ok">✔ Đã lưu.</span>'; taiDsUngLuong(); setTimeout(dongFormUngLuong, 600); }
+      else { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; }
+    };
+    const loi = function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; };
+    if (soDong) google.script.run.withSuccessHandler(xongThi).withFailureHandler(loi).guiSuaGiaoDich('UNGLUONG', Number(soDong), d);
+    else google.script.run.withSuccessHandler(xongThi).withFailureHandler(loi).guiThemGiaoDich('UNGLUONG', d);
+  }
+
+  function xoaUngLuong(soDong) {
+    if (!confirm('Xoá giao dịch ứng lương này?')) return;
+    google.script.run.withSuccessHandler(function (r) { if (r.ok) taiDsUngLuong(); else alert('Lỗi: ' + r.loi); }).guiXoaGiaoDich('UNGLUONG', soDong);
+  }
+
+  // ----- Bơm dăm (thủ công) -----
+  function taiDsBanDam() {
+    const nam = document.getElementById('namBD').value;
+    const thang = document.getElementById('thangBD').value;
+    const kq = document.getElementById('ketQuaDsBanDam');
+    kq.innerHTML = 'Đang tải...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = r.data.length + ' chuyến.';
+      const tbody = document.querySelector('#bangDsBanDam tbody');
+      tbody.innerHTML = '';
+      r.data.forEach(function (gd) {
+        tbody.innerHTML += '<tr><td>' + dinhDangNgayHienThi_(gd['Ngày cân']) + '</td><td>' + (gd['Biển số'] || '') + '</td><td>' + (gd['KL hàng (Tấn)'] || '') + '</td><td>' + (gd['Mã phòng ban'] || '') + '</td><td>' + (gd['Mã NV'] || '') + '</td><td><button class="small btn-xem" onclick="moFormSuaBanDam(' + gd._soDong + ')">Sửa</button> <button class="small danger" onclick="xoaBanDam(' + gd._soDong + ')">Xoá</button></td></tr>';
+      });
+      window._dsBanDam = r.data;
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiLayGiaoDich('BANDAM', nam, thang);
+  }
+
+  function moFormThemBanDam() {
+    document.getElementById('tieuDeFormBanDam').textContent = 'Thêm chuyến bơm dăm';
+    document.querySelectorAll('#formBanDam input').forEach(function (el) { el.value = ''; });
+    document.getElementById('bdMaPB').value = '';
+    document.getElementById('bdSoDong').value = '';
+    document.getElementById('ketQuaFormBanDam').innerHTML = '';
+    document.getElementById('formBanDam').style.display = 'block';
+    document.getElementById('formBanDam').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function moFormSuaBanDam(soDong) {
+    const gd = (window._dsBanDam || []).find(function (x) { return x._soDong === soDong; });
+    if (!gd) return;
+    document.getElementById('tieuDeFormBanDam').textContent = 'Sửa chuyến bơm dăm';
+    document.getElementById('bdSoDong').value = soDong;
+    document.getElementById('bdNgay').value = dinhDangNgayInput_(gd['Ngày cân']);
+    document.getElementById('bdGio').value = gd['Giờ cân'] || '';
+    document.getElementById('bdBienSo').value = gd['Biển số'] || '';
+    document.getElementById('bdCanLan1').value = gd['Cân lần 1'] || '';
+    document.getElementById('bdCanLan2').value = gd['Cân lần 2'] || '';
+    document.getElementById('bdKLHang').value = gd['KL hàng (Tấn)'] || '';
+    document.getElementById('bdMaPB').value = gd['Mã phòng ban'] || '';
+    document.getElementById('bdMaNV').value = gd['Mã NV'] || '';
+    document.getElementById('bdPhieuCan').value = gd['Phiếu cân'] || '';
+    document.getElementById('ketQuaFormBanDam').innerHTML = '';
+    document.getElementById('formBanDam').style.display = 'block';
+    document.getElementById('formBanDam').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function dongFormBanDam() { document.getElementById('formBanDam').style.display = 'none'; }
+
+  function luuBanDam() {
+    const soDong = document.getElementById('bdSoDong').value;
+    const d = {
+      'Ngày cân': thuGiaTri_('bdNgay'), 'Giờ cân': thuGiaTri_('bdGio'), 'Biển số': thuGiaTri_('bdBienSo'),
+      'Cân lần 1': thuGiaTri_('bdCanLan1'), 'Cân lần 2': thuGiaTri_('bdCanLan2'),
+      'KL hàng (Tấn)': thuGiaTri_('bdKLHang'), 'Mã phòng ban': thuGiaTri_('bdMaPB'),
+      'Mã NV': thuGiaTri_('bdMaNV'), 'Phiếu cân': thuGiaTri_('bdPhieuCan')
+    };
+    if (!d['Ngày cân'] || !d['Mã phòng ban'] || !d['KL hàng (Tấn)']) { alert('Vui lòng nhập đủ Ngày cân, Mã phòng ban, KL hàng (Tấn)'); return; }
+    const kq = document.getElementById('ketQuaFormBanDam');
+    kq.innerHTML = 'Đang lưu...';
+    const xongThi = function (r) {
+      if (r.ok) { kq.innerHTML = '<span class="ok">✔ Đã lưu.</span>'; taiDsBanDam(); setTimeout(dongFormBanDam, 600); }
+      else { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; }
+    };
+    const loi = function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; };
+    if (soDong) google.script.run.withSuccessHandler(xongThi).withFailureHandler(loi).guiSuaGiaoDich('BANDAM', Number(soDong), d);
+    else google.script.run.withSuccessHandler(xongThi).withFailureHandler(loi).guiThemGiaoDich('BANDAM', d);
+  }
+
+  function xoaBanDam(soDong) {
+    if (!confirm('Xoá chuyến bơm dăm này?')) return;
+    google.script.run.withSuccessHandler(function (r) { if (r.ok) taiDsBanDam(); else alert('Lỗi: ' + r.loi); }).guiXoaGiaoDich('BANDAM', soDong);
+  }
+
+  function dinhDangNgayInput_(v) {
+    if (!(v instanceof Date)) return '';
+    const p = function (n) { return ('0' + n).slice(-2); };
+    return v.getFullYear() + '-' + p(v.getMonth() + 1) + '-' + p(v.getDate());
+  }
+
   // ---------- TAB Danh mục ----------
   const DANHMUC_HEADERS = {
     PHONGBAN: ['Mã phòng ban', 'Tên phòng ban', 'Tài khoản chi phí'],
     CHUCVU: ['Mã chức vụ', 'Tên chức vụ'],
-    PHUCAP: ['Mã phụ cấp', 'Tên phụ cấp', 'Số tiền', 'Tỷ lệ', 'Tham chiếu', 'Cách tính'],
-    HOTRO: ['Mã hỗ trợ', 'Tên hỗ trợ', 'Số tiền', 'Cách tính'],
-    TANGCA: ['Mã tăng ca', 'Nội dung tăng ca', 'Hệ số tăng ca', 'Tiền tăng ca (nếu tính cố định)', 'Cách tính'],
-    BAOHIEM: ['Mã bảo hiểm', 'Nội dung', 'DN.BHXH', 'DN.BHYT', 'DN.BHTN', 'DN.KPCD', 'NLD.BHXH', 'NLD.BHYT', 'NLD.BHTN', 'NLD.KPCD'],
-    LUONG: ['Mã lương', 'Mã hình thức lương', 'Hình thức lương', 'Số tiền khoán', 'Lương phụ', 'Ngưỡng truy thu BH (công)', 'ĐK_Bù lương (công tối thiểu)', 'Đơn giá bù lương', 'Đơn giá bơm dăm', 'Cách tính'],
-    GTTNCN: ['Mã giảm trừ', 'Số người', 'Số tiền'],
-    TNCN: ['Bậc', 'Nội dung khấu trừ', 'Tỷ lệ đóng thuế', 'Thu nhập tháng (Min)', 'Thu nhập tháng (Max)']
+    PHUCAP: ['Mã phụ cấp', 'Hiệu lực từ', 'Hiệu lực đến', 'Tên phụ cấp', 'Số tiền', 'Tỷ lệ', 'Tham chiếu', 'Cách tính'],
+    HOTRO: ['Mã hỗ trợ', 'Hiệu lực từ', 'Hiệu lực đến', 'Tên hỗ trợ', 'Số tiền', 'Cách tính'],
+    TANGCA: ['Mã tăng ca', 'Hiệu lực từ', 'Hiệu lực đến', 'Nội dung tăng ca', 'Hệ số tăng ca', 'Tiền tăng ca (nếu tính cố định)', 'Cách tính'],
+    BAOHIEM: ['Mã bảo hiểm', 'Hiệu lực từ', 'Hiệu lực đến', 'Nội dung', 'DN.BHXH', 'DN.BHYT', 'DN.BHTN', 'DN.KPCD', 'NLD.BHXH', 'NLD.BHYT', 'NLD.BHTN', 'NLD.KPCD'],
+    LUONG: ['Mã lương', 'Hiệu lực từ', 'Hiệu lực đến', 'Mã hình thức lương', 'Hình thức lương', 'Số tiền khoán', 'Lương phụ', 'Ngưỡng truy thu BH (công)', 'ĐK_Bù lương (công tối thiểu)', 'Đơn giá bù lương', 'Đơn giá bơm dăm', 'Cách tính'],
+    GTTNCN: ['Mã giảm trừ', 'Hiệu lực từ', 'Hiệu lực đến', 'Số người', 'Số tiền'],
+    TNCN: ['Bậc', 'Hiệu lực từ', 'Hiệu lực đến', 'Nội dung khấu trừ', 'Tỷ lệ đóng thuế', 'Thu nhập tháng (Min)', 'Thu nhập tháng (Max)']
   };
   const DANHMUC_KHOA = { PHONGBAN: 'Mã phòng ban', CHUCVU: 'Mã chức vụ', PHUCAP: 'Mã phụ cấp', HOTRO: 'Mã hỗ trợ', TANGCA: 'Mã tăng ca', BAOHIEM: 'Mã bảo hiểm', LUONG: 'Mã lương', GTTNCN: 'Mã giảm trừ', TNCN: 'Bậc' };
+  const DANHMUC_CO_HIEU_LUC = { PHONGBAN: false, CHUCVU: false, PHUCAP: true, HOTRO: true, TANGCA: true, BAOHIEM: true, LUONG: true, GTTNCN: true, TNCN: true };
+
+  function dinhDangODanhMuc_(h, v) {
+    if (v instanceof Date) return v.toLocaleDateString('vi-VN');
+    if ((h === 'Hiệu lực đến') && !v) return '<span style="color:var(--text-mute);">(còn hiệu lực)</span>';
+    return (v !== undefined && v !== null) ? v : '';
+  }
 
   function taiDanhMuc() {
     const loai = document.getElementById('loaiDanhMuc').value;
@@ -840,48 +1538,63 @@
     kq.innerHTML = 'Đang tải...';
     google.script.run.withSuccessHandler(function (r) {
       if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
-      kq.innerHTML = r.data.length + ' dòng.' + (r.data.length === 0 ? ' Bấm "Khởi tạo dữ liệu mẫu" để có ngay ví dụ, hoặc "Thêm dòng" để tự nhập.' : '');
+      kq.innerHTML = r.data.length + ' dòng' + (DANHMUC_CO_HIEU_LUC[loai] ? ' (gồm mọi phiên bản theo thời gian)' : '') + '.' + (r.data.length === 0 ? ' Bấm "Khởi tạo dữ liệu mẫu" để có ngay ví dụ, hoặc "Thêm dòng" để tự nhập.' : '');
       const headers = DANHMUC_HEADERS[loai];
       document.querySelector('#bangDanhMuc thead').innerHTML = '<tr>' + headers.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '<th>Thao tác</th></tr>';
       const tbody = document.querySelector('#bangDanhMuc tbody'); tbody.innerHTML = '';
       r.data.forEach(function (row) {
-        const ma = row[DANHMUC_KHOA[loai]];
-        const tds = headers.map(function (h) {
-          let v = row[h]; if (v instanceof Date) v = v.toLocaleDateString('vi-VN');
-          return '<td>' + (v !== undefined && v !== null ? v : '') + '</td>';
-        }).join('');
-        tbody.innerHTML += '<tr>' + tds + '<td><button class="small btn-xem" onclick="moFormSuaDanhMuc(\'' + ma + '\')">Sửa</button> <button class="small danger" onclick="xoaDanhMuc(\'' + ma + '\')">Xoá</button></td></tr>';
+        const soDong = row._soDong;
+        const tds = headers.map(function (h) { return '<td>' + dinhDangODanhMuc_(h, row[h]) + '</td>'; }).join('');
+        tbody.innerHTML += '<tr>' + tds + '<td><button class="small btn-xem" onclick="moFormSuaDanhMuc(' + soDong + ')">Sửa</button> <button class="small danger" onclick="xoaDanhMuc(' + soDong + ')">Xoá</button></td></tr>';
       });
       window._danhMucHienTai = r.data;
     }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiLayDanhMuc(loai);
   }
 
+  function truongHieuLucHtml_(loai, hieuLucTu, hieuLucDen) {
+    if (!DANHMUC_CO_HIEU_LUC[loai]) return '';
+    return '<div><label>Hiệu lực từ *</label><input type="date" id="dm_hieuLucTu" value="' + (hieuLucTu || '') + '"></div>' +
+      '<div><label>Hiệu lực đến (để trống = còn hiệu lực)</label><input type="date" id="dm_hieuLucDen" value="' + (hieuLucDen || '') + '"></div>';
+  }
+
   function moFormThemDanhMuc() {
     const loai = document.getElementById('loaiDanhMuc').value;
-    const headers = DANHMUC_HEADERS[loai];
-    document.getElementById('tieuDeFormDanhMuc').textContent = 'Thêm dòng mới';
+    const headers = DANHMUC_HEADERS[loai].filter(function (h) { return h !== 'Hiệu lực từ' && h !== 'Hiệu lực đến'; });
+    document.getElementById('tieuDeFormDanhMuc').textContent = DANHMUC_CO_HIEU_LUC[loai] ? 'Thêm phiên bản mới' : 'Thêm dòng mới';
     const wrap = document.getElementById('truongFormDanhMuc');
-    wrap.innerHTML = headers.map(function (h, i) { return '<div><label>' + h + '</label><input id="dm_f_' + i + '" data-ten="' + h + '"></div>'; }).join('');
+    wrap.innerHTML = truongHieuLucHtml_(loai, '', '') + headers.map(function (h, i) { return '<div><label>' + h + '</label><input id="dm_f_' + i + '" data-ten="' + h + '"></div>'; }).join('');
     wrap.dataset.dangSua = '';
-    document.getElementById('ketQuaFormDanhMuc').innerHTML = '';
+    if (DANHMUC_CO_HIEU_LUC[loai]) {
+      document.getElementById('ketQuaFormDanhMuc').innerHTML = '<span class="warn">Nếu mã này đã có phiên bản đang hiệu lực, phiên bản cũ sẽ TỰ ĐỘNG bị đóng (Hiệu lực đến = trước ngày bắt đầu bản mới 1 ngày).</span>';
+    } else {
+      document.getElementById('ketQuaFormDanhMuc').innerHTML = '';
+    }
     document.getElementById('formDanhMuc').style.display = 'block';
     document.getElementById('formDanhMuc').scrollIntoView({ behavior: 'smooth' });
   }
 
-  function moFormSuaDanhMuc(ma) {
+  function ngayChoInputDate_(v) {
+    if (!(v instanceof Date)) return '';
+    const p = function (n) { return ('0' + n).slice(-2); };
+    return v.getFullYear() + '-' + p(v.getMonth() + 1) + '-' + p(v.getDate());
+  }
+
+  function moFormSuaDanhMuc(soDong) {
     const loai = document.getElementById('loaiDanhMuc').value;
-    const khoa = DANHMUC_KHOA[loai];
-    const row = (window._danhMucHienTai || []).find(function (r) { return String(r[khoa]) === String(ma); });
+    const row = (window._danhMucHienTai || []).find(function (r) { return r._soDong === soDong; });
     if (!row) return;
-    const headers = DANHMUC_HEADERS[loai];
-    document.getElementById('tieuDeFormDanhMuc').textContent = 'Sửa: ' + ma;
+    const khoa = DANHMUC_KHOA[loai];
+    const headers = DANHMUC_HEADERS[loai].filter(function (h) { return h !== 'Hiệu lực từ' && h !== 'Hiệu lực đến'; });
+    document.getElementById('tieuDeFormDanhMuc').textContent = 'Sửa: ' + row[khoa] + (DANHMUC_CO_HIEU_LUC[loai] ? ' (hiệu lực từ ' + dinhDangODanhMuc_('Hiệu lực từ', row['Hiệu lực từ']) + ')' : '');
     const wrap = document.getElementById('truongFormDanhMuc');
-    wrap.innerHTML = headers.map(function (h, i) {
-      let v = row[h]; if (v instanceof Date) v = '';
-      const disabled = (h === khoa) ? 'disabled' : '';
-      return '<div><label>' + h + '</label><input id="dm_f_' + i + '" data-ten="' + h + '" value="' + (v !== undefined && v !== null ? v : '') + '" ' + disabled + '></div>';
-    }).join('');
-    wrap.dataset.dangSua = ma;
+    wrap.innerHTML = truongHieuLucHtml_(loai, ngayChoInputDate_(row['Hiệu lực từ']), ngayChoInputDate_(row['Hiệu lực đến'])) +
+      headers.map(function (h, i) {
+        let v = row[h]; if (v instanceof Date) v = '';
+        const disabled = (h === khoa) ? 'disabled' : '';
+        return '<div><label>' + h + '</label><input id="dm_f_' + i + '" data-ten="' + h + '" value="' + (v !== undefined && v !== null ? v : '') + '" ' + disabled + '></div>';
+      }).join('');
+    wrap.dataset.dangSua = soDong;
+    wrap.dataset.maDangSua = row[khoa];
     document.getElementById('ketQuaFormDanhMuc').innerHTML = '';
     document.getElementById('formDanhMuc').style.display = 'block';
     document.getElementById('formDanhMuc').scrollIntoView({ behavior: 'smooth' });
@@ -895,22 +1608,37 @@
     const wrap = document.getElementById('truongFormDanhMuc');
     const dangSua = wrap.dataset.dangSua;
     const data = {};
-    wrap.querySelectorAll('input').forEach(function (inp) { data[inp.dataset.ten] = inp.value; });
-    if (dangSua) data[khoa] = dangSua;
+    wrap.querySelectorAll('input[data-ten]').forEach(function (inp) { data[inp.dataset.ten] = inp.value; });
+    if (dangSua) data[khoa] = wrap.dataset.maDangSua;
     if (!data[khoa]) { alert('Thiếu ' + khoa); return; }
+    if (DANHMUC_CO_HIEU_LUC[loai]) {
+      const hlTu = document.getElementById('dm_hieuLucTu').value;
+      const hlDen = document.getElementById('dm_hieuLucDen').value;
+      if (!hlTu) { alert('Danh mục này cần điền "Hiệu lực từ".'); return; }
+      data['Hiệu lực từ'] = hlTu;
+      if (hlDen) data['Hiệu lực đến'] = hlDen;
+    }
     const kq = document.getElementById('ketQuaFormDanhMuc');
     kq.innerHTML = 'Đang lưu...';
-    const ham = dangSua ? 'guiSuaDongDanhMuc' : 'guiThemDongDanhMuc';
-    google.script.run.withSuccessHandler(function (r) {
-      if (r.ok) { kq.innerHTML = '<span class="ok">✔ Đã lưu.</span>'; taiDanhMuc(); setTimeout(dongFormDanhMuc, 600); }
-      else { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; }
-    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; })[ham](loai, data);
+    if (dangSua) {
+      google.script.run.withSuccessHandler(function (r) {
+        if (r.ok) { kq.innerHTML = '<span class="ok">✔ Đã lưu.</span>'; taiDanhMuc(); setTimeout(dongFormDanhMuc, 600); }
+        else { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; }
+      }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiSuaDongDanhMuc(loai, Number(dangSua), data);
+    } else {
+      google.script.run.withSuccessHandler(function (r) {
+        if (r.ok) {
+          kq.innerHTML = '<span class="ok">✔ Đã lưu.' + (r.daDongPhienBanCu ? ' (đã tự động đóng phiên bản cũ)' : '') + '</span>';
+          taiDanhMuc(); setTimeout(dongFormDanhMuc, 800);
+        } else { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; }
+      }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiThemDongDanhMuc(loai, data);
+    }
   }
 
-  function xoaDanhMuc(ma) {
-    if (!confirm('Xoá dòng "' + ma + '" khỏi danh mục? Chỉ nên xoá nếu chưa có nhân viên nào đang dùng mã này.')) return;
+  function xoaDanhMuc(soDong) {
+    if (!confirm('Xoá dòng danh mục này? (nếu mã đang được gán cho nhân viên nào đó, hệ thống sẽ TỰ CHẶN xoá)')) return;
     const loai = document.getElementById('loaiDanhMuc').value;
-    google.script.run.withSuccessHandler(function (r) { if (r.ok) taiDanhMuc(); else alert('Lỗi: ' + r.loi); }).guiXoaDongDanhMuc(loai, ma);
+    google.script.run.withSuccessHandler(function (r) { if (r.ok) taiDanhMuc(); else alert('Lỗi: ' + r.loi); }).guiXoaDongDanhMuc(loai, soDong);
   }
 
   function khoiTaoDuLieuMauDanhMuc() {
@@ -923,6 +1651,18 @@
         (r.daBoQua.length ? '<br><span class="warn">Bỏ qua (đã có dữ liệu sẵn): ' + r.daBoQua.join(', ') + '</span>' : '');
       taiDanhMuc();
     }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiKhoiTaoDanhMucMau(false);
+  }
+
+  function khoiTaoQuyCheLuongHienHanh() {
+    if (!confirm('Khởi tạo Quy chế lương hiện hành cho các danh mục ĐANG TRỐNG?')) return;
+    const kq = document.getElementById('ketQuaDanhMuc');
+    kq.innerHTML = 'Đang khởi tạo...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = '<span class="ok">✔ Đã khởi tạo Quy chế lương hiện hành cho: ' + (r.daKhoiTao.join(', ') || '(không có)') + '</span>' +
+        (r.daBoQua.length ? '<br><span class="warn">Bỏ qua (đã có dữ liệu sẵn): ' + r.daBoQua.join(', ') + '</span>' : '');
+      taiDanhMuc();
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiKhoiTaoQuyCheLuongHienHanh(false);
   }
 
   let _danhMucForm = null;
@@ -1085,6 +1825,7 @@
         statCard_(tien_(d.tongHop.tongThuNhap), 'Tổng thu nhập') +
         statCard_(tien_(d.tongHop.tongThucLinh), 'Tổng thực lĩnh') +
         statCard_(tien_(d.tongHop.tongBH), 'BHXH trừ NLĐ', 'gold') +
+        statCard_(tien_(d.tongHop.tongTruyThu), 'Truy thu BH', d.tongHop.tongTruyThu > 0 ? 'red' : '') +
         statCard_(tien_(d.tongHop.tongThue), 'Thuế TNCN', 'red');
       const tbPB = document.querySelector('#bangBaoCaoLuongPB tbody'); tbPB.innerHTML = '';
       d.theoPhongBan.forEach(function (r2) {
@@ -1133,10 +1874,11 @@
         statCard_(d.tongHop.soNguoi, 'Số người tham gia') +
         statCard_(tien_(d.tongHop.tongCty), 'Công ty đóng') +
         statCard_(tien_(d.tongHop.tongNLD), 'NLĐ đóng', 'gold') +
+        statCard_(tien_(d.tongHop.tongTruyThu), 'Truy thu (thiếu công)', d.tongHop.tongTruyThu > 0 ? 'red' : '') +
         statCard_(tien_(d.tongHop.tongCong), 'Tổng cộng');
       const tb = document.querySelector('#bangBaoCaoBHXH tbody'); tb.innerHTML = '';
       d.chiTiet.forEach(function (r2) {
-        tb.innerHTML += '<tr><td>' + r2['Mã NV'] + '</td><td>' + r2['Họ và tên'] + '</td><td>' + r2['Phòng ban'] + '</td><td>' + tien_(r2['Lương đóng BHXH']) + '</td><td>' + tien_(r2['Cộng BH công ty đóng']) + '</td><td>' + tien_(r2['Cộng BH NLĐ đóng']) + '</td><td>' + (r2['Ghi chú ngưỡng công'] || '') + '</td></tr>';
+        tb.innerHTML += '<tr><td>' + r2['Mã NV'] + '</td><td>' + r2['Họ và tên'] + '</td><td>' + r2['Phòng ban'] + '</td><td>' + tien_(r2['Lương đóng BHXH']) + '</td><td>' + tien_(r2['Cộng BH công ty đóng']) + '</td><td>' + tien_(r2['Cộng BH NLĐ đóng']) + '</td><td>' + tien_(r2['Truy thu bảo hiểm']) + '</td><td>' + (r2['Ghi chú ngưỡng công'] || '') + '</td></tr>';
       });
     }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiBaoCaoBHXH();
   }
@@ -1157,6 +1899,154 @@
         tb.innerHTML += '<tr><td>' + r2['Mã NV'] + '</td><td>' + r2['Họ và tên'] + '</td><td>' + tien_(r2['Thu nhập chịu thuế']) + '</td><td>' + tien_(r2['Giảm trừ bản thân']) + '</td><td>' + r2['Số người phụ thuộc'] + '</td><td>' + tien_(r2['Giảm trừ người phụ thuộc']) + '</td><td>' + tien_(r2['Thu nhập tính thuế']) + '</td><td>' + tien_(r2['Thuế TNCN phải nộp']) + '</td></tr>';
       });
     }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiBaoCaoTNCN();
+  }
+
+  function taiBaoCaoPhanBoSanLuong() {
+    const nam = document.getElementById('namPBSL').value;
+    const thang = document.getElementById('thangPBSL').value;
+    const loai = document.getElementById('loaiPBSL').value;
+    const kq = document.getElementById('ketQuaBaoCaoPBSL');
+    kq.innerHTML = 'Đang tải...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = '';
+      const d = r.data;
+      document.getElementById('statBaoCaoPBSL').innerHTML =
+        statCard_(d.tongHop.tongTan.toLocaleString('vi-VN') + ' tấn', 'Tổng sản lượng') +
+        statCard_(d.tongHop.tongPhieu, 'Tổng số phiếu cân') +
+        statCard_(d.tongHop.soCongNhanCoPhanBo, 'Công nhân có phân bổ') +
+        statCard_(d.tongHop.soPhieuChuaGanNguoi, 'Phiếu chưa gán người', d.tongHop.soPhieuChuaGanNguoi > 0 ? 'red' : '');
+
+      const tbPB = document.querySelector('#bangPBSLPhongBan tbody'); tbPB.innerHTML = '';
+      d.theoPhongBan.forEach(function (r2) {
+        tbPB.innerHTML += '<tr><td>' + r2['Mã phòng ban'] + '</td><td>' + r2['Tên phòng ban'] + '</td><td>' + r2['Tổng sản lượng (tấn)'].toLocaleString('vi-VN') + '</td><td>' + r2['Số phiếu cân'] + '</td><td>' + r2['Số công nhân'] + '</td></tr>';
+      });
+
+      const tbCN = document.querySelector('#bangPBSLCongNhan tbody'); tbCN.innerHTML = '';
+      d.theoCongNhan.forEach(function (r2) {
+        tbCN.innerHTML += '<tr><td>' + r2['Mã NV'] + '</td><td>' + r2['Họ và tên'] + '</td><td>' + r2['Tên phòng ban'] + '</td><td>' + r2['Tổng sản lượng (tấn)'].toLocaleString('vi-VN') + '</td><td>' + r2['Số phiếu cân'] + '</td><td>' + r2['Tỷ trọng trong phòng ban (%)'] + '%</td></tr>';
+      });
+
+      const tbCG = document.querySelector('#bangPBSLChuaGan tbody'); tbCG.innerHTML = '';
+      d.chuaGanNguoi.forEach(function (r2) {
+        tbCG.innerHTML += '<tr><td>' + (r2['Phiếu cân'] || '') + '</td><td>' + dinhDangNgayHienThi_(r2['Ngày cân']) + '</td><td>' + (r2['Biển số'] || '') + '</td><td>' + r2['KL hàng (Tấn)'] + '</td><td>' + r2['Tên phòng ban'] + '</td></tr>';
+      });
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiBaoCaoPhanBoSanLuong(nam, thang, loai);
+  }
+
+  function taiBaoCaoBuSanLuong() {
+    const nam = document.getElementById('namBSL').value;
+    const thang = document.getElementById('thangBSL').value;
+    const phuongPhap = document.getElementById('phuongPhapBSL').value;
+    const kq = document.getElementById('ketQuaBaoCaoBSL');
+    kq.innerHTML = 'Đang tính...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = 'Phương pháp đang áp dụng: <b>' + r.data.phuongPhap + '</b>';
+      const d = r.data;
+      document.getElementById('statBaoCaoBSL').innerHTML =
+        statCard_(d.tongHop.soNguoiSanLuong, 'Người trả lương sản lượng') +
+        statCard_(d.tongHop.soNguoiDuocBu, 'Người được bù', d.tongHop.soNguoiDuocBu > 0 ? 'gold' : '') +
+        statCard_(tien_(d.tongHop.tongLuongBu), 'Tổng lương bù', 'gold');
+
+      const tbT = document.querySelector('#bangBSLThang tbody'); tbT.innerHTML = '';
+      d.chiTietThang.forEach(function (r2) {
+        const tagDuoi = r2['Dưới ngưỡng?'] === 'Có' ? '<span class="tag tag-canhbao">Có</span>' : '<span class="tag tag-dangLam">Không</span>';
+        tbT.innerHTML += '<tr><td>' + r2['Mã NV'] + '</td><td>' + r2['Họ và tên'] + '</td><td>' + r2['Phòng ban'] + '</td><td>' + r2['Sản lượng (tấn)'] + '</td><td>' + r2['Tổng công'] + '</td><td>' + r2['SL bình quân/công'] + '</td><td>' + r2['Ngưỡng (tấn/công)'] + '</td><td>' + tagDuoi + '</td><td>' + tien_(r2['Lương sản lượng']) + '</td><td>' + tien_(r2['Đơn giá bù']) + '</td><td>' + tien_(r2['Lương bù']) + '</td></tr>';
+      });
+
+      const coNgay = phuongPhap === 'NGAY' && d.chiTietNgay && d.chiTietNgay.length > 0;
+      document.getElementById('cardBSLNgay').style.display = coNgay ? 'block' : 'none';
+      if (coNgay) {
+        const tbN = document.querySelector('#bangBSLNgay tbody'); tbN.innerHTML = '';
+        d.chiTietNgay.forEach(function (r2) {
+          const tagDuoi = r2['Dưới ngưỡng?'] === 'Có' ? '<span class="tag tag-canhbao">Có</span>' : '<span class="tag tag-dangLam">Không</span>';
+          tbN.innerHTML += '<tr><td>' + r2['Mã NV'] + '</td><td>' + r2['Họ và tên'] + '</td><td>' + r2['Ngày'] + '</td><td>' + r2['Sản lượng ngày (tấn)'] + '</td><td>' + r2['Công ngày'] + '</td><td>' + r2['SL bình quân/công'] + '</td><td>' + r2['Ngưỡng (tấn/công)'] + '</td><td>' + tagDuoi + '</td><td>' + tien_(r2['Lương bù ngày']) + '</td></tr>';
+        });
+      }
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiBaoCaoBuSanLuong(nam, thang, phuongPhap);
+  }
+
+  // ---------- TAB "Chứng từ & Lưu trữ" ----------
+  function kyCT_() {
+    return { nam: document.getElementById('namCT').value, thang: document.getElementById('thangCT').value };
+  }
+
+  function chotBaoCaoChamCong() {
+    const k = kyCT_();
+    const kq = document.getElementById('ketQuaChot');
+    kq.innerHTML = 'Đang chốt báo cáo chấm công...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (r.ok) kq.innerHTML = '<span class="ok">✔ Đã chốt báo cáo chấm công kỳ ' + r.ky + ' — ' + r.soDong + ' dòng, ghi vào RP_CHAMCONG.</span>';
+      else kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>';
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiChotBaoCaoChamCong(k.nam, k.thang);
+  }
+
+  function chotBaoCaoPhanBoSanLuong() {
+    const k = kyCT_();
+    const kq = document.getElementById('ketQuaChot');
+    kq.innerHTML = 'Đang chốt phân bổ sản lượng...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (r.ok) kq.innerHTML = '<span class="ok">✔ Đã chốt phân bổ sản lượng kỳ ' + r.ky + ' — ' + r.soDong + ' dòng, ghi vào RP_PHANBOSL.</span>';
+      else kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>';
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiChotBaoCaoPhanBoSanLuong(k.nam, k.thang);
+  }
+
+  function taoBangHachToan() {
+    const k = kyCT_();
+    const kq = document.getElementById('ketQuaChungTu');
+    kq.innerHTML = 'Đang lập bảng hạch toán...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = '<span class="ok">✔ Đã lập bảng hạch toán kỳ ' + r.ky + ' — ' + r.soDong + ' bút toán.</span>';
+      taiBangHachToan_();
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiTaoBangHachToan(k.nam, k.thang);
+  }
+
+  function taiBangHachToan_() {
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) return;
+      const tb = document.querySelector('#bangHachToan tbody'); tb.innerHTML = '';
+      r.data.forEach(function (b) {
+        tb.innerHTML += '<tr><td>' + b['Tài khoản Nợ'] + '</td><td>' + b['Tên tài khoản Nợ'] + '</td><td>' + b['Tài khoản Có'] + '</td><td>' + b['Tên tài khoản Có'] + '</td><td>' + b['Diễn giải'] + '</td><td>' + tien_(b['Số tiền']) + '</td></tr>';
+      });
+    }).guiLayBangHachToan();
+  }
+
+  function taoPhieuChi() {
+    const k = kyCT_();
+    const loai = document.getElementById('loaiPhieuChi').value;
+    const kq = document.getElementById('ketQuaChungTu');
+    kq.innerHTML = 'Đang lập phiếu chi...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      kq.innerHTML = '<span class="ok">✔ Đã lập ' + r.soDong + ' phiếu chi kỳ ' + r.ky + '.</span>';
+      taiPhieuChi_();
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiTaoPhieuChi(k.nam, k.thang, loai);
+  }
+
+  function taiPhieuChi_() {
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) return;
+      const tb = document.querySelector('#bangPhieuChi tbody'); tb.innerHTML = '';
+      r.data.forEach(function (p) {
+        tb.innerHTML += '<tr><td>' + p['Số phiếu'] + '</td><td>' + dinhDangNgayHienThi_(p['Ngày chi']) + '</td><td>' + p['Mã NV'] + '</td><td>' + p['Họ và tên'] + '</td><td>' + p['Loại chi'] + '</td><td>' + tien_(p['Số tiền']) + '</td><td>' + p['Người nhận'] + '</td><td>' + (p['Ghi chú'] || '') + '</td></tr>';
+      });
+    }).guiLayPhieuChi();
+  }
+
+  function luuTruKy() {
+    const k = kyCT_();
+    if (!confirm('LƯU TRỮ kỳ ' + k.thang + '/' + k.nam + '? Thao tác này sẽ copy toàn bộ dữ liệu File Xử lý sang File Lưu trữ rồi XOÁ SẠCH File Xử lý — KHÔNG THỂ HOÀN TÁC. Chắc chắn kỳ này đã xong xuôi chưa?')) return;
+    if (!confirm('Xác nhận LẦN CUỐI — bấm OK để lưu trữ và xoá sạch File Xử lý ngay bây giờ.')) return;
+    const kq = document.getElementById('ketQuaLuuTru');
+    kq.innerHTML = 'Đang lưu trữ...';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      let html = '<span class="ok">✔ Đã lưu trữ kỳ ' + r.ky + ':</span><br>';
+      r.ketQua.forEach(function (m) { html += '&nbsp;&nbsp;• ' + m.sheet + ': ' + m.soDong + ' dòng<br>'; });
+      kq.innerHTML = html;
+    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiLuuTruKy(k.nam, k.thang);
   }
 
   google.script.run.withSuccessHandler(function (url) { document.getElementById('linkSheet').href = url; }).guiLinkSheet();

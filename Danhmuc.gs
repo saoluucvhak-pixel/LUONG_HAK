@@ -1,5 +1,4 @@
-function myFunction() {
-  // ================= DANH MỤC (DM_*) — tra cứu theo mã =================
+// ================= DANH MỤC (DM_*) — tra cứu theo mã =================
 // Mỗi hàm trả về 1 Map: Mã -> record đầy đủ của dòng đó trong sheet danh mục.
 // Dùng chung cho cả TinhLuong.gs và KiemTra.gs.
 
@@ -88,5 +87,4 @@ function tinhThueTNCNLuyTien_(thuNhapTinhThue, bieuThue) {
     }
   }
   return Math.round(thue);
-}
 }

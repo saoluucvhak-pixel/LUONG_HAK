@@ -36,6 +36,16 @@ function guiKhoiTaoTatCaSheet() {
   }
 }
 
+// ---------- Cầu nối cho "Nhập dữ liệu ban đầu" (khởi tạo 1 lần) ----------
+
+function guiNhapDuLieuBanDau(base64, tenFile, mimeType, cheDoGhi) {
+  try {
+    return nhapDuLieuBanDauTuFile(base64, tenFile, mimeType, cheDoGhi);
+  } catch (e) {
+    return { ok: false, loi: e.message + (e.message.indexOf("Drive") >= 0 ? " — kiểm tra đã bật Advanced Service \"Drive API\" chưa (xem HUONG_DAN_WEBAPP.md)." : "") };
+  }
+}
+
 /** Lấy N dòng log kiểm tra gần nhất để hiển thị ngay trên giao diện (không cần mở Sheet). */
 function guiDanhSachLogGanNhat(soDongToiDa) {
   const sh = layHoacTaoSheet_(SHEET_KIEMTRA_LOG, HEADER_KIEMTRA_LOG);
@@ -54,7 +64,31 @@ function guiDanhSachLogGanNhat(soDongToiDa) {
 
 /** Trả về link mở trực tiếp Google Sheet đang cấu hình (để người dùng xem chi tiết). */
 function guiLinkSheet() {
-  return moSheet_().getUrl();
+  // ⚠ Giữ HÀM CŨ để không vỡ code gọi cũ (trả về link File Data — nơi có nhiều
+  // sheet người dùng hay cần mở tay nhất) — dùng guiDanhSachLinkFile() nếu cần
+  // đủ cả 5 link.
+  try {
+    return moFileTheoLoai_(LOAI_FILE_DATA).getUrl();
+  } catch (e) {
+    return "";
+  }
+}
+
+function guiDanhSachLinkFile() {
+  try {
+    return { ok: true, data: xemCauHinhLienKetFile() };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiDatIdFile(loai, urlHoacId) {
+  try {
+    datIdFile_(loai, urlHoacId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
 }
 
 // ---------- Cầu nối cho tab "Nhân sự" ----------
@@ -173,9 +207,75 @@ function guiHuyNhapSanLuong() {
   }
 }
 
+function guiXemTruocUngLuong(base64, tenFile, mimeType) {
+  try {
+    return xemTruocUngLuongTuFile(base64, tenFile, mimeType);
+  } catch (e) {
+    return { ok: false, loi: e.message + (e.message.indexOf("Drive") >= 0 ? " — kiểm tra đã bật Advanced Service \"Drive API\" chưa (xem HUONG_DAN_WEBAPP.md)." : "") };
+  }
+}
+
+function guiDoiChieuLaiNhapUngLuong() {
+  try {
+    return doiChieuLaiNhapUngLuong();
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiXacNhanNapUngLuongTuNhap(cheDoGhi) {
+  try {
+    return xacNhanNapUngLuongTuNhap(cheDoGhi);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiHuyNhapUngLuong() {
+  try {
+    return huyNhapUngLuong();
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
 function guiUrlSheetNhap(tenSheet) {
   try {
     return { ok: true, url: guiUrlSheetNhap_(tenSheet) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+// ---------- Cầu nối cho việc nhập/sửa/xoá thủ công Ứng lương & Bơm dăm ----------
+
+function guiLayGiaoDich(loai, nam, thang) {
+  try {
+    return { ok: true, data: layGiaoDich(loai, nam, thang) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiThemGiaoDich(loai, d) {
+  try {
+    return themGiaoDich(loai, d);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiSuaGiaoDich(loai, soDong, d) {
+  try {
+    return suaGiaoDich(loai, soDong, d);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiXoaGiaoDich(loai, soDong) {
+  try {
+    return xoaGiaoDich(loai, soDong);
   } catch (e) {
     return { ok: false, loi: e.message };
   }
@@ -199,17 +299,17 @@ function guiThemDongDanhMuc(loai, d) {
   }
 }
 
-function guiSuaDongDanhMuc(loai, d) {
+function guiSuaDongDanhMuc(loai, soDong, d) {
   try {
-    return suaDongDanhMuc(loai, d);
+    return suaDongDanhMuc(loai, soDong, d);
   } catch (e) {
     return { ok: false, loi: e.message };
   }
 }
 
-function guiXoaDongDanhMuc(loai, ma) {
+function guiXoaDongDanhMuc(loai, soDong) {
   try {
-    return xoaDongDanhMuc(loai, ma);
+    return xoaDongDanhMuc(loai, soDong);
   } catch (e) {
     return { ok: false, loi: e.message };
   }
@@ -218,6 +318,14 @@ function guiXoaDongDanhMuc(loai, ma) {
 function guiKhoiTaoDanhMucMau(ghiDeCaKhiCoDuLieu) {
   try {
     return khoiTaoDanhMucMau(!!ghiDeCaKhiCoDuLieu);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiKhoiTaoQuyCheLuongHienHanh(ghiDeCaKhiCoDuLieu) {
+  try {
+    return khoiTaoQuyCheLuongHienHanh(!!ghiDeCaKhiCoDuLieu);
   } catch (e) {
     return { ok: false, loi: e.message };
   }
@@ -252,6 +360,80 @@ function guiBaoCaoBHXH() {
 function guiBaoCaoTNCN() {
   try {
     return { ok: true, data: baoCaoTNCN() };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiBaoCaoPhanBoSanLuong(nam, thang, loai) {
+  try {
+    return { ok: true, data: baoCaoPhanBoSanLuong(nam, thang, loai) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiBaoCaoBuSanLuong(nam, thang, phuongPhapBu) {
+  try {
+    return { ok: true, data: baoCaoBuSanLuong(nam, thang, phuongPhapBu) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+// ---------- Cầu nối cho báo cáo "chốt", phiếu hạch toán, Lưu trữ ----------
+
+function guiChotBaoCaoChamCong(nam, thang) {
+  try {
+    return chotBaoCaoChamCong(nam, thang);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiChotBaoCaoPhanBoSanLuong(nam, thang) {
+  try {
+    return chotBaoCaoPhanBoSanLuong(nam, thang);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiTaoBangHachToan(nam, thang) {
+  try {
+    return taoBangHachToan(nam, thang);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiTaoPhieuChi(nam, thang, loaiChi) {
+  try {
+    return taoPhieuChi(nam, thang, loaiChi);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiLayBangHachToan() {
+  try {
+    return { ok: true, data: docSheetThanhObject_(SHEET_HACHTOAN, HEADER_HACHTOAN) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiLayPhieuChi() {
+  try {
+    return { ok: true, data: docSheetThanhObject_(SHEET_PHIEUCHI, HEADER_PHIEUCHI) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiLuuTruKy(nam, thang) {
+  try {
+    return luuTruKy(nam, thang);
   } catch (e) {
     return { ok: false, loi: e.message };
   }
