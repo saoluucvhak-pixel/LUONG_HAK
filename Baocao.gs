@@ -13,7 +13,7 @@ function layKyGanNhat_() {
 function baoCaoTienLuong() {
   const list = docSheetThanhObject_(SHEET_BANGLUONG, HEADER_BANGLUONG);
   const theoPhongBanMap = {};
-  let tongThuNhap = 0, tongThucLinh = 0, tongBH = 0, tongThue = 0, tongTamUng = 0;
+  let tongThuNhap = 0, tongThucLinh = 0, tongBH = 0, tongTruyThu = 0, tongThue = 0, tongTamUng = 0;
 
   list.forEach(function (r) {
     const pb = r["Phòng ban"] || "(chưa xác định)";
@@ -27,13 +27,14 @@ function baoCaoTienLuong() {
     tongThuNhap += Number(r["Tổng thu nhập (trước trừ)"]) || 0;
     tongThucLinh += Number(r["Thực lĩnh"]) || 0;
     tongBH += Number(r["BHXH/BHYT/BHTN trừ NLĐ"]) || 0;
+    tongTruyThu += Number(r["Truy thu bảo hiểm"]) || 0;
     tongThue += Number(r["Thuế TNCN"]) || 0;
     tongTamUng += Number(r["Tạm ứng"]) || 0;
   });
 
   return {
     ky: layKyGanNhat_(),
-    tongHop: { soNguoi: list.length, tongThuNhap: tongThuNhap, tongThucLinh: tongThucLinh, tongBH: tongBH, tongThue: tongThue, tongTamUng: tongTamUng },
+    tongHop: { soNguoi: list.length, tongThuNhap: tongThuNhap, tongThucLinh: tongThucLinh, tongBH: tongBH, tongTruyThu: tongTruyThu, tongThue: tongThue, tongTamUng: tongTamUng },
     theoPhongBan: Object.values(theoPhongBanMap),
     chiTiet: list
   };
@@ -64,16 +65,87 @@ function baoCaoNhanSu(baoGomDaNghi) {
 /** Báo cáo các khoản trích theo lương (BHXH/BHYT/BHTN/KPCĐ), từ RP_BHXH. */
 function baoCaoBHXH() {
   const list = docSheetThanhObject_(SHEET_BHXH, HEADER_BHXH);
-  let tongCty = 0, tongNLD = 0;
+  let tongCty = 0, tongNLD = 0, tongTruyThu = 0;
   list.forEach(function (r) {
     tongCty += Number(r["Cộng BH công ty đóng"]) || 0;
     tongNLD += Number(r["Cộng BH NLĐ đóng"]) || 0;
+    tongTruyThu += Number(r["Truy thu bảo hiểm"]) || 0;
   });
   return {
     ky: layKyGanNhat_(),
-    tongHop: { soNguoi: list.length, tongCty: tongCty, tongNLD: tongNLD, tongCong: tongCty + tongNLD },
+    tongHop: { soNguoi: list.length, tongCty: tongCty, tongNLD: tongNLD, tongTruyThu: tongTruyThu, tongCong: tongCty + tongNLD },
     chiTiet: list
   };
+}
+
+/**
+ * Bảng tổng hợp công theo từng nhân viên trong 1 kỳ — breakdown số công theo
+ * từng hình thức (BT/CC/PN/CL/TC), kèm số phép năm còn lại (cộng dồn công
+ * "PN" từ đầu năm tới kỳ đang xem, so với số phép/năm mặc định).
+ * ⚠ "Số phép/năm" hiện dùng mức mặc định 12 ngày (theo luật lao động VN phổ
+ * biến) — CHƯA có nguồn riêng theo từng người (nguồn ngoài THONGTINNHANSU_HAK
+ * có sheet "CT_QUYENLOIPHEP" có thể đồng bộ thêm sau nếu cần chính xác theo
+ * từng người/thâm niên).
+ */
+function baoCaoTongHopCong(nam, thang) {
+  const namSo = Number(nam);
+  const SO_PHEP_NAM_MAC_DINH = 12;
+  const nhanSuList = docSheetThanhObject_(SHEET_NHANSU, HEADER_NHANSU);
+  const dmPhongBan = docDanhMucPhongBan_();
+  // ⚠ TỐI ƯU: đọc NL_CHAMCONG ĐÚNG 1 LẦN rồi dùng chung cho cả 2 mục đích bên
+  // dưới (trước đây tongHopChamCong_ và tinhSoPhepDaNghiCaNam_ mỗi hàm tự đọc
+  // riêng — trùng lặp không cần thiết).
+  const danhSachChamCong = docSheetThanhObject_(SHEET_CHAMCONG, headerChamCongDayDu_());
+  const chamCongMap = tongHopChamCong_(namSo, thang, danhSachChamCong);
+  const soPhepDaNghiCaNam = tinhSoPhepDaNghiCaNam_(namSo, Number(thang), danhSachChamCong);
+
+  const ketQua = [];
+  nhanSuList.forEach(function (ns) {
+    const maNV = ns["Mã nhân viên"];
+    const c = chamCongMap[maNV];
+    if (!c) return;
+    const daNghi = soPhepDaNghiCaNam[maNV] || 0;
+    ketQua.push({
+      "Mã NV": maNV, "Họ và tên": ns["Họ và tên"],
+      "Mã phòng ban": ns["Mã PB"], "Tên phòng ban": tenPhongBan_(ns["Mã PB"], dmPhongBan),
+      "Tổng công": c.tongCong,
+      "Công BT": c.congTheoHinhThuc["BT"] || 0,
+      "Công CC": c.congTheoHinhThuc["CC"] || 0,
+      "Công PN": c.congTheoHinhThuc["PN"] || 0,
+      "Công CL": c.congTheoHinhThuc["CL"] || 0,
+      "Công TC": c.congTangCa,
+      "Công Chủ nhật": c.congChuNhat,
+      "Số phép/năm": SO_PHEP_NAM_MAC_DINH,
+      "Đã nghỉ phép (luỹ kế năm)": daNghi,
+      "Phép còn lại": Math.max(0, SO_PHEP_NAM_MAC_DINH - daNghi)
+    });
+  });
+  return ketQua;
+}
+
+/** Cộng dồn số công hình thức "PN" (phép năm) từ đầu năm tới hết kỳ (thang) — dùng tính "còn lại". */
+function tinhSoPhepDaNghiCaNam_(nam, thangHienTai, danhSachChoSan) {
+  const header = headerChamCongDayDu_();
+  const list = danhSachChoSan || docSheetThanhObject_(SHEET_CHAMCONG, header);
+  const ketQua = {};
+  list.forEach(function (row) {
+    const maNV = row["Mã NV"];
+    if (!maNV) return;
+    const ngayTinhCong = row["Ngày tính công"];
+    if (!(ngayTinhCong instanceof Date)) return;
+    if (ngayTinhCong.getFullYear() != nam) return;
+    if ((ngayTinhCong.getMonth() + 1) > thangHienTai) return;
+    const hinhThuc = String(row["Hình thức công"] || "").trim().toUpperCase();
+    if (hinhThuc !== "PN") return;
+    let tongDong = 0;
+    for (let ngay = 1; ngay <= 31; ngay++) {
+      const ten = ("0" + ngay).slice(-2);
+      const { soCong } = tachSoCongVaNhan_(row[ten]);
+      tongDong += soCong;
+    }
+    ketQua[maNV] = (ketQua[maNV] || 0) + tongDong;
+  });
+  return ketQua;
 }
 
 /** Báo cáo thuế TNCN, từ RP_THUETNCN. */
@@ -108,7 +180,7 @@ function baoCaoBuSanLuong(nam, thang, phuongPhapBu) {
   const buTheoNgay = (phuongPhapBu === "NGAY");
 
   const nhanSuList = docSheetThanhObject_(SHEET_NHANSU, HEADER_NHANSU);
-  const dmLuong = docDanhMucLuong_();
+  const dmLuong = docDanhMucLuong_(namSo, thang);
   const dmPhongBan = docDanhMucPhongBan_();
 
   const chamCongMap = tongHopChamCong_(namSo, thang);

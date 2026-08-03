@@ -2,13 +2,13 @@
 // Bảng chấm công lưu dạng ma trận: 1 dòng / nhân viên / hình thức công / tháng,
 // các cột "01".."31" là số công của từng ngày trong tháng (0 / 0.5 / 1 / 1.5 / 2 / 3...).
 //
-// "Hình thức công" — quy ước theo đúng DM_CC thật đã giải mã được từ HAK Group:
-//   BT   = Công hàng ngày (công chính)         PN   = Công ngày phép
-//   CL   = Công ngày lễ                        TRCH = Công trung chuyển hàng
-//   DC   = Công di chuyển                      TC   = Công tăng ca (TC/TC1..TC6)
-//   CC   = Ngày tính tiền cơm (không dùng ở đây — xem DL_TIENCOM thay thế)
-//   CT   = Công công tác (không dùng ở đây — xem cơ chế NHÃN chấm công bên dưới)
-// Nếu đơn vị dùng ký hiệu khác, cần đổi lại các điều kiện so khớp bên dưới.
+// "Hình thức công" — ĐÃ XÁC NHẬN với người dùng đúng 5 mã dùng thật (HAK_DN):
+//   BT = Công bình thường (công chính)     CL = Công lễ
+//   PN = Phép năm                          CC = Công tính cơm
+//   TC = Công tăng ca (TC/TC1..TC6)
+// (Mã "DC"/"TRCH" trong DM_CC gốc — Công di chuyển/Công trung chuyển — KHÔNG nằm
+// trong 5 mã đã xác nhận; webapp vẫn giữ chỗ tính (mặc định 0 nếu không có dòng
+// tương ứng) để không vỡ công thức tăng ca TC1/TC2 nếu đơn vị khác có dùng).
 
 /**
  * Tách số công ra khỏi giá trị 1 ô chấm công — ô có thể là số thuần (1, 0.5) hoặc
@@ -31,20 +31,21 @@ function tachSoCongVaNhan_(giaTri) {
 
 /**
  * Tổng hợp chấm công theo Mã NV cho 1 tháng, trả về Map:
- *   MaNV -> { tongCong, congChuNhat, congTangCa, congLe, congPhep, congDiChuyen,
- *             congTrungChuyen, congTheoHinhThuc: {BT: x, ...}, nhanTheoNgay: {...} }
+ *   MaNV -> { tongCong, congChuNhat, congTangCa, congLe, congPhep, congCom,
+ *             congDiChuyen, congTrungChuyen, congTheoHinhThuc: {BT: x, ...},
+ *             nhanTheoNgay: { "01": "QC", ... } }
  * @param {string} nam
  * @param {number} thang (1-12)
  */
-function tongHopChamCong_(nam, thang) {
+function tongHopChamCong_(nam, thang, danhSachChoSan) {
   const header = headerChamCongDayDu_();
-  const list = docSheetThanhObject_(SHEET_CHAMCONG, header);
+  const list = danhSachChoSan || docSheetThanhObject_(SHEET_CHAMCONG, header);
   const ketQua = {};
 
   const rong_ = function () {
     return {
       tongCong: 0, congChuNhat: 0, congTangCa: 0,
-      congLe: 0, congPhep: 0, congDiChuyen: 0, congTrungChuyen: 0,
+      congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0,
       congTheoHinhThuc: {}, nhanTheoNgay: {}
     };
   };
@@ -58,6 +59,10 @@ function tongHopChamCong_(nam, thang) {
 
     if (!ketQua[maNV]) ketQua[maNV] = rong_();
     const hinhThuc = String(row["Hình thức công"] || "BT").trim().toUpperCase();
+    // "CC" (Công tính cơm) KHÔNG tính vào tổng công đi làm (không phải công thực
+    // tế), chỉ dùng để suy ra "Ngày cơm" — xem TinhLuong.gs (kết hợp thêm dữ liệu
+    // từ DL_TIENCOM nếu có).
+    const laCong = hinhThuc !== "CC";
     const laTangCa = /TC/i.test(hinhThuc);
     let tongDongNay = 0;
 
@@ -68,9 +73,9 @@ function tongHopChamCong_(nam, thang) {
       tongDongNay += soCong;
       if (nhan) ketQua[maNV].nhanTheoNgay[ten] = nhan; // lưu lại nhãn (vd "QC") để tham khảo/audit sau
 
-      // Công Chủ nhật: chỉ tính từ dòng công CHÍNH (không phải dòng tăng ca riêng),
-      // tránh đếm trùng nếu 1 người có cả dòng BT và dòng TC trong cùng ngày Chủ nhật.
-      if (!laTangCa) {
+      // Công Chủ nhật: chỉ tính từ dòng công CHÍNH (không phải dòng tăng ca/cơm riêng),
+      // tránh đếm trùng nếu 1 người có nhiều dòng hình thức trong cùng ngày Chủ nhật.
+      if (!laTangCa && laCong) {
         const ngayThuc = new Date(nam, thang - 1, ngay);
         if (ngayThuc.getMonth() === thang - 1 && ngayThuc.getDay() === 0) {
           ketQua[maNV].congChuNhat += soCong;
@@ -78,10 +83,11 @@ function tongHopChamCong_(nam, thang) {
       }
     }
 
-    ketQua[maNV].tongCong += tongDongNay;
+    if (laCong) ketQua[maNV].tongCong += tongDongNay;
     if (laTangCa) ketQua[maNV].congTangCa += tongDongNay;
     if (hinhThuc === "CL") ketQua[maNV].congLe += tongDongNay;
     if (hinhThuc === "PN") ketQua[maNV].congPhep += tongDongNay;
+    if (hinhThuc === "CC") ketQua[maNV].congCom += tongDongNay;
     if (hinhThuc === "DC") ketQua[maNV].congDiChuyen += tongDongNay;
     if (hinhThuc === "TRCH") ketQua[maNV].congTrungChuyen += tongDongNay;
     ketQua[maNV].congTheoHinhThuc[hinhThuc] = (ketQua[maNV].congTheoHinhThuc[hinhThuc] || 0) + tongDongNay;

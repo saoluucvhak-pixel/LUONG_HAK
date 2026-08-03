@@ -8,7 +8,9 @@
 
 const GIAO_DICH_CAU_HINH = {
   UNGLUONG: { sheet: SHEET_UNGLUONG, header: HEADER_UNGLUONG, ngayCot: "Ngày hạch toán" },
-  BANDAM: { sheet: SHEET_BANDAM, header: HEADER_SANLUONG, ngayCot: "Ngày cân" }
+  BANDAM: { sheet: SHEET_BANDAM, header: HEADER_SANLUONG, ngayCot: "Ngày cân" },
+  SANLUONG: { sheet: SHEET_SANLUONG, header: HEADER_SANLUONG, ngayCot: "Ngày cân" },
+  PSLUONG: { sheet: SHEET_PSLUONG, header: HEADER_PSLUONG, ngayCot: "Ngày hạch toán" }
 };
 
 /**
@@ -97,7 +99,10 @@ function kiemTraGiaoDich_(loai, data) {
     if (!data["Ngày hạch toán"]) return "Thiếu Ngày hạch toán";
     const tamUng = Number(data["Tạm ứng"]);
     if (isNaN(tamUng) || tamUng < 0) return "\"Tạm ứng\" phải là số không âm";
-  } else if (loai === "BANDAM") {
+  } else if (loai === "PSLUONG") {
+    if (!data["Mã NV"] || !nhanSuSet[data["Mã NV"]]) return "Mã NV \"" + (data["Mã NV"] || "") + "\" không có trong NL_NHANSU";
+    if (!data["Ngày hạch toán"]) return "Thiếu Ngày hạch toán";
+  } else if (loai === "BANDAM" || loai === "SANLUONG") {
     if (!data["Ngày cân"]) return "Thiếu Ngày cân";
     if (!data["Mã phòng ban"]) return "Thiếu Mã phòng ban";
     else {

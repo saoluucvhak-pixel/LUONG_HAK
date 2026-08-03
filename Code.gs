@@ -14,11 +14,12 @@
 // ngay trên webapp (tab "Hướng dẫn sử dụng" → "Cài đặt liên kết file", không
 // cần sửa code) — nếu cấu hình qua webapp thì giá trị đó ĐƯỢC ƯU TIÊN hơn các
 // hằng số dưới đây. Xem chi tiết ánh xạ sheet↔file ở `LienKetFile.gs`.
-const SPREADSHEET_ID_DANHMUC = "1oQSvFWtCkXs7Ge5XmuLNJby6RVDFGqriQ8SFSoo8O88";
-const SPREADSHEET_ID_DRAFT = "1hDIHwZY3X-j0eyEEpBJpdju4yHMmyMuVqpZtmc5jAgc";            
-const SPREADSHEET_ID_DATA = "1Hc_fwJCj-pwYc3OTTR_fueNvzwjfD4yZztqq1hAgGe0";         
-const SPREADSHEET_ID_XULY = "10YpRp9k7lvTSlOSl_Lmoh5q0Z5dA-zuljaAKI3buCaw";          
-const SPREADSHEET_ID_LUUTRU = "1BOBJ3rzYZosPBEEyK2iHx84pw6WKnAnLENxOlCcoU90";  
+const SPREADSHEET_ID_DANHMUC = "DÁN_ID_FILE_DANH_MỤC_VÀO_ĐÂY";
+const SPREADSHEET_ID_DRAFT = "DÁN_ID_FILE_DRAFT_VÀO_ĐÂY";
+const SPREADSHEET_ID_DATA = "DÁN_ID_FILE_DATA_VÀO_ĐÂY";
+const SPREADSHEET_ID_XULY = "DÁN_ID_FILE_XỬ_LÝ_VÀO_ĐÂY";
+const SPREADSHEET_ID_LUUTRU = "DÁN_ID_FILE_LƯU_TRỮ_VÀO_ĐÂY";
+
 // Mỗi ĐƠN VỊ x KỲ LƯƠNG nên dùng 1 bộ 5 file riêng (đúng như 2 file Excel
 // "DL_LUONG_<đơn vị>_<kỳ>" + "Luong<kỳ>_<đơn vị>" hiện tại của HAK Group) —
 // webapp này gộp cả 2 vai trò (dữ liệu vào + tính toán + kiểm tra) vào 5 Sheet.
@@ -56,6 +57,7 @@ const SHEET_KIEMTRA_LOG = "KIEMTRA_LOG";
 const SHEET_NHAP_CHAMCONG = "NHAP_CHAMCONG";
 const SHEET_NHAP_SANLUONG = "NHAP_SANLUONG";
 const SHEET_NHAP_UNGLUONG = "NHAP_UNGLUONG";
+const SHEET_NHAP_PSLUONG = "NHAP_PSLUONG";
 
 // Nhóm E — báo cáo/chứng từ MỚI thuộc File Xử lý (ngoài RP_BANGLUONG/RP_BHXH/
 // RP_THUETNCN/KIEMTRA_LOG đã có) — đều là bản "CHỐT" (snapshot) của 1 kỳ, khác
@@ -78,14 +80,15 @@ const HEADER_NHANSU = [
   "Ngày vào làm", "Ngày hết hạn HĐ", "Ngày nghỉ/thay đổi",
   "Lương cơ bản", "Lương thỏa thuận", "Hình thức hợp đồng",
   "Mã tiền lương 1", "Mã tiền lương 2", "Mã tăng ca", "Mã phụ cấp",
-  "Mã hỗ trợ", "Mã hỗ trợ 2", "Mã BHXH", "Mã TNCN"
+  "Mã hỗ trợ", "Mã hỗ trợ 2", "Mã BHXH", "Mã TNCN",
+  "Hiệu lực từ", "Hiệu lực đến", "Kỳ tính lương"
 ];
 
 const HEADER_CHITIETNS = [
-  "Ngày cập nhật", "Mã nhân viên", "Họ và tên", "Ngày sinh", "Thường trú",
+  "Ngày cập nhật", "Mã nhân viên", "Họ và tên", "Số CCCD", "Ngày sinh", "Thường trú",
   "Ngày cấp CCCD", "Nơi cấp", "Mã BHXH", "Số điện thoại", "Số HĐLĐ",
   "Mã GT_TNCN_BT", "Mã GT_TNCN_PT", "Người phụ thuộc",
-  "Số tài khoản", "Tên Ngân hàng"
+  "Số tài khoản", "Tên Ngân hàng", "Kỳ tính lương"
 ];
 
 // 01..31 = số công thực tế của từng ngày trong tháng (0/0.5/1/2/3 tuỳ đơn vị quy định)
@@ -123,12 +126,12 @@ const HEADER_DM_LUONG = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã lương", "Mã hình thức lương", "Hình thức lương",
   "Số tiền khoán", "Lương phụ", "Ngưỡng truy thu BH (công)",
   "ĐK_Bù lương (công tối thiểu)", "Đơn giá bù lương", "Đơn giá bơm dăm", "Cách tính"
-];
+, "Kỳ tính lương"];
 
 const HEADER_DM_PHUCAP = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã phụ cấp", "Tên phụ cấp", "Số tiền", "Tỷ lệ",
   "Tham chiếu", "Cách tính"
-];
+, "Kỳ tính lương"];
 
 // Hệ số/cách tính tăng ca theo mã — xem TinhCong.gs hàm tinhHeSoTangCa_()
 // Cách tính hỗ trợ: "TC1".."TC6" — copy nguyên logic đã dò được từ hệ thống
@@ -137,29 +140,29 @@ const HEADER_DM_PHUCAP = [
 const HEADER_DM_TANGCA = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã tăng ca", "Nội dung tăng ca", "Hệ số tăng ca",
   "Tiền tăng ca (nếu tính cố định)", "Cách tính"
-];
+, "Kỳ tính lương"];
 
 const HEADER_DM_HOTRO = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã hỗ trợ", "Tên hỗ trợ", "Số tiền", "Cách tính"
-];
+, "Kỳ tính lương"];
 
 const HEADER_DM_BAOHIEM = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã bảo hiểm", "Nội dung",
   "DN.BHXH", "DN.BHYT", "DN.BHTN", "DN.KPCD",
   "NLD.BHXH", "NLD.BHYT", "NLD.BHTN", "NLD.KPCD"
-];
+, "Kỳ tính lương"];
 
 const HEADER_DM_TNCN = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Bậc", "Nội dung khấu trừ", "Tỷ lệ đóng thuế",
   "Thu nhập tháng (Min)", "Thu nhập tháng (Max)"
-];
+, "Kỳ tính lương"];
 
 const HEADER_DM_GTTNCN = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã giảm trừ", "Số người", "Số tiền"
-];
+, "Kỳ tính lương"];
 
-const HEADER_DM_PHONGBAN = ["Ngày cập nhật", "Mã phòng ban", "Tên phòng ban", "Tài khoản chi phí"];
-const HEADER_DM_CHUCVU = ["Ngày cập nhật", "Mã chức vụ", "Tên chức vụ"];
+const HEADER_DM_PHONGBAN = ["Ngày cập nhật", "Mã phòng ban", "Tên phòng ban", "Tài khoản chi phí", "Kỳ tính lương"];
+const HEADER_DM_CHUCVU = ["Ngày cập nhật", "Mã chức vụ", "Tên chức vụ", "Kỳ tính lương"];
 
 const HEADER_BANGLUONG = [
   "Mã NV", "Họ và tên", "Phòng ban", "Chức vụ",
@@ -198,6 +201,7 @@ function headerNhapChamCong_() {
 }
 const HEADER_NHAP_SANLUONG = HEADER_SANLUONG.concat(["✔ Kiểm tra"]);
 const HEADER_NHAP_UNGLUONG = HEADER_UNGLUONG.concat(["✔ Kiểm tra"]);
+const HEADER_NHAP_PSLUONG = HEADER_PSLUONG.concat(["✔ Kiểm tra"]);
 
 // ---------- Header cho Nhóm E (báo cáo/chứng từ mới) ----------
 const HEADER_BC_CHAMCONG = [
@@ -218,15 +222,6 @@ const HEADER_PHIEUCHI = [
   "Kỳ", "Số phiếu", "Ngày chi", "Mã NV", "Họ và tên", "Loại chi", "Số tiền",
   "Hình thức TT", "Người nhận", "Ghi chú"
 ];
-
-/**
- * ⚠️ ĐÃ CHUYỂN SANG KIẾN TRÚC 5 FILE — hàm này GIỮ LẠI để tương thích ngược cho
- * bất kỳ đoạn code cũ nào lỡ còn gọi trực tiếp, nhưng KHÔNG NÊN dùng nữa. Dùng
- * `moSheetChoBang_(tenSheet)` (LienKetFile.gs) để mở ĐÚNG file chứa sheet đó.
- */
-function moSheet_() {
-  return moSheetChoBang_(SHEET_THAMSO);
-}
 
 /**
  * Lấy 1 sheet theo tên; tự tạo + ghi header nếu chưa tồn tại. Tự mở ĐÚNG file

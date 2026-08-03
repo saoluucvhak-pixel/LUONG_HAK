@@ -91,6 +91,66 @@ function guiDatIdFile(loai, urlHoacId) {
   }
 }
 
+// ---------- Cầu nối cho đồng bộ Danh mục & Nhân sự từ 2 nguồn ngoài ----------
+
+function guiDongBoTatCaTuNgoai(nam, thang) {
+  try {
+    return dongBoTatCaTuNgoai(nam, thang);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiCauHinhNguonNgoai() {
+  try {
+    return {
+      ok: true,
+      danhMuc: PropertiesService.getScriptProperties().getProperty("ID_NGOAI_DANHMUC") || ID_NGOAI_DANHMUC_MACDINH_,
+      nhanSu: PropertiesService.getScriptProperties().getProperty("ID_NGOAI_NHANSU") || ID_NGOAI_NHANSU_MACDINH_
+    };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiDatIdNguonNgoai(loai, urlHoacId) {
+  try {
+    datIdNgoai_(loai, urlHoacId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiTrangThaiDongBoDanhMuc() {
+  try {
+    return { ok: true, data: layTrangThaiDongBoDanhMuc() };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+/**
+ * ⚠ TỐI ƯU HIỆU SUẤT: kiểm tra ĐÚNG 1 loại danh mục (thay vì cả 9 loại như
+ * `guiTrangThaiDongBoDanhMuc()`) — dùng cho tab Danh mục, vì mỗi lần chỉ xem
+ * đúng 1 loại đang chọn ở dropdown, không cần biết trạng thái 8 loại còn lại.
+ */
+function guiDanhMucCoNguonNgoaiKhong(loai) {
+  try {
+    return { ok: true, coNguonNgoai: danhMucCoNguonNgoaiKhong_(loai) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiKiemTraDuLieuNgoaiKy(nam, thang) {
+  try {
+    return Object.assign({ ok: true }, kiemTraDuLieuNgoaiKy_(nam, thang));
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
 // ---------- Cầu nối cho tab "Nhân sự" ----------
 
 function guiDanhSachNhanSu(baoGomDaNghi) {
@@ -336,6 +396,69 @@ function guiKhoiTaoQuyCheLuongHienHanh(ghiDeCaKhiCoDuLieu) {
 function guiBaoCaoTienLuong() {
   try {
     return { ok: true, data: baoCaoTienLuong() };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiBaoCaoTongHopCong(nam, thang) {
+  try {
+    return { ok: true, data: baoCaoTongHopCong(nam, thang) };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+/** Đọc toàn bộ NL_CHAMCONG (không lọc kỳ) — dùng cho tab "Xem lại chấm công" (lọc phía client). */
+/**
+ * Đọc NL_CHAMCONG (lọc theo NĂM nếu có truyền — giảm dữ liệu truyền qua mạng
+ * khi lịch sử tích luỹ nhiều năm) — dùng cho tab "Xem lại chấm công" (lọc
+ * tháng/phòng ban/tên/hình thức còn lại thực hiện phía client cho phản hồi
+ * nhanh khi đổi bộ lọc).
+ */
+function guiXemChamCongDayDu(nam) {
+  try {
+    const header = headerChamCongDayDu_();
+    let list = docSheetThanhObject_(SHEET_CHAMCONG, header);
+    if (nam) {
+      const namSo = Number(nam);
+      list = list.filter(function (r) { return r["Ngày tính công"] instanceof Date && r["Ngày tính công"].getFullYear() === namSo; });
+    }
+    return { ok: true, data: list };
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+// ---------- Cầu nối cho luồng nháp Phát sinh lương ----------
+
+function guiXemTruocPSLuong(base64, tenFile, mimeType) {
+  try {
+    return xemTruocPSLuongTuFile(base64, tenFile, mimeType);
+  } catch (e) {
+    return { ok: false, loi: e.message + (e.message.indexOf("Drive") >= 0 ? " — kiểm tra đã bật Advanced Service \"Drive API\" chưa (xem HUONG_DAN_WEBAPP.md)." : "") };
+  }
+}
+
+function guiDoiChieuLaiNhapPSLuong() {
+  try {
+    return doiChieuLaiNhapPSLuong();
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiXacNhanNapPSLuongTuNhap(cheDoGhi) {
+  try {
+    return xacNhanNapPSLuongTuNhap(cheDoGhi);
+  } catch (e) {
+    return { ok: false, loi: e.message };
+  }
+}
+
+function guiHuyNhapPSLuong() {
+  try {
+    return huyNhapPSLuong();
   } catch (e) {
     return { ok: false, loi: e.message };
   }
