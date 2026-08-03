@@ -69,7 +69,7 @@ function taoBangHachToan(nam, thang) {
   const nhanSuList = docSheetThanhObject_(SHEET_NHANSU, HEADER_NHANSU);
   const nhanSuMap = {};
   nhanSuList.forEach(function (ns) { nhanSuMap[ns["Mã nhân viên"]] = ns; });
-  const dmPhongBan = docDanhMucPhongBan_();
+  const dmChiPhi = docDanhMucChiPhi_(nam, thang);
 
   const bangLuong = docSheetThanhObject_(SHEET_BANGLUONG, HEADER_BANGLUONG);
   const bhxh = docSheetThanhObject_(SHEET_BHXH, HEADER_BHXH);
@@ -81,8 +81,8 @@ function taoBangHachToan(nam, thang) {
   const theoTKChiPhi = {}; // TK chi phí -> tổng thu nhập
   bangLuong.forEach(function (r) {
     const ns = nhanSuMap[r["Mã NV"]];
-    const pb = ns ? dmPhongBan[ns["Mã PB"]] : null;
-    const tk = (pb && pb["Tài khoản chi phí"]) ? pb["Tài khoản chi phí"] : "642 (chưa xác định phòng ban)";
+    const cp = ns ? dmChiPhi[ns["Mã PB"]] : null;
+    const tk = (cp && cp["Tài khoản chi phí"]) ? cp["Tài khoản chi phí"] : "642 (chưa khai Tài khoản chi phí cho phòng ban này — xem tab Danh mục)";
     theoTKChiPhi[tk] = (theoTKChiPhi[tk] || 0) + (Number(r["Tổng thu nhập (trước trừ)"]) || 0);
   });
 
@@ -91,8 +91,8 @@ function taoBangHachToan(nam, thang) {
   let tongBHCongTyDong = 0, tongBHNLDDong = 0, tongTruyThuBH = 0;
   bhxh.forEach(function (r) {
     const ns = nhanSuMap[r["Mã NV"]];
-    const pb = ns ? dmPhongBan[ns["Mã PB"]] : null;
-    const tk = (pb && pb["Tài khoản chi phí"]) ? pb["Tài khoản chi phí"] : "642 (chưa xác định phòng ban)";
+    const cp = ns ? dmChiPhi[ns["Mã PB"]] : null;
+    const tk = (cp && cp["Tài khoản chi phí"]) ? cp["Tài khoản chi phí"] : "642 (chưa khai Tài khoản chi phí cho phòng ban này — xem tab Danh mục)";
     theoTKChiPhiBH[tk] = (theoTKChiPhiBH[tk] || 0) + (Number(r["Cộng BH công ty đóng"]) || 0);
     tongBHCongTyDong += Number(r["Cộng BH công ty đóng"]) || 0;
     tongBHNLDDong += Number(r["Cộng BH NLĐ đóng"]) || 0;

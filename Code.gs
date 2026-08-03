@@ -44,6 +44,7 @@ const SHEET_DM_HOTRO = "DM_HOTRO";
 const SHEET_DM_BAOHIEM = "DM_BAOHIEM";
 const SHEET_DM_TNCN = "DM_TNCN";
 const SHEET_DM_GTTNCN = "DM_GT_TNCN";
+const SHEET_DM_CHIPHI = "DM_CHIPHI";
 const SHEET_DM_PHONGBAN = "DM_PHONGBAN";
 const SHEET_DM_CHUCVU = "DM_CHUCVU";
 
@@ -161,8 +162,16 @@ const HEADER_DM_GTTNCN = [
   "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã giảm trừ", "Số người", "Số tiền"
 , "Kỳ tính lương"];
 
-const HEADER_DM_PHONGBAN = ["Ngày cập nhật", "Mã phòng ban", "Tên phòng ban", "Tài khoản chi phí", "Kỳ tính lương"];
+const HEADER_DM_PHONGBAN = ["Ngày cập nhật", "Mã phòng ban", "Tên phòng ban", "Kỳ tính lương"];
 const HEADER_DM_CHUCVU = ["Ngày cập nhật", "Mã chức vụ", "Tên chức vụ", "Kỳ tính lương"];
+// "Tài khoản chi phí" TÁCH RIÊNG thành danh mục "DM_CHIPHI" (không đồng bộ từ
+// nguồn ngoài — DM_PHONGBAN ở nguồn ngoài không có trường này, và bị GHI ĐÈ
+// TOÀN BỘ mỗi lần "Tải dữ liệu kỳ này" nên không thể lưu ở đó được) — quản lý
+// TRỰC TIẾP trong webapp, CÓ HIỆU LỰC THEO NGÀY (tài khoản chi phí có thể đổi
+// theo từng kỳ, vd đổi hệ thống tài khoản kế toán).
+const HEADER_DM_CHIPHI = [
+  "Ngày cập nhật", "Hiệu lực từ", "Hiệu lực đến", "Mã phòng ban", "Tài khoản chi phí", "Ghi chú"
+];
 
 const HEADER_BANGLUONG = [
   "Mã NV", "Họ và tên", "Phòng ban", "Chức vụ",
@@ -230,7 +239,25 @@ const HEADER_PHIEUCHI = [
  * @param {string} tenSheet
  * @param {string[]} header
  */
-function layHoacTaoSheet_(tenSheet, header) {
+/**
+ * Lấy 1 sheet theo tên; tự tạo + ghi header nếu chưa tồn tại.
+ * ⚠ LỖI THẬT ĐÃ PHÁT HIỆN VÀ SỬA: nếu sheet ĐÃ TỒN TẠI nhưng header trong code
+ * đã thay đổi (thêm/bớt/đổi tên cột — vd tách "Tài khoản chi phí" ra khỏi
+ * DM_PHONGBAN), hàm TRƯỚC ĐÂY không bao giờ cập nhật lại dòng tiêu đề (dòng 1)
+ * — khiến dòng 1 vẫn hiện tên cột CŨ trong khi dữ liệu bên dưới đã ghi theo ý
+ * nghĩa MỚI (lệch nội dung cột — vd cột ghi "Tài khoản chi phí" nhưng chứa
+ * giá trị "Kỳ tính lương"). Giờ TỰ ĐỘNG SO SÁNH và ghi đè lại dòng 1 nếu khác.
+ */
+/**
+ * ⚠ CHỈ DÙNG CHO ĐỌC (view) — KHÔNG BAO GIỜ ghi/sửa gì lên sheet, kể cả khi
+ * header lệch so với code (khác với `layHoacTaoSheet_()` — vốn tự sửa lại
+ * header nếu lệch, ĐÚNG cho thao tác GHI nhưng SAI về nguyên tắc cho thao tác
+ * ĐỌC: 1 lệnh "xem dữ liệu" không nên có tác dụng phụ ghi/sửa gì cả). Nếu
+ * sheet CHƯA TỪNG tồn tại, vẫn tạo mới + ghi header (hợp lý, vì sheet trống
+ * hoàn toàn không có gì để "xem"). Dùng cho `docSheetThanhObject_`,
+ * `layDanhMuc`, `layGiaoDich`, và mọi hàm chỉ đọc khác.
+ */
+function moSheetChiDoc_(tenSheet, header) {
   const ss = moSheetChoBang_(tenSheet);
   let sh = ss.getSheetByName(tenSheet);
   if (!sh) {
@@ -241,12 +268,62 @@ function layHoacTaoSheet_(tenSheet, header) {
   return sh;
 }
 
+/**
+ * Lấy 1 sheet theo tên; tự tạo + ghi header nếu chưa tồn tại.
+ * ⚠ CHỈ DÙNG CHO GHI (thêm/sửa/xoá dòng, tạo báo cáo...) — hàm này CÓ TÁC
+ * DỤNG PHỤ: tự động sửa lại dòng tiêu đề (dòng 1) nếu phát hiện lệch so với
+ * code hiện tại (vd sau khi đổi cấu trúc cột). Việc ĐỌC/XEM dữ liệu phải dùng
+ * `moSheetChiDoc_()` ở trên (không có tác dụng phụ này).
+ */
+function layHoacTaoSheet_(tenSheet, header) {
+  const ss = moSheetChoBang_(tenSheet);
+  let sh = ss.getSheetByName(tenSheet);
+  if (!sh) {
+    sh = ss.insertSheet(tenSheet);
+    sh.getRange(1, 1, 1, header.length).setValues([header]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  const headerHienTai = sh.getLastColumn() > 0 ? sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0] : [];
+  const khopDung = headerHienTai.length === header.length && header.every(function (h, i) { return headerHienTai[i] === h; });
+  if (!khopDung) {
+    // Xoá sạch dòng tiêu đề cũ (kể cả cột thừa nếu header mới NGẮN hơn header
+    // cũ) rồi ghi lại đúng header mới nhất từ code.
+    if (headerHienTai.length > 0) sh.getRange(1, 1, 1, headerHienTai.length).clearContent();
+    sh.getRange(1, 1, 1, header.length).setValues([header]);
+  }
+  return sh;
+}
+
 /** Đọc toàn bộ dữ liệu 1 sheet (trừ dòng header) thành mảng object {TênCột: giá trị}. */
+/**
+ * ⚠ LỖI NGHIÊM TRỌNG ĐÃ PHÁT HIỆN VÀ SỬA (ảnh hưởng TOÀN HỆ THỐNG — hàm này
+ * dùng chung cho hầu hết sheet nội bộ: Nhân sự, Chấm công, Sản lượng, Ứng
+ * lương, các báo cáo RP_*...): trước đây tin mù quáng vào `sh.getLastRow()`
+ * để tính số dòng cần đọc — nhưng nếu 1 sheet TỪNG bị ghi/dán dữ liệu vượt
+ * quá phạm vi thật (vd dán từ Excel có định dạng kéo dài, hoặc dữ liệu cũ từ
+ * trước khi sửa các lỗi đồng bộ khác), "vùng dữ liệu" (used range) của sheet
+ * có thể bị THỔI PHỒNG rất lớn so với dữ liệu thật (đã xác nhận thực tế: 1
+ * sheet chỉ có ~16 dòng/4 cột dữ liệu thật nhưng used range tới cột Z, dòng
+ * 962!) — khiến MỌI request đọc sheet đó phải xử lý dư thừa hàng trăm/nghìn
+ * dòng trống, có thể gây lỗi/treo khi trả kết quả qua `google.script.run`.
+ * Giờ tìm ĐÚNG dòng cuối có dữ liệu thật (dựa vào CỘT ĐẦU TIÊN của header,
+ * thường luôn có giá trị ở mọi dòng thật) trước khi đọc toàn bộ các cột.
+ */
 function docSheetThanhObject_(tenSheet, header) {
   const ss = moSheetChoBang_(tenSheet);
   const sh = ss.getSheetByName(tenSheet);
-  if (!sh || sh.getLastRow() < 2) return [];
-  const soHang = sh.getLastRow() - 1;
+  if (!sh) return [];
+  const soHangToiDa = sh.getLastRow();
+  if (soHangToiDa < 2) return [];
+
+  const cotDau = sh.getRange(2, 1, soHangToiDa - 1, 1).getValues();
+  let soHang = 0;
+  for (let i = cotDau.length - 1; i >= 0; i--) {
+    if (cotDau[i][0] !== "" && cotDau[i][0] !== null) { soHang = i + 1; break; }
+  }
+  if (soHang === 0) return [];
+
   const soCot = header.length;
   const values = sh.getRange(2, 1, soHang, soCot).getValues();
   return values
@@ -259,11 +336,17 @@ function docSheetThanhObject_(tenSheet, header) {
 }
 
 /** Ghi đè toàn bộ dữ liệu (mảng object) vào 1 sheet, giữ nguyên header đã cho. */
+/** Ghi đè toàn bộ dữ liệu (mảng object) vào 1 sheet, giữ nguyên header đã cho. */
 function ghiDeSheet_(tenSheet, header, danhSachObject) {
   const sh = layHoacTaoSheet_(tenSheet, header);
   const soHangCu = sh.getMaxRows();
+  // ⚠ Xoá theo SỐ CỘT LỚN HƠN giữa header mới và số cột THỰC TẾ đang có trên
+  // sheet — nếu chỉ xoá đúng header.length (số cột MỚI, có thể ít hơn số cột
+  // CŨ do header bị thu hẹp), cột thừa phía sau sẽ bị BỎ SÓT, giữ nguyên dữ
+  // liệu rác từ cấu trúc cũ mãi mãi (lỗi thật đã gặp — xem `layHoacTaoSheet_`).
+  const soCotXoa = Math.max(header.length, sh.getMaxColumns());
   if (soHangCu > 1) {
-    sh.getRange(2, 1, soHangCu - 1, header.length).clearContent();
+    sh.getRange(2, 1, soHangCu - 1, soCotXoa).clearContent();
   }
   if (danhSachObject.length === 0) return;
   const rows = danhSachObject.map(obj => header.map(ten => (obj[ten] !== undefined ? obj[ten] : "")));

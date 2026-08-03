@@ -23,9 +23,15 @@ const GIAO_DICH_CAU_HINH = {
 function layGiaoDich(loai, nam, thang) {
   const cauHinh = GIAO_DICH_CAU_HINH[loai];
   if (!cauHinh) throw new Error("Loại giao dịch không hợp lệ: " + loai);
-  const sh = layHoacTaoSheet_(cauHinh.sheet, cauHinh.header);
-  if (sh.getLastRow() < 2) return [];
-  const soHang = sh.getLastRow() - 1;
+  const sh = moSheetChiDoc_(cauHinh.sheet, cauHinh.header);
+  const soHangToiDa = sh.getLastRow();
+  if (soHangToiDa < 2) return [];
+  const cotDau = sh.getRange(2, 1, soHangToiDa - 1, 1).getValues();
+  let soHang = 0;
+  for (let i = cotDau.length - 1; i >= 0; i--) {
+    if (cotDau[i][0] !== "" && cotDau[i][0] !== null) { soHang = i + 1; break; }
+  }
+  if (soHang === 0) return [];
   const values = sh.getRange(2, 1, soHang, cauHinh.header.length).getValues();
   const ketQua = [];
   values.forEach(function (row, i) {

@@ -60,14 +60,38 @@ function datIdNgoai_(loai, urlHoacId) {
  * "NgayCapNhat" là 1 giá trị Ngày hợp lệ — nên tự động LOẠI BỎ mọi dòng có
  * "NgayCapNhat" KHÔNG PHẢI ngày hợp lệ (coi là dữ liệu cũ/hỏng, không dùng).
  */
+/**
+ * ⚠ TỐI ƯU HIỆU SUẤT — LỖI CHẬM NGHIÊM TRỌNG ĐÃ PHÁT HIỆN VÀ SỬA: nhiều sheet ở
+ * nguồn ngoài có "vùng dữ liệu" (used range — Google Sheets tự tính dựa trên
+ * MỌI ô từng được định dạng, kể cả không có nội dung) bị THỔI PHỒNG gấp
+ * 60-500 LẦN so với dữ liệu thật (vd DM_PHONGBAN: 962 dòng vùng dữ liệu nhưng
+ * chỉ 16 dòng thật; DM_BAOHIEM: 994 dòng nhưng chỉ 2 dòng thật). Đọc thẳng
+ * bằng `getDataRange()` (như trước) sẽ đọc TOÀN BỘ vùng thổi phồng này — với
+ * ~15 sheet nguồn ngoài, tổng cộng lên tới hàng chục nghìn ô trống phải đọc
+ * qua mạng mỗi lần "Tải dữ liệu kỳ này" → mất VÀI PHÚT thay vì vài giây.
+ * SỬA: đọc TRƯỚC đúng 1 CỘT ĐẦU TIÊN (luôn có "_id" ở MỌI dòng thật, rẻ hơn
+ * nhiều so với đọc toàn bộ cột) để tìm ĐÚNG dòng cuối cùng có dữ liệu thật,
+ * rồi CHỈ đọc đúng phạm vi đó cho toàn bộ cột.
+ */
 function docSheetNgoai_(spreadsheetId, tenSheet) {
   const ss = moSheetTheoIdCache_(spreadsheetId);
   const sh = ss.getSheetByName(tenSheet);
-  if (!sh || sh.getLastRow() < 2) return [];
-  const values = sh.getDataRange().getValues();
-  const header = values[0];
+  if (!sh) return [];
+  const soCotThuc = sh.getLastColumn();
+  const soHangToiDa = sh.getLastRow(); // có thể bị thổi phồng, chỉ dùng làm giới hạn TRÊN để dò
+  if (soCotThuc === 0 || soHangToiDa < 2) return [];
+
+  const cotA = sh.getRange(2, 1, soHangToiDa - 1, 1).getValues();
+  let soDongThat = 0;
+  for (let i = cotA.length - 1; i >= 0; i--) {
+    if (cotA[i][0] !== "" && cotA[i][0] !== null) { soDongThat = i + 1; break; }
+  }
+  if (soDongThat === 0) return [];
+
+  const header = sh.getRange(1, 1, 1, soCotThuc).getValues()[0];
+  const values = sh.getRange(2, 1, soDongThat, soCotThuc).getValues();
   const coCotNgayCapNhat = header[1] === "NgayCapNhat";
-  return values.slice(1)
+  return values
     .filter(function (row) { return row.some(function (v) { return v !== "" && v !== null; }); })
     .filter(function (row) { return !coCotNgayCapNhat || row[1] instanceof Date; })
     .map(function (row) {
@@ -90,12 +114,21 @@ function dinhDangMa_(v) {
 }
 
 /** Kiểm tra 1 dòng có hiệu lực tại ngayMoc không (theo 2 cột hiệu lực chỉ định). */
+/**
+ * ⚠ ĐÂY MỚI LÀ CHỖ THẬT SỰ SO SÁNH — dùng giá trị RAW đọc trực tiếp từ Google
+ * Sheets (không qua `ngayNgoaiThanhDate_()`). Áp dụng ĐÚNG cùng 1 cách nhận
+ * diện "Date năm ≤ 1900 = chưa có giá trị" (xem giải thích chi tiết ở
+ * `ngayNgoaiThanhDate_()`) — nếu không, mọi danh mục có cột "Hiệu lực đến"
+ * định dạng Time=0 sẽ bị lọc RỖNG HOÀN TOÀN.
+ */
 function conHieuLuc_(row, ngayMoc, cotTu, cotDen) {
   const tu = row[cotTu];
   const den = row[cotDen];
-  const tuOk = !(tu instanceof Date) || tu <= ngayMoc;
-  // "Hiệu lực đến" = 0, rỗng, hoặc không phải Date → coi là CÒN HIỆU LỰC (chưa kết thúc)
-  const denOk = !(den instanceof Date) || den >= ngayMoc;
+  const tuHopLe = (tu instanceof Date) && tu.getFullYear() > 1900;
+  const denHopLe = (den instanceof Date) && den.getFullYear() > 1900;
+  const tuOk = !tuHopLe || tu <= ngayMoc;
+  // "Hiệu lực đến" = 0, rỗng, hoặc Date năm ≤1900 → coi là CÒN HIỆU LỰC (chưa kết thúc)
+  const denOk = !denHopLe || den >= ngayMoc;
   return tuOk && denOk;
 }
 
@@ -116,11 +149,23 @@ function locHieuLucTheoMa_(list, cotMa, ngayMoc, cotTu, cotDen) {
 }
 
 /** Ngày dạng Date hoặc chuỗi ISO → Date, hoặc null nếu không hợp lệ/để trống (0 = chưa kết thúc). */
+/**
+ * ⚠ LỖI NGHI�êM TRỌNG ĐÃ PHÁT HIỆN VÀ SỬA (qua dữ liệu mẫu mới): nhiều ô
+ * "Hiệu lực đến" ở nguồn ngoài được ĐỊNH DẠNG KIỂU "Time" (chỉ giờ) với giá
+ * trị 0 (00:00:00) thay vì số 0 hay ô trống — khi Google Sheets/Apps Script
+ * đọc ô này qua getValues(), nó trả về 1 Date object với NĂM = 1899 (mốc gốc
+ * chuẩn Excel/Sheets cho serial number 0), KHÔNG PHẢI số 0 hay null. Nếu
+ * không xử lý, `conHieuLuc_()` sẽ so sánh "năm 1899 >= năm kỳ đang tính
+ * (2026)" → LUÔN SAI → COI NHƯ HẾT HIỆU LỰC → TOÀN BỘ danh mục có cột này bị
+ * lọc rỗng (đồng bộ ra 0 dòng cho mọi loại). Coi Date có năm ≤ 1900 là
+ * "CHƯA CÓ GIÁ TRỊ" (tương đương số 0 = còn hiệu lực), không phải 1 ngày thật.
+ */
 function ngayNgoaiThanhDate_(v) {
-  if (v instanceof Date) return v;
+  if (v instanceof Date) return v.getFullYear() <= 1900 ? null : v;
   if (!v || v === 0) return null;
   const d = new Date(v);
-  return isNaN(d.getTime()) ? null : d;
+  if (isNaN(d.getTime())) return null;
+  return d.getFullYear() <= 1900 ? null : d;
 }
 
 /** Bản đồ: loại danh mục (dùng ở tab Danh mục) → tên sheet tương ứng ở nguồn ngoài "DM_CONGTY_HAK". */
@@ -171,6 +216,42 @@ function dongBoDanhMucTuNgoai(nam, thang) {
   const ky = thang + "/" + nam;
   const ketQua = [];
 
+  // ⚠ GHÉP thay vì GHI ĐÈ cho các trường KHÔNG CÓ nguồn ở file ngoài — đọc
+  // TRƯỚC khi bị ghi đè, các trường "Lương phụ"/"Ngưỡng truy thu BH"/"ĐK_Bù
+  // lương"/"Đơn giá bù lương"/"Đơn giá bơm dăm" của DM_LUONG (đã có sẵn từ
+  // trước qua "Khởi tạo Quy chế lương hiện hành" hoặc do người dùng tự nhập
+  // bổ sung) — nếu không GIỮ LẠI, mỗi lần "Tải dữ liệu kỳ này" sẽ XOÁ MẤT các
+  // giá trị này (nguồn ngoài không có, ghi đè thành rỗng), khiến "Bù sản
+  // lượng"/"Truy thu bảo hiểm" ngừng hoạt động cho TẤT CẢ mọi người.
+  const truongLuongGiuLai_ = ["Lương phụ", "Ngưỡng truy thu BH (công)", "ĐK_Bù lương (công tối thiểu)", "Đơn giá bù lương", "Đơn giá bơm dăm"];
+  const duLieuLuongCuTheoMa_ = {};
+  docSheetThanhObject_(SHEET_DM_LUONG, HEADER_DM_LUONG).forEach(function (r) {
+    if (r["Mã lương"]) duLieuLuongCuTheoMa_[r["Mã lương"]] = r;
+  });
+
+  // ⚠ "DM_LUONG_BS" (Bổ sung) — sheet MỚI ở nguồn ngoài, bảng CON của DM_LUONG
+  // (nối qua "_parentId" = "_id" của DM_LUONG), chứa ĐÚNG "NguongBoSung"/
+  // "DonGiaBoSung" cho cơ chế bù sản lượng — ƯU TIÊN dùng nguồn THẬT này
+  // (chính xác hơn giá trị cũ/mẫu), chỉ fallback về `duLieuLuongCuTheoMa_`
+  // (Mục trên) nếu 1 mã lương KHÔNG có dòng bổ sung tương ứng.
+  const boSungLuongTheoMa_ = {};
+  (function () {
+    const dsLuongNgoai = docSheetNgoai_(idNgoai, "DM_LUONG");
+    const maTheoId_ = {};
+    dsLuongNgoai.forEach(function (r) { if (r["_id"]) maTheoId_[r["_id"]] = r["MaLuong"]; });
+    docSheetNgoai_(idNgoai, "DM_LUONG_BS").forEach(function (bs) {
+      const ma = maTheoId_[bs["_parentId"]];
+      if (!ma) return;
+      // Nếu 1 mã có nhiều dòng bổ sung theo thời gian, ưu tiên dòng có
+      // "Hiệu lực từ" hiệu lực tại kỳ đang tính, mới nhất nếu vẫn nhiều dòng.
+      if (!conHieuLuc_(bs, ngayMoc, "HieuLucTuNgay", "HieuLucDenNgay")) return;
+      const hienTai = boSungLuongTheoMa_[ma];
+      const tuMoi = ngayNgoaiThanhDate_(bs["HieuLucTuNgay"]) || new Date(0);
+      const tuHienTai = (hienTai && ngayNgoaiThanhDate_(hienTai["HieuLucTuNgay"])) || new Date(-1);
+      if (!hienTai || tuMoi >= tuHienTai) boSungLuongTheoMa_[ma] = bs;
+    });
+  })();
+
   // Bản đồ ngược: tên sheet ngoài -> loại danh mục (dùng gắn trường "loai" vào
   // kết quả trả về, để CLIENT TỰ CACHE trạng thái "có nguồn ngoài hay không"
   // ngay từ lúc "Tải dữ liệu kỳ này" — không cần hỏi lại server mỗi lần mở tab
@@ -208,8 +289,7 @@ function dongBoDanhMucTuNgoai(nam, thang) {
   dong("DM_PHONGBAN", "MaPB", "HieuLucTuNgay", "HieuLucDenNgay", SHEET_DM_PHONGBAN, HEADER_DM_PHONGBAN, function (r) {
     return {
       "Mã phòng ban": dinhDangMa_(r["MaPB"]),
-      "Tên phòng ban": (r["TenKhoi"] ? r["TenKhoi"] + " > " : "") + (r["TenPB"] || ""),
-      "Tài khoản chi phí": r["TaiKhoanChiPhi"] || ""
+      "Tên phòng ban": (r["TenKhoi"] ? r["TenKhoi"] + " > " : "") + (r["TenPB"] || "")
     };
   });
 
@@ -230,13 +310,25 @@ function dongBoDanhMucTuNgoai(nam, thang) {
   // bảo hiểm" sẽ không kích hoạt được cho ai (xem cảnh báo Mục 10/11 ở
   // KiemTra.gs — đã có sẵn để phát hiện đúng tình huống này).
   dong("DM_LUONG", "MaLuong", "HieuLucTuNgay", "HieuLucDenNgay", SHEET_DM_LUONG, HEADER_DM_LUONG, function (r) {
-    return {
+    const cu = duLieuLuongCuTheoMa_[r["MaLuong"]] || {};
+    const boSung = boSungLuongTheoMa_[r["MaLuong"]];
+    const ketQuaDong = {
       "Mã lương": r["MaLuong"], "Mã hình thức lương": r["MaHinhThucLuong"], "Hình thức lương": r["HinhThucLuong"],
       "Số tiền khoán": r["SoTienKhoan"] || 0,
-      "Lương phụ": "", "Ngưỡng truy thu BH (công)": "", "ĐK_Bù lương (công tối thiểu)": "",
-      "Đơn giá bù lương": "", "Đơn giá bơm dăm": "",
       "Cách tính": r["CachTinh"] || ""
     };
+    if (boSung) {
+      // Có dữ liệu bổ sung THẬT từ DM_LUONG_BS — dùng đúng nguồn này
+      ketQuaDong["Ngưỡng truy thu BH (công)"] = boSung["NguongBoSung"] || "";
+      ketQuaDong["ĐK_Bù lương (công tối thiểu)"] = boSung["NguongBoSung"] || "";
+      ketQuaDong["Đơn giá bù lương"] = boSung["DonGiaBoSung"] || "";
+      ketQuaDong["Lương phụ"] = cu["Lương phụ"] !== undefined ? cu["Lương phụ"] : "";
+      ketQuaDong["Đơn giá bơm dăm"] = cu["Đơn giá bơm dăm"] !== undefined ? cu["Đơn giá bơm dăm"] : "";
+    } else {
+      // Không có dòng bổ sung cho mã này ở nguồn ngoài — giữ nguyên giá trị cũ đang có
+      truongLuongGiuLai_.forEach(function (ten) { ketQuaDong[ten] = cu[ten] !== undefined ? cu[ten] : ""; });
+    }
+    return ketQuaDong;
   });
 
   dong("DM_PHUCAP", "MaPhuCap", "HieuLucTuNgay", "HieuLucDenNgay", SHEET_DM_PHUCAP, HEADER_DM_PHUCAP, function (r) {
@@ -355,9 +447,17 @@ function xayBanDoLoaiThueTNCN_(idDanhMucNgoai) {
   list.forEach(function (r) {
     if (!r["_id"]) return;
     const noiDung = String(r["NoiDung"] || "");
+    const mucThue = Number(r["MucThue"]);
     let ma = "";
+    // ⚠ QUAN TRỌNG: dò theo "MucThue" TRƯỚC (căn cứ chính, đáng tin cậy hơn) —
+    // đã xác nhận qua dữ liệu thật: có 2 mã CÙNG TÊN "Khấu trừ vãng lai"
+    // (NoiDung giống hệt nhau) nhưng MỘT có MucThue=10% (khấu trừ thật), MỘT
+    // có MucThue=0% (miễn thuế) — nếu chỉ dò theo tên/NoiDung như trước, 2 mã
+    // này sẽ bị gộp NHẦM chung 1 loại.
     if (/(luỹ tiến|lũy tiến)/i.test(noiDung)) ma = "TNCN2";
-    else if (/(vãng lai|vang lai|cố định|co dinh|10%)/i.test(noiDung)) ma = "TNCN1";
+    else if (!isNaN(mucThue) && mucThue > 0) ma = "TNCN1"; // có % khấu trừ thật > 0
+    else if (!isNaN(mucThue) && mucThue === 0) ma = "TNCN0"; // % khấu trừ = 0 → miễn
+    else if (/(vãng lai|vang lai|cố định|co dinh|10%)/i.test(noiDung)) ma = "TNCN1"; // dự phòng nếu thiếu MucThue
     else if (/miễn|mien/i.test(noiDung)) ma = "TNCN0";
     map[r["_id"]] = ma;
   });
@@ -460,10 +560,15 @@ function dongBoNhanSuTuNgoai(nam, thang) {
     if (!hopDongChon) { soBiBoQua++; return; }
 
     // Chọn phụ lục đang hiệu lực trong hợp đồng đó tại kỳ, mới nhất nếu nhiều
+    // ⚠ ƯU TIÊN "TuNgay"/"DenNgay" (khác nhau từng người, phản ánh đúng thời
+    // điểm áp dụng mức lương thật) — "HieuLucTuNgay" ở dữ liệu thật LUÔN CỐ
+    // ĐỊNH 1 giá trị chung cho MỌI người (ngày chốt/nhập dữ liệu vào hệ thống,
+    // KHÔNG PHẢI ngày hiệu lực áp dụng riêng) — nếu ưu tiên nhầm field này,
+    // mọi kỳ TRƯỚC ngày chốt đó sẽ bị coi là "chưa ai có phụ lục hiệu lực".
     let phuLucChon = null, tuPhuLucChon = null;
     (phuLucTheoHopDong[hopDongChon["_id"]] || []).forEach(function (pl) {
-      const tu = ngayNgoaiThanhDate_(pl["HieuLucTuNgay"]) || ngayNgoaiThanhDate_(pl["TuNgay"]);
-      const den = ngayNgoaiThanhDate_(pl["DenNgay"]);
+      const tu = ngayNgoaiThanhDate_(pl["TuNgay"]) || ngayNgoaiThanhDate_(pl["HieuLucTuNgay"]);
+      const den = ngayNgoaiThanhDate_(pl["DenNgay"]) || ngayNgoaiThanhDate_(pl["HieuLucDenNgay"]);
       if (tu && tu > ngayMoc) return;
       if (den && den < ngayMoc) return;
       if (!phuLucChon || (tu && (!tuPhuLucChon || tu >= tuPhuLucChon))) { phuLucChon = pl; tuPhuLucChon = tu; }
@@ -473,9 +578,25 @@ function dongBoNhanSuTuNgoai(nam, thang) {
     const caNhan = caNhanTheoNV[idNV] || {};
     const thanhToan = thanhToanTheoNV[idNV] || {};
 
+    // ⚠ QUAN TRỌNG: field "MaLuong" có thể chứa NHIỀU GUID nối bằng dấu phẩy
+    // trong CÙNG 1 Ô (vd người vừa trả lương sản lượng "SP" vừa bơm dăm "BD"
+    // → "id_xxx,id_yyy") — đây là cách nguồn ngoài biểu diễn "1 người có thể
+    // có nhiều mã lương đồng thời". Tách ra, mã ĐẦU TIÊN → "Mã tiền lương 1",
+    // mã THỨ HAI (nếu có) → "Mã tiền lương 2" (khớp đúng 2 slot webapp có
+    // sẵn). Nếu có nhiều hơn 2 mã, các mã từ thứ 3 trở đi hiện CHƯA có chỗ
+    // chứa — ghi vào "Ghi chú" tạm thời để không mất thông tin âm thầm.
+    const dsMaLuong = String(phuLucChon["MaLuong"] || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    const maLuong1 = mapLuong[dsMaLuong[0]] || "";
+    const maLuong2 = dsMaLuong[1] ? (mapLuong[dsMaLuong[1]] || "") : "";
+    const maLuongThua = dsMaLuong.slice(2).map(function (id) { return mapLuong[id] || id; }).filter(Boolean);
+
+    const dsMaHoTro = String(phuLucChon["MaHoTro"] || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    const maHoTro1 = mapHoTro[dsMaHoTro[0]] || "";
+    const maHoTro2 = dsMaHoTro[1] ? (mapHoTro[dsMaHoTro[1]] || "") : "";
+
     dsNhanSuMoi.push({
       "Ngày cập nhật": new Date(),
-      "Mã nhân viên": nv["MaNV"], "Họ và tên": nv["TenNhanVien"],
+      "Mã nhân viên": dinhDangMa_(nv["MaNV"]), "Họ và tên": nv["TenNhanVien"],
       "Mã PB": mapPhongBan[phuLucChon["MaPhongBan"]] || "",
       "Mã CV": mapChucVu[phuLucChon["MaCV"]] || "",
       "Ngày vào làm": ngayNgoaiThanhDate_(hopDongChon["NgayVaoLam"]) || "",
@@ -483,13 +604,19 @@ function dongBoNhanSuTuNgoai(nam, thang) {
       "Ngày nghỉ/thay đổi": "",
       "Lương cơ bản": phuLucChon["LuongCoBan"] || 0,
       "Lương thỏa thuận": phuLucChon["LuongThoaThuan"] || 0,
-      "Hình thức hợp đồng": hopDongChon["HinhThucHDLD"] || "",
-      "Mã tiền lương 1": mapLuong[phuLucChon["MaCongTac"]] || "",
-      "Mã tiền lương 2": mapLuong[phuLucChon["MaLuongPhu"]] || "",
+      "Hình thức hợp đồng": (hopDongChon["HinhThucHDLD"] || "") + (maLuongThua.length ? (" | Còn thêm mã lương chưa có chỗ chứa: " + maLuongThua.join(", ")) : ""),
+      // ⚠ SỬA: field ĐÚNG trỏ tới DM_LUONG là "MaLuong" (GUID, đã xác nhận
+      // qua dữ liệu thật). "MaCongTac" ở cấu trúc MỚI chỉ là MÃ SỐ HỢP ĐỒNG
+      // dạng "20240813_1" (ngày ký + số thứ tự), KHÔNG liên quan tới DM_LUONG.
+      // "MaHoTro" CŨNG có thể chứa NHIỀU GUID nối dấu phẩy (đã xác nhận qua
+      // dữ liệu thật: có người vừa "HT.01" Tiền cơm vừa "HT.02" Hỗ trợ cơ
+      // giới) — áp dụng ĐÚNG cùng cách tách như "Mã lương" ở trên.
+      "Mã tiền lương 1": maLuong1,
+      "Mã tiền lương 2": maLuong2,
       "Mã tăng ca": mapTangCa[phuLucChon["MaTangCa"]] || "",
       "Mã phụ cấp": mapPhuCap[phuLucChon["MaPhuCap"]] || "",
-      "Mã hỗ trợ": mapHoTro[phuLucChon["MaHoTro"]] || "",
-      "Mã hỗ trợ 2": mapHoTro[phuLucChon["MaHoTro2"]] || "",
+      "Mã hỗ trợ": maHoTro1,
+      "Mã hỗ trợ 2": maHoTro2,
       "Mã BHXH": mapBaoHiem[phuLucChon["MaBHXH"]] || "",
       "Mã TNCN": mapTNCN[phuLucChon["MaTNCN"]] || "",
       "Hiệu lực từ": tuPhuLucChon || "", "Hiệu lực đến": ngayNgoaiThanhDate_(phuLucChon["DenNgay"]) || "",
@@ -498,7 +625,7 @@ function dongBoNhanSuTuNgoai(nam, thang) {
 
     dsChiTietMoi.push({
       "Ngày cập nhật": new Date(),
-      "Mã nhân viên": nv["MaNV"], "Họ và tên": nv["TenNhanVien"],
+      "Mã nhân viên": dinhDangMa_(nv["MaNV"]), "Họ và tên": nv["TenNhanVien"],
       "Số CCCD": caNhan["SoCCCD"] || nv["SoCCCD"] || "",
       "Ngày sinh": ngayNgoaiThanhDate_(caNhan["NgaySinh"]) || "",
       "Thường trú": caNhan["ThuongTru"] || "",

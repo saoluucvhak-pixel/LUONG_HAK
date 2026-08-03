@@ -24,7 +24,13 @@ const DANH_MUC_CAU_HINH = {
   BAOHIEM: { sheet: SHEET_DM_BAOHIEM, header: HEADER_DM_BAOHIEM, khoa: "Mã bảo hiểm", coHieuLuc: true },
   LUONG: { sheet: SHEET_DM_LUONG, header: HEADER_DM_LUONG, khoa: "Mã lương", coHieuLuc: true },
   GTTNCN: { sheet: SHEET_DM_GTTNCN, header: HEADER_DM_GTTNCN, khoa: "Mã giảm trừ", coHieuLuc: true },
-  TNCN: { sheet: SHEET_DM_TNCN, header: HEADER_DM_TNCN, khoa: "Bậc", coHieuLuc: true }
+  TNCN: { sheet: SHEET_DM_TNCN, header: HEADER_DM_TNCN, khoa: "Bậc", coHieuLuc: true },
+  // ⚠ "CHIPHI" (Tài khoản chi phí theo phòng ban) KHÔNG có trong
+  // DANH_MUC_SHEET_NGOAI_ (DongBoNgoai.gs) — nghĩa là KHÔNG đồng bộ từ nguồn
+  // ngoài, luôn cho nhập/sửa/xoá tay trên webapp (đúng ý: tài khoản chi phí
+  // có thể khác mỗi kỳ, và DM_PHONGBAN ở nguồn ngoài không có trường này nên
+  // không thể "mượn" theo — phải quản lý độc lập, có hiệu lực theo ngày).
+  CHIPHI: { sheet: SHEET_DM_CHIPHI, header: HEADER_DM_CHIPHI, khoa: "Mã phòng ban", coHieuLuc: true }
 };
 
 /**
@@ -33,12 +39,32 @@ const DANH_MUC_CAU_HINH = {
  * biết đang sửa/xoá đúng phiên bản nào). Mỗi dòng kèm "_soDong" (số dòng thật
  * trong sheet) để dùng khi Sửa/Xoá.
  */
+/**
+ * ⚠ SỬA LỖI TƯƠNG TỰ ĐÃ GẶP Ở `docSheetNgoai_()` (DongBoNgoai.gs): TRƯỚC ĐÂY
+ * tin mù quáng vào `sh.getLastRow()` để tính số dòng cần đọc — nhưng nếu
+ * sheet nội bộ này TỪNG bị ghi dữ liệu thừa (từ các lần đồng bộ CŨ, trước khi
+ * `ghiDeSheet_`/`docSheetNgoai_` được sửa để tránh đọc "vùng dữ liệu" bị thổi
+ * phồng ở nguồn ngoài), "used range" của sheet NỘI BỘ có thể VẪN CÒN CAO dù
+ * nội dung đã bị xoá (Google Sheets không luôn tự giảm used range khi xoá nội
+ * dung) — khiến MỖI LẦN xem Danh mục phải đọc dư thừa hàng trăm/nghìn dòng
+ * trống, có thể gây lỗi/chậm bất thường khi trả kết quả qua `google.script.run`.
+ * Giờ tìm ĐÚNG dòng cuối có dữ liệu thật (dựa vào cột đầu tiên "Ngày cập
+ * nhật", luôn có giá trị ở mọi dòng thật) trước khi đọc toàn bộ cột.
+ */
 function layDanhMuc(loai) {
   const cauHinh = DANH_MUC_CAU_HINH[loai];
   if (!cauHinh) throw new Error("Loại danh mục không hợp lệ: " + loai);
-  const sh = layHoacTaoSheet_(cauHinh.sheet, cauHinh.header);
-  if (sh.getLastRow() < 2) return [];
-  const soHang = sh.getLastRow() - 1;
+  const sh = moSheetChiDoc_(cauHinh.sheet, cauHinh.header);
+  const soHangToiDa = sh.getLastRow();
+  if (soHangToiDa < 2) return [];
+
+  const cotDau = sh.getRange(2, 1, soHangToiDa - 1, 1).getValues();
+  let soHang = 0;
+  for (let i = cotDau.length - 1; i >= 0; i--) {
+    if (cotDau[i][0] !== "" && cotDau[i][0] !== null) { soHang = i + 1; break; }
+  }
+  if (soHang === 0) return [];
+
   const values = sh.getRange(2, 1, soHang, cauHinh.header.length).getValues();
   const ketQua = [];
   values.forEach(function (row, i) {
@@ -48,6 +74,8 @@ function layDanhMuc(loai) {
     ketQua.push(obj);
   });
   // Mới nhất lên trước (theo "Hiệu lực từ" nếu có, không thì theo thứ tự dòng)
+  // ⚠ Sắp xếp TRƯỚC khi chuyển Date→String bên dưới, vì cần so sánh theo giá
+  // trị Date gốc (getTime()), không phải chuỗi text.
   if (cauHinh.coHieuLuc) {
     ketQua.sort(function (a, b) {
       const ta = a["Hiệu lực từ"] instanceof Date ? a["Hiệu lực từ"].getTime() : 0;
@@ -56,6 +84,19 @@ function layDanhMuc(loai) {
       return String(a[cauHinh.khoa]).localeCompare(String(b[cauHinh.khoa]));
     });
   }
+  // ⚠ THỬ NGHIỆM QUAN TRỌNG: chuyển MỌI Date object thành CHUỖI TEXT ở BƯỚC
+  // CUỐI CÙNG này (sau khi đã sort xong) — khác với `layDanhSachNhanSu()`
+  // (đã luôn làm việc này qua `dinhDangNgay_()` từ trước) — nghi ngờ đây
+  // chính là nguyên nhân khiến `google.script.run` trả về `null` cho riêng
+  // luồng Danh mục, dù logic JS không có gì sai và chạy đúng khi Test trực
+  // tiếp trong Apps Script Editor.
+  ketQua.forEach(function (obj) {
+    Object.keys(obj).forEach(function (ten) {
+      if (obj[ten] instanceof Date) {
+        obj[ten] = Utilities.formatDate(obj[ten], Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
+    });
+  });
   return ketQua;
 }
 
@@ -206,22 +247,42 @@ function khoiTaoQuyCheLuongHienHanh(ghiDeCaKhiCoDuLieu) {
   const ngay = new Date();
   const mau = {
     PHONGBAN: [
-      { "Mã phòng ban": "01.01", "Tên phòng ban": "01.Văn phòng > Văn phòng", "Tài khoản chi phí": "6421" },
-      { "Mã phòng ban": "01.02", "Tên phòng ban": "01.Văn phòng > Trạm cân", "Tài khoản chi phí": "6411" },
-      { "Mã phòng ban": "01.03", "Tên phòng ban": "01.Văn phòng > Quản đốc", "Tài khoản chi phí": "6271" },
-      { "Mã phòng ban": "01.04", "Tên phòng ban": "01.Văn phòng > Tạp vụ", "Tài khoản chi phí": "6421" },
-      { "Mã phòng ban": "01.05", "Tên phòng ban": "01.Văn phòng > Bảo vệ", "Tài khoản chi phí": "6421" },
-      { "Mã phòng ban": "01.06", "Tên phòng ban": "01.Văn phòng > Kinh doanh", "Tài khoản chi phí": "6411" },
-      { "Mã phòng ban": "01.07", "Tên phòng ban": "01.Văn phòng > KCS", "Tài khoản chi phí": "622" },
-      { "Mã phòng ban": "01.08", "Tên phòng ban": "01.Văn phòng > Cơ khí", "Tài khoản chi phí": "6271" },
-      { "Mã phòng ban": "01.09", "Tên phòng ban": "01.Văn phòng > Cơ giới", "Tài khoản chi phí": "6271" },
-      { "Mã phòng ban": "01.10", "Tên phòng ban": "01.Văn phòng > Thủ kho", "Tài khoản chi phí": "6271" },
-      { "Mã phòng ban": "01.11", "Tên phòng ban": "01.Văn phòng > Ben hàng", "Tài khoản chi phí": "6271" },
-      { "Mã phòng ban": "02.01", "Tên phòng ban": "03.Sản xuất > Tổ 1 - Công nhân sản xuất", "Tài khoản chi phí": "622" },
-      { "Mã phòng ban": "02.02", "Tên phòng ban": "03.Sản xuất > Tổ 2 - Công nhân sản xuất", "Tài khoản chi phí": "622" },
-      { "Mã phòng ban": "02.03", "Tên phòng ban": "03.Sản xuất > Tổ 1 - Công nhân công nhật", "Tài khoản chi phí": "622" },
-      { "Mã phòng ban": "02.04", "Tên phòng ban": "03.Sản xuất > Tổ 2 - Công nhân công nhật", "Tài khoản chi phí": "622" },
-      { "Mã phòng ban": "04.06", "Tên phòng ban": "02.Vận tải > Vận tải", "Tài khoản chi phí": "6411" }
+      { "Mã phòng ban": "01.01", "Tên phòng ban": "01.Văn phòng > Văn phòng" },
+      { "Mã phòng ban": "01.02", "Tên phòng ban": "01.Văn phòng > Trạm cân" },
+      { "Mã phòng ban": "01.03", "Tên phòng ban": "01.Văn phòng > Quản đốc" },
+      { "Mã phòng ban": "01.04", "Tên phòng ban": "01.Văn phòng > Tạp vụ" },
+      { "Mã phòng ban": "01.05", "Tên phòng ban": "01.Văn phòng > Bảo vệ" },
+      { "Mã phòng ban": "01.06", "Tên phòng ban": "01.Văn phòng > Kinh doanh" },
+      { "Mã phòng ban": "01.07", "Tên phòng ban": "01.Văn phòng > KCS" },
+      { "Mã phòng ban": "01.08", "Tên phòng ban": "01.Văn phòng > Cơ khí" },
+      { "Mã phòng ban": "01.09", "Tên phòng ban": "01.Văn phòng > Cơ giới" },
+      { "Mã phòng ban": "01.10", "Tên phòng ban": "01.Văn phòng > Thủ kho" },
+      { "Mã phòng ban": "01.11", "Tên phòng ban": "01.Văn phòng > Ben hàng" },
+      { "Mã phòng ban": "02.01", "Tên phòng ban": "03.Sản xuất > Tổ 1 - Công nhân sản xuất" },
+      { "Mã phòng ban": "02.02", "Tên phòng ban": "03.Sản xuất > Tổ 2 - Công nhân sản xuất" },
+      { "Mã phòng ban": "02.03", "Tên phòng ban": "03.Sản xuất > Tổ 1 - Công nhân công nhật" },
+      { "Mã phòng ban": "02.04", "Tên phòng ban": "03.Sản xuất > Tổ 2 - Công nhân công nhật" },
+      { "Mã phòng ban": "04.06", "Tên phòng ban": "02.Vận tải > Vận tải" }
+    ],
+    // "Tài khoản chi phí" TÁCH RIÊNG khỏi DM_PHONGBAN — quản lý ở DM_CHIPHI
+    // (không bị đồng bộ ngoài ghi đè mất, có hiệu lực theo ngày).
+    CHIPHI: [
+      { "Mã phòng ban": "01.01", "Tài khoản chi phí": "6421" },
+      { "Mã phòng ban": "01.02", "Tài khoản chi phí": "6411" },
+      { "Mã phòng ban": "01.03", "Tài khoản chi phí": "6271" },
+      { "Mã phòng ban": "01.04", "Tài khoản chi phí": "6421" },
+      { "Mã phòng ban": "01.05", "Tài khoản chi phí": "6421" },
+      { "Mã phòng ban": "01.06", "Tài khoản chi phí": "6411" },
+      { "Mã phòng ban": "01.07", "Tài khoản chi phí": "622" },
+      { "Mã phòng ban": "01.08", "Tài khoản chi phí": "6271" },
+      { "Mã phòng ban": "01.09", "Tài khoản chi phí": "6271" },
+      { "Mã phòng ban": "01.10", "Tài khoản chi phí": "6271" },
+      { "Mã phòng ban": "01.11", "Tài khoản chi phí": "6271" },
+      { "Mã phòng ban": "02.01", "Tài khoản chi phí": "622" },
+      { "Mã phòng ban": "02.02", "Tài khoản chi phí": "622" },
+      { "Mã phòng ban": "02.03", "Tài khoản chi phí": "622" },
+      { "Mã phòng ban": "02.04", "Tài khoản chi phí": "622" },
+      { "Mã phòng ban": "04.06", "Tài khoản chi phí": "6411" }
     ],
     CHUCVU: [
       { "Mã chức vụ": "01", "Tên chức vụ": "Giám đốc" },
@@ -316,10 +377,16 @@ function khoiTaoQuyCheLuongHienHanh(ghiDeCaKhiCoDuLieu) {
 function khoiTaoDanhMucMau(ghiDeCaKhiCoDuLieu) {
   const mau = {
     PHONGBAN: [
-      { "Mã phòng ban": "PB01", "Tên phòng ban": "Văn phòng", "Tài khoản chi phí": "6421" },
-      { "Mã phòng ban": "PB02", "Tên phòng ban": "Sản xuất", "Tài khoản chi phí": "6271" },
-      { "Mã phòng ban": "PB03", "Tên phòng ban": "Cơ giới", "Tài khoản chi phí": "6272" },
-      { "Mã phòng ban": "PB04", "Tên phòng ban": "Bảo vệ", "Tài khoản chi phí": "6273" }
+      { "Mã phòng ban": "PB01", "Tên phòng ban": "Văn phòng" },
+      { "Mã phòng ban": "PB02", "Tên phòng ban": "Sản xuất" },
+      { "Mã phòng ban": "PB03", "Tên phòng ban": "Cơ giới" },
+      { "Mã phòng ban": "PB04", "Tên phòng ban": "Bảo vệ" }
+    ],
+    CHIPHI: [
+      { "Mã phòng ban": "PB01", "Tài khoản chi phí": "6421" },
+      { "Mã phòng ban": "PB02", "Tài khoản chi phí": "6271" },
+      { "Mã phòng ban": "PB03", "Tài khoản chi phí": "6272" },
+      { "Mã phòng ban": "PB04", "Tài khoản chi phí": "6273" }
     ],
     CHUCVU: [
       { "Mã chức vụ": "CV01", "Tên chức vụ": "Giám đốc" },

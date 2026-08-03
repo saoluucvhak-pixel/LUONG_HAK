@@ -235,6 +235,7 @@
           <button id="btnTaiKy" onclick="taiKyTinhLuong()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Tải dữ liệu kỳ này</button>
         </div>
         <p class="card-sub" style="margin-top:8px;">Cần cấu hình đủ 2 link nguồn ngoài trước (tab Hướng dẫn sử dụng → "Nguồn Danh mục &amp; Nhân sự"). Sau khi tải xong, xem lại ở tab <b>Nhân sự</b>/<b>Danh mục</b>, rồi sang tab <b>Tính lương</b> (nhóm Kiểm soát) để tính.</p>
+        <p class="card-sub" style="margin-top:4px; color:#b45309;">⚠ "Ngưỡng bù sản lượng"/"Đơn giá bù lương"/"Đơn giá bơm dăm" không có ở file nguồn ngoài — nếu 1 mã lương chưa từng có sẵn 3 trường này, cần bổ sung tay ở tab Danh mục → "Hình thức lương" (danh mục nào không có nguồn ngoài vẫn cho nhập/sửa tay). Các lần tải kỳ SAU sẽ tự động GIỮ LẠI giá trị đã nhập, không cần lặp lại mỗi kỳ.</p>
         <div id="ketQuaTaiKy" class="result"></div>
       </div>
     </section>
@@ -646,6 +647,7 @@
           <div class="field"><label>Loại danh mục</label>
             <select id="loaiDanhMuc" onchange="taiDanhMuc()">
               <option value="PHONGBAN">Phòng ban</option>
+              <option value="CHIPHI">Tài khoản chi phí (theo phòng ban)</option>
               <option value="CHUCVU">Chức vụ</option>
               <option value="PHUCAP">Phụ cấp</option>
               <option value="HOTRO">Hỗ trợ</option>
@@ -658,8 +660,6 @@
           </div>
           <div class="row" style="margin:0;">
             <span class="card-sub" style="margin:0;" id="nhanTrangThaiDanhMuc"></span>
-            <button class="secondary" onclick="khoiTaoDuLieuMauDanhMuc()">Khởi tạo dữ liệu mẫu</button>
-            <button class="secondary" onclick="khoiTaoQuyCheLuongHienHanh()">Khởi tạo Quy chế lương hiện hành</button>
             <button id="btnThemDongDanhMuc" style="display:none;" onclick="moFormThemDanhMuc()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm dòng</button>
           </div>
         </div>
@@ -974,7 +974,7 @@
 
       <div class="card">
         <div class="card-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Quy chế lương — Cách tính theo bộ phận</div>
-        <p class="card-sub">Bảng dưới đây tổng hợp cách tính lương và phụ cấp hiện hành theo từng bộ phận. Khởi tạo lần đầu qua tab <b>Danh mục</b> → "Khởi tạo Quy chế lương hiện hành"; khi có điều chỉnh mức lương/phụ cấp, cập nhật trực tiếp các dòng tương ứng trong tab Danh mục — không cần sửa lại nội dung hướng dẫn này.</p>
+        <p class="card-sub">Bảng dưới đây tổng hợp cách tính lương và phụ cấp hiện hành theo từng bộ phận. Khi có điều chỉnh mức lương/phụ cấp, cập nhật trực tiếp các dòng tương ứng trong tab Danh mục — không cần sửa lại nội dung hướng dẫn này.</p>
 
         <div class="tablewrap"><table>
           <thead><tr><th>Bộ phận (Mã PB)</th><th>Cách tính lương chính</th><th>Phụ cấp trách nhiệm</th><th>Ghi chú</th></tr></thead>
@@ -1756,7 +1756,8 @@
 
   // ---------- TAB Danh mục ----------
   const DANHMUC_HEADERS = {
-    PHONGBAN: ['Mã phòng ban', 'Tên phòng ban', 'Tài khoản chi phí', 'Kỳ tính lương'],
+    PHONGBAN: ['Mã phòng ban', 'Tên phòng ban', 'Kỳ tính lương'],
+    CHIPHI: ['Mã phòng ban', 'Hiệu lực từ', 'Hiệu lực đến', 'Tài khoản chi phí', 'Ghi chú'],
     CHUCVU: ['Mã chức vụ', 'Tên chức vụ', 'Kỳ tính lương'],
     PHUCAP: ['Mã phụ cấp', 'Hiệu lực từ', 'Hiệu lực đến', 'Tên phụ cấp', 'Số tiền', 'Tỷ lệ', 'Tham chiếu', 'Cách tính', 'Kỳ tính lương'],
     HOTRO: ['Mã hỗ trợ', 'Hiệu lực từ', 'Hiệu lực đến', 'Tên hỗ trợ', 'Số tiền', 'Cách tính', 'Kỳ tính lương'],
@@ -1766,8 +1767,8 @@
     GTTNCN: ['Mã giảm trừ', 'Hiệu lực từ', 'Hiệu lực đến', 'Số người', 'Số tiền', 'Kỳ tính lương'],
     TNCN: ['Bậc', 'Hiệu lực từ', 'Hiệu lực đến', 'Nội dung khấu trừ', 'Tỷ lệ đóng thuế', 'Thu nhập tháng (Min)', 'Thu nhập tháng (Max)', 'Kỳ tính lương']
   };
-  const DANHMUC_KHOA = { PHONGBAN: 'Mã phòng ban', CHUCVU: 'Mã chức vụ', PHUCAP: 'Mã phụ cấp', HOTRO: 'Mã hỗ trợ', TANGCA: 'Mã tăng ca', BAOHIEM: 'Mã bảo hiểm', LUONG: 'Mã lương', GTTNCN: 'Mã giảm trừ', TNCN: 'Bậc' };
-  const DANHMUC_CO_HIEU_LUC = { PHONGBAN: false, CHUCVU: false, PHUCAP: true, HOTRO: true, TANGCA: true, BAOHIEM: true, LUONG: true, GTTNCN: true, TNCN: true };
+  const DANHMUC_KHOA = { PHONGBAN: 'Mã phòng ban', CHIPHI: 'Mã phòng ban', CHUCVU: 'Mã chức vụ', PHUCAP: 'Mã phụ cấp', HOTRO: 'Mã hỗ trợ', TANGCA: 'Mã tăng ca', BAOHIEM: 'Mã bảo hiểm', LUONG: 'Mã lương', GTTNCN: 'Mã giảm trừ', TNCN: 'Bậc' };
+  const DANHMUC_CO_HIEU_LUC = { PHONGBAN: false, CHIPHI: true, CHUCVU: false, PHUCAP: true, HOTRO: true, TANGCA: true, BAOHIEM: true, LUONG: true, GTTNCN: true, TNCN: true };
 
   function dinhDangODanhMuc_(h, v) {
     if (v instanceof Date) return v.toLocaleDateString('vi-VN');
@@ -1777,40 +1778,48 @@
 
   function taiDanhMuc() {
     const loai = document.getElementById('loaiDanhMuc').value;
+    console.log('[CHẨN ĐOÁN] taiDanhMuc() bắt đầu, loai =', loai);
     const kq = document.getElementById('ketQuaDanhMuc');
     kq.innerHTML = 'Đang tải...';
     document.getElementById('nhanTrangThaiDanhMuc').textContent = '';
     document.getElementById('btnThemDongDanhMuc').style.display = 'none';
 
-    // ⚠ TỐI ƯU: nếu đã biết trạng thái từ bước "Tải dữ liệu kỳ này" rồi (cache
-    // ở window._danhMucCoNguonNgoai), dùng LUÔN — không hỏi lại server (nhanh,
-    // tránh "treo" do phải mở lại file ngoài). Chỉ hỏi server nếu CHƯA có cache
-    // (vd người dùng vào thẳng tab Danh mục mà chưa từng tải kỳ nào).
-    if (window._danhMucCoNguonNgoai && (loai in window._danhMucCoNguonNgoai)) {
-      apDungTrangThaiVaTaiBangDanhMuc_(loai, window._danhMucCoNguonNgoai[loai], kq);
-      return;
-    }
-
-    google.script.run.withSuccessHandler(function (rTT) {
-      const coNguonNgoai = rTT.ok ? !!rTT.coNguonNgoai : false;
-      window._danhMucCoNguonNgoai = window._danhMucCoNguonNgoai || {};
-      window._danhMucCoNguonNgoai[loai] = coNguonNgoai;
-      apDungTrangThaiVaTaiBangDanhMuc_(loai, coNguonNgoai, kq);
-    }).withFailureHandler(function () {
-      // Không lấy được trạng thái đồng bộ (vd chưa cấu hình nguồn ngoài) -> mặc định cho nhập tay, an toàn hơn
-      apDungTrangThaiVaTaiBangDanhMuc_(loai, false, kq);
-    }).guiDanhMucCoNguonNgoaiKhong(loai);
+    // ⚠ ĐÃ ĐƠN GIẢN HOÁ: trước đây mỗi lần xem Danh mục lại HỎI RIÊNG server 1
+    // lần nữa xem loại này "có nguồn ngoài hay không" — THỪA, vì thông tin
+    // này ĐÃ CÓ SẴN ngay từ lúc "Tải dữ liệu kỳ này" (lưu trong bộ nhớ trình
+    // duyệt). Giờ CHỈ dùng cache có sẵn — không gọi thêm lệnh server nào để
+    // hỏi lại — giảm 1 điểm có thể lỗi/treo, đồng thời đúng bản chất: dữ liệu
+    // ĐÃ tải xong thì không cần hỏi lại nguồn ngoài nữa. Nếu CHƯA có cache (vd
+    // vào thẳng tab Danh mục mà chưa từng tải kỳ nào), mặc định coi là "cho
+    // nhập tay" (an toàn hơn — không khoá nhầm người dùng khi chưa rõ).
+    const coNguonNgoai = (window._danhMucCoNguonNgoai && (loai in window._danhMucCoNguonNgoai))
+      ? window._danhMucCoNguonNgoai[loai] : false;
+    apDungTrangThaiVaTaiBangDanhMuc_(loai, coNguonNgoai, kq);
   }
 
   function apDungTrangThaiVaTaiBangDanhMuc_(loai, coNguonNgoai, kq) {
+    console.log('[CHẨN ĐOÁN] apDungTrangThaiVaTaiBangDanhMuc_ chạy, coNguonNgoai =', coNguonNgoai);
     const chiXem = coNguonNgoai;
     document.getElementById('nhanTrangThaiDanhMuc').innerHTML = chiXem
       ? '<span class="tag tag-dangLam">📖 Đồng bộ từ nguồn ngoài — chỉ xem</span>'
       : '<span class="tag tag-canhbao">✎ Không có ở nguồn ngoài — nhập/sửa/xoá tay</span>';
     document.getElementById('btnThemDongDanhMuc').style.display = chiXem ? 'none' : '';
 
+    // ⚠ CHỐNG TREO VÔ THỜI HẠN: nếu sau 15 giây vẫn KHÔNG nhận được phản hồi
+    // (dù thành công hay thất bại) từ server — có thể do tiện ích mở rộng
+    // trình duyệt chặn giao tiếp iframe của Apps Script — tự động báo lỗi rõ
+    // ràng thay vì để "Đang tải..." đứng im mãi mãi không rõ lý do.
+    let daNhanPhanHoi = false;
+    const dongHoTreo = setTimeout(function () {
+      if (daNhanPhanHoi) return;
+      kq.innerHTML = '<span class="err">✘ Hết thời gian chờ (15 giây) — trình duyệt không nhận được phản hồi từ máy chủ, dù máy chủ có thể đã xử lý xong. Thường do tiện ích mở rộng trình duyệt (chặn quảng cáo/bảo mật) can thiệp vào Google Apps Script. Thử theo thứ tự: (1) Tải lại trang (F5), (2) Tắt tạm các tiện ích mở rộng trình duyệt rồi tải lại, (3) Thử trình duyệt khác (Edge/Firefox/Cốc Cốc...).</span>';
+    }, 15000);
+
+    console.log('[CHẨN ĐOÁN] Chuẩn bị gọi guiLayDanhMuc(' + loai + ') qua google.script.run...');
     google.script.run.withSuccessHandler(function (r) {
-      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
+      daNhanPhanHoi = true; clearTimeout(dongHoTreo);
+      console.log('[CHẨN ĐOÁN] ĐÃ NHẬN phản hồi từ guiLayDanhMuc:', r);
+      if (!r || !r.ok) { kq.innerHTML = '<span class="err">✘ ' + (r ? r.loi : 'Không nhận được dữ liệu hợp lệ từ máy chủ (phản hồi rỗng) — xem gợi ý ở trên.') + '</span>'; return; }
       kq.innerHTML = r.data.length + ' dòng' + (DANHMUC_CO_HIEU_LUC[loai] ? ' (gồm mọi phiên bản theo thời gian)' : '') + '.' + (r.data.length === 0 ? ' Bấm "Khởi tạo dữ liệu mẫu" ở dưới nếu chưa cấu hình nguồn ngoài, hoặc đồng bộ thử ở tab Hướng dẫn sử dụng.' : '');
       const headers = DANHMUC_HEADERS[loai];
       const themCotThaoTac = chiXem ? '' : '<th>Thao tác</th>';
@@ -1822,7 +1831,12 @@
         tbody.innerHTML += '<tr>' + tds + thaoTac + '</tr>';
       });
       window._danhMucHienTai = r.data;
-    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiLayDanhMuc(loai);
+      console.log('[CHẨN ĐOÁN] Đã render xong bảng, ' + r.data.length + ' dòng.');
+    }).withFailureHandler(function (e) {
+      daNhanPhanHoi = true; clearTimeout(dongHoTreo);
+      console.log('[CHẨN ĐOÁN] LỖI từ server:', e);
+      kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>';
+    }).guiLayDanhMuc(loai);
   }
 
   function truongHieuLucHtml_(loai, hieuLucTu, hieuLucDen) {
@@ -1914,30 +1928,6 @@
     const loai = document.getElementById('loaiDanhMuc').value;
     google.script.run.withSuccessHandler(function (r) { if (r.ok) taiDanhMuc(); else alert('Lỗi: ' + r.loi); })
       .withFailureHandler(function (e) { alert('✘ Lỗi hệ thống: ' + e.message); }).guiXoaDongDanhMuc(loai, soDong);
-  }
-
-  function khoiTaoDuLieuMauDanhMuc() {
-    if (!confirm('Khởi tạo dữ liệu mẫu cho các danh mục ĐANG TRỐNG (không đụng tới danh mục nào đã có sẵn dữ liệu)?')) return;
-    const kq = document.getElementById('ketQuaDanhMuc');
-    kq.innerHTML = 'Đang khởi tạo...';
-    google.script.run.withSuccessHandler(function (r) {
-      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
-      kq.innerHTML = '<span class="ok">✔ Đã khởi tạo mẫu cho: ' + (r.daKhoiTao.join(', ') || '(không có)') + '</span>' +
-        (r.daBoQua.length ? '<br><span class="warn">Bỏ qua (đã có dữ liệu sẵn): ' + r.daBoQua.join(', ') + '</span>' : '');
-      taiDanhMuc();
-    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiKhoiTaoDanhMucMau(false);
-  }
-
-  function khoiTaoQuyCheLuongHienHanh() {
-    if (!confirm('Khởi tạo Quy chế lương hiện hành cho các danh mục ĐANG TRỐNG?')) return;
-    const kq = document.getElementById('ketQuaDanhMuc');
-    kq.innerHTML = 'Đang khởi tạo...';
-    google.script.run.withSuccessHandler(function (r) {
-      if (!r.ok) { kq.innerHTML = '<span class="err">✘ ' + r.loi + '</span>'; return; }
-      kq.innerHTML = '<span class="ok">✔ Đã khởi tạo Quy chế lương hiện hành cho: ' + (r.daKhoiTao.join(', ') || '(không có)') + '</span>' +
-        (r.daBoQua.length ? '<br><span class="warn">Bỏ qua (đã có dữ liệu sẵn): ' + r.daBoQua.join(', ') + '</span>' : '');
-      taiDanhMuc();
-    }).withFailureHandler(function (e) { kq.innerHTML = '<span class="err">✘ Lỗi hệ thống: ' + e.message + '</span>'; }).guiKhoiTaoQuyCheLuongHienHanh(false);
   }
 
   let _danhMucForm = null;

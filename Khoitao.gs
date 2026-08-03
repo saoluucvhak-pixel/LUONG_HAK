@@ -31,6 +31,7 @@ function danhSachSheetCanTao_() {
     { ten: SHEET_TIENCOM, header: HEADER_TIENCOM, mau: "#d9ead3" },
     // ---- File DANH MỤC ----
     { ten: SHEET_DM_PHONGBAN, header: HEADER_DM_PHONGBAN, mau: "#fce5cd" },
+    { ten: SHEET_DM_CHIPHI, header: HEADER_DM_CHIPHI, mau: "#fce5cd" },
     { ten: SHEET_DM_CHUCVU, header: HEADER_DM_CHUCVU, mau: "#fce5cd" },
     { ten: SHEET_DM_LUONG, header: HEADER_DM_LUONG, mau: "#fce5cd" },
     { ten: SHEET_DM_PHUCAP, header: HEADER_DM_PHUCAP, mau: "#fce5cd" },

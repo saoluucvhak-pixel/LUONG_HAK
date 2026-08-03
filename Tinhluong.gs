@@ -35,6 +35,12 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
   const namSo = Number(nam);
   const buTheoNgay = (phuongPhapBu === "NGAY");
 
+  // ⚠ Đồng bộ Danh mục/Nhân sự từ nguồn ngoài KHÔNG còn tự động chạy ở đây —
+  // đã tách thành bước RIÊNG ở tab "Kỳ tính lương" (người dùng chủ động bấm
+  // "Tải dữ liệu kỳ này" trước). Hàm này chỉ ĐỌC dữ liệu NL_NHANSU/DM_* đang
+  // có sẵn — nếu chưa tải kỳ nào, kết quả sẽ rỗng/thiếu (xem cảnh báo tương
+  // ứng ở tab Kiểm tra bảng lương).
+
   // 1) Dữ liệu nền
   const nhanSuList = docSheetThanhObject_(SHEET_NHANSU, HEADER_NHANSU);
   const chiTietNSList = docSheetThanhObject_(SHEET_CHITIETNS, HEADER_CHITIETNS);
@@ -166,9 +172,21 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
       }
     }
 
-    // ----- Lương bơm dăm (⚠ trước đây tính số xe nhưng KHÔNG cộng tiền — đã sửa) -----
+    // ----- Lương bơm dăm -----
+    // ⚠ CẤU TRÚC DỮ LIỆU MỚI: "BD" (bơm dăm) giờ là 1 MÃ LƯƠNG ĐỘC LẬP (có
+    // "Số tiền khoán" riêng, vd 10.000đ/xe) — KHÔNG CÒN là field phụ "Đơn giá
+    // bơm dăm" gắn trong dòng "SP" như thiết kế cũ. Người vừa trả lương sản
+    // lượng vừa bơm dăm sẽ có "Mã tiền lương 2" = "BD" (đồng bộ tách từ chuỗi
+    // nhiều mã, xem DongBoNgoai.gs). ƯU TIÊN dùng "Số tiền khoán" của Mã tiền
+    // lương 2 (nếu có, và đúng loại lương sản phẩm) — FALLBACK về field "Đơn
+    // giá bơm dăm" cũ (tương thích ngược với "Khởi tạo Quy chế lương hiện
+    // hành"/dữ liệu nhập tay kiểu cũ).
     const soXeBanDam = banDamMap[maNV] || 0;
-    const donGiaBanDam = dmLuongInfo ? (Number(dmLuongInfo["Đơn giá bơm dăm"]) || 0) : 0;
+    const dmLuong2Info = dmLuong[ns["Mã tiền lương 2"]] || null;
+    const laLuong2SanPham = !!(dmLuong2Info && /SP/i.test(dmLuong2Info["Mã hình thức lương"] || ""));
+    const donGiaBanDam = laLuong2SanPham
+      ? (Number(dmLuong2Info["Số tiền khoán"]) || 0)
+      : (dmLuongInfo ? (Number(dmLuongInfo["Đơn giá bơm dăm"]) || 0) : 0);
     const luongBanDam = Math.round(soXeBanDam * donGiaBanDam);
 
     // ----- Tăng ca -----

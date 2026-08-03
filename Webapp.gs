@@ -48,7 +48,7 @@ function guiNhapDuLieuBanDau(base64, tenFile, mimeType, cheDoGhi) {
 
 /** Lấy N dòng log kiểm tra gần nhất để hiển thị ngay trên giao diện (không cần mở Sheet). */
 function guiDanhSachLogGanNhat(soDongToiDa) {
-  const sh = layHoacTaoSheet_(SHEET_KIEMTRA_LOG, HEADER_KIEMTRA_LOG);
+  const sh = moSheetChiDoc_(SHEET_KIEMTRA_LOG, HEADER_KIEMTRA_LOG);
   const tongDong = sh.getLastRow() - 1;
   if (tongDong <= 0) return [];
   const soLay = Math.min(soDongToiDa || 50, tongDong);
@@ -345,9 +345,15 @@ function guiXoaGiaoDich(loai, soDong) {
 
 function guiLayDanhMuc(loai) {
   try {
-    return { ok: true, data: layDanhMuc(loai) };
+    const data = layDanhMuc(loai);
+    // ⚠ Ép JSON.stringify SỚM ở đây để BẮT ĐƯỢC lỗi rõ ràng nếu có giá trị nào
+    // đó không "serialize" được (vd Date không hợp lệ, kiểu dữ liệu lạ) —
+    // KHÔNG làm vậy, Apps Script sẽ ÂM THẦM trả về null cho client (rất khó
+    // chẩn đoán, y hệt tình huống "Đang tải mãi" đã gặp).
+    JSON.stringify(data);
+    return { ok: true, data: data };
   } catch (e) {
-    return { ok: false, loi: e.message };
+    return { ok: false, loi: "Lỗi khi lấy danh mục \"" + loai + "\": " + e.message };
   }
 }
 
