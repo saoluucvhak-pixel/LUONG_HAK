@@ -74,6 +74,42 @@ function anhXaCotSanLuong_(hangTieuDe) {
   });
 }
 
+/** Ánh xạ tiêu đề cột của file Ứng lương người dùng tải lên → tên cột chuẩn (khớp HEADER_UNGLUONG). */
+function anhXaCotUngLuong_(hangTieuDe) {
+  const dongNghia = {
+    "ngày hạch toán": "Ngày hạch toán",
+    "số phiếu chi": "Số phiếu chi",
+    "mã nv": "Mã NV",
+    "người nhận": "Người nhận",
+    "diễn giải": "Diễn giải",
+    "tài khoản": "Tài khoản",
+    "tk đối ứng": "TK đối ứng",
+    "tạm ứng": "Tạm ứng",
+    "thanh toán tm": "Thanh toán TM"
+  };
+  return hangTieuDe.map(function (tieuDe) {
+    return dongNghia[chuanHoaTieuDe_(tieuDe)] || null;
+  });
+}
+
+/** Ánh xạ tiêu đề cột của file Phát sinh lương người dùng tải lên → tên cột chuẩn (khớp HEADER_PSLUONG). */
+function anhXaCotPSLuong_(hangTieuDe) {
+  const dongNghia = {
+    "ngày hạch toán": "Ngày hạch toán",
+    "mã nv": "Mã NV",
+    "người nhận": "Người nhận",
+    "diễn giải": "Diễn giải",
+    "tài khoản": "Tài khoản",
+    "tk đối ứng": "TK đối ứng",
+    "thưởng": "Thưởng",
+    "thu nhập khác": "Thu nhập khác",
+    "trừ khác": "Trừ khác"
+  };
+  return hangTieuDe.map(function (tieuDe) {
+    return dongNghia[chuanHoaTieuDe_(tieuDe)] || null;
+  });
+}
+
 /**
  * Chuyển bảng thô (rows[0] = tiêu đề, rows[1..] = dữ liệu) thành danh sách object
  * theo tên cột CHUẨN, dùng hàm anhXaCot để map — bỏ qua cột lạ, bỏ qua dòng trống.
@@ -143,6 +179,50 @@ function doiChieuNhapSanLuong_(list) {
     if (row["Mã NV"] && !nhanSuSet[row["Mã NV"]]) loi.push("Mã NV \"" + row["Mã NV"] + "\" không có trong NL_NHANSU");
     const kl = Number(row["KL hàng (Tấn)"]);
     if (!kl || kl <= 0) loi.push("KL hàng (Tấn) phải là số dương");
+    if (loi.length) soLoi++;
+    row["✔ Kiểm tra"] = loi.length ? ("Lỗi: " + loi.join("; ")) : "OK";
+    return row;
+  });
+  return { list: ketQua, soLoi: soLoi };
+}
+
+/**
+ * Đối chiếu 1 danh sách Ứng lương NHÁP với NL_NHANSU — gắn thêm cột "✔ Kiểm tra".
+ */
+function doiChieuNhapUngLuong_(list) {
+  const nhanSuSet = {};
+  docSheetThanhObject_(SHEET_NHANSU, HEADER_NHANSU).forEach(function (ns) { nhanSuSet[ns["Mã nhân viên"]] = true; });
+
+  let soLoi = 0;
+  const ketQua = list.map(function (row) {
+    const loi = [];
+    if (!row["Mã NV"]) loi.push("thiếu Mã NV");
+    else if (!nhanSuSet[row["Mã NV"]]) loi.push("Mã NV \"" + row["Mã NV"] + "\" không có trong NL_NHANSU");
+    if (!(row["Ngày hạch toán"] instanceof Date)) loi.push("Ngày hạch toán không hợp lệ");
+    const tamUng = Number(row["Tạm ứng"]);
+    if (row["Tạm ứng"] !== "" && row["Tạm ứng"] !== undefined && row["Tạm ứng"] !== null && (isNaN(tamUng) || tamUng < 0)) {
+      loi.push("\"Tạm ứng\" phải là số không âm");
+    }
+    if (loi.length) soLoi++;
+    row["✔ Kiểm tra"] = loi.length ? ("Lỗi: " + loi.join("; ")) : "OK";
+    return row;
+  });
+  return { list: ketQua, soLoi: soLoi };
+}
+
+/**
+ * Đối chiếu 1 danh sách Phát sinh lương NHÁP với NL_NHANSU — gắn thêm cột "✔ Kiểm tra".
+ */
+function doiChieuNhapPSLuong_(list) {
+  const nhanSuSet = {};
+  docSheetThanhObject_(SHEET_NHANSU, HEADER_NHANSU).forEach(function (ns) { nhanSuSet[ns["Mã nhân viên"]] = true; });
+
+  let soLoi = 0;
+  const ketQua = list.map(function (row) {
+    const loi = [];
+    if (!row["Mã NV"]) loi.push("thiếu Mã NV");
+    else if (!nhanSuSet[row["Mã NV"]]) loi.push("Mã NV \"" + row["Mã NV"] + "\" không có trong NL_NHANSU");
+    if (!(row["Ngày hạch toán"] instanceof Date)) loi.push("Ngày hạch toán không hợp lệ");
     if (loi.length) soLoi++;
     row["✔ Kiểm tra"] = loi.length ? ("Lỗi: " + loi.join("; ")) : "OK";
     return row;
@@ -268,17 +348,258 @@ function huyNhapSanLuong() {
   return { ok: true };
 }
 
-/** Xoá hẳn 1 sheet nháp nếu nó tồn tại (dùng khi Hủy hoặc sau khi Xác nhận nạp thành công). */
+// ================= NHẬP LIỆU ỨNG LƯƠNG (từ file, qua bảng nháp) =================
+// ⚠ HOÀN THIỆN CHỨC NĂNG CÒN THIẾU ĐÃ PHÁT HIỆN: giao diện (index.html, tab "Ứng
+// lương & Bơm dăm") và cầu nối (Webapp.gs: guiXemTruocUngLuong/
+// guiDoiChieuLaiNhapUngLuong/guiXacNhanNapUngLuongTuNhap/guiHuyNhapUngLuong) đã
+// gọi sẵn 4 hàm dưới đây — nhưng CHƯA TỪNG được lập trình ở bất kỳ file .gs nào,
+// khiến bấm "Xem trước"/"Đối chiếu lại"/"Xác nhận nạp"/"Hủy" ở luồng tải file
+// Ứng lương LUÔN báo "ReferenceError: ... is not defined" (server ném lỗi, bắt
+// được qua try/catch ở Webapp.gs nên không "treo" nhưng tính năng hoàn toàn
+// không hoạt động). Bổ sung ĐÚNG THEO MẪU đã có ở luồng Chấm công/Sản lượng
+// phía trên (đọc file → đối chiếu → ghi NHAP_UNGLUONG → xác nhận nạp vào
+// NL_UNGLUONG → xoá nháp).
+
+/** Tương tự xemTruocChamCongTuFile() nhưng cho Ứng lương. */
+function xemTruocUngLuongTuFile(base64, tenFile, mimeType) {
+  const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType || "application/octet-stream", tenFile);
+  const rows = docBangTuBlob_(blob, tenFile);
+  const { list, cotBiBoQua } = chuyenBangThanhDanhSachObject_(rows, anhXaCotUngLuong_);
+  if (list.length === 0) {
+    return { ok: false, loi: "Không đọc được dòng dữ liệu nào. Kiểm tra lại tiêu đề cột — cần có ít nhất: Ngày hạch toán, Mã NV, Tạm ứng." };
+  }
+  const header = HEADER_NHAP_UNGLUONG;
+  const { list: daDoiChieu, soLoi } = doiChieuNhapUngLuong_(list);
+  ghiDeSheet_(SHEET_NHAP_UNGLUONG, header, daDoiChieu);
+  return { ok: true, list: daDoiChieu, soDong: daDoiChieu.length, soLoi: soLoi, cotBiBoQua: cotBiBoQua };
+}
+
+/** Tương tự doiChieuLaiNhapChamCong() nhưng cho Ứng lương. */
+function doiChieuLaiNhapUngLuong() {
+  const header = HEADER_NHAP_UNGLUONG;
+  const list = docSheetThanhObject_(SHEET_NHAP_UNGLUONG, header);
+  if (list.length === 0) return { ok: false, loi: "Sheet nháp NHAP_UNGLUONG đang trống — chưa có gì để đối chiếu." };
+  const { list: daDoiChieu, soLoi } = doiChieuNhapUngLuong_(list);
+  ghiDeSheet_(SHEET_NHAP_UNGLUONG, header, daDoiChieu);
+  return { ok: true, list: daDoiChieu, soDong: daDoiChieu.length, soLoi: soLoi };
+}
+
+/** XÁC NHẬN nạp Ứng lương từ bảng nháp vào NL_UNGLUONG. */
+function xacNhanNapUngLuongTuNhap(cheDoGhi) {
+  const headerNhap = HEADER_NHAP_UNGLUONG;
+  const list = docSheetThanhObject_(SHEET_NHAP_UNGLUONG, headerNhap);
+  if (list.length === 0) return { ok: false, loi: "Sheet nháp NHAP_UNGLUONG đang trống — không có gì để nạp." };
+  const { list: daDoiChieu, soLoi } = doiChieuNhapUngLuong_(list);
+  if (soLoi > 0) {
+    ghiDeSheet_(SHEET_NHAP_UNGLUONG, headerNhap, daDoiChieu);
+    return { ok: false, loi: "Còn " + soLoi + " dòng LỖI trong bảng nháp — sửa hết lỗi (trực tiếp trong sheet NHAP_UNGLUONG hoặc tải lại file khác) rồi mới Xác nhận nạp được.", conLoi: true };
+  }
+  if (cheDoGhi === "GHIDE") {
+    ghiDeSheet_(SHEET_UNGLUONG, HEADER_UNGLUONG, daDoiChieu);
+  } else {
+    appendVaoSheet_(SHEET_UNGLUONG, HEADER_UNGLUONG, daDoiChieu);
+  }
+  xoaSheetNhap_(SHEET_NHAP_UNGLUONG);
+  return { ok: true, soDong: daDoiChieu.length };
+}
+
+/** HỦY — xoá sạch sheet nháp Ứng lương, không ghi gì vào bảng chính. */
+function huyNhapUngLuong() {
+  xoaSheetNhap_(SHEET_NHAP_UNGLUONG);
+  return { ok: true };
+}
+
+// ================= NHẬP LIỆU PHÁT SINH LƯƠNG (từ file, qua bảng nháp) =================
+// ⚠ HOÀN THIỆN CHỨC NĂNG CÒN THIẾU — cùng tình trạng như khối Ứng lương ở trên
+// (Webapp.gs/index.html đã gọi sẵn nhưng 4 hàm dưới đây chưa từng tồn tại).
+
+/** Tương tự xemTruocChamCongTuFile() nhưng cho Phát sinh lương (thưởng/thu nhập khác/trừ khác). */
+function xemTruocPSLuongTuFile(base64, tenFile, mimeType) {
+  const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType || "application/octet-stream", tenFile);
+  const rows = docBangTuBlob_(blob, tenFile);
+  const { list, cotBiBoQua } = chuyenBangThanhDanhSachObject_(rows, anhXaCotPSLuong_);
+  if (list.length === 0) {
+    return { ok: false, loi: "Không đọc được dòng dữ liệu nào. Kiểm tra lại tiêu đề cột — cần có ít nhất: Ngày hạch toán, Mã NV." };
+  }
+  const header = HEADER_NHAP_PSLUONG;
+  const { list: daDoiChieu, soLoi } = doiChieuNhapPSLuong_(list);
+  ghiDeSheet_(SHEET_NHAP_PSLUONG, header, daDoiChieu);
+  return { ok: true, list: daDoiChieu, soDong: daDoiChieu.length, soLoi: soLoi, cotBiBoQua: cotBiBoQua };
+}
+
+/** Tương tự doiChieuLaiNhapChamCong() nhưng cho Phát sinh lương. */
+function doiChieuLaiNhapPSLuong() {
+  const header = HEADER_NHAP_PSLUONG;
+  const list = docSheetThanhObject_(SHEET_NHAP_PSLUONG, header);
+  if (list.length === 0) return { ok: false, loi: "Sheet nháp NHAP_PSLUONG đang trống — chưa có gì để đối chiếu." };
+  const { list: daDoiChieu, soLoi } = doiChieuNhapPSLuong_(list);
+  ghiDeSheet_(SHEET_NHAP_PSLUONG, header, daDoiChieu);
+  return { ok: true, list: daDoiChieu, soDong: daDoiChieu.length, soLoi: soLoi };
+}
+
+/** XÁC NHẬN nạp Phát sinh lương từ bảng nháp vào NL_PSLUONG. */
+function xacNhanNapPSLuongTuNhap(cheDoGhi) {
+  const headerNhap = HEADER_NHAP_PSLUONG;
+  const list = docSheetThanhObject_(SHEET_NHAP_PSLUONG, headerNhap);
+  if (list.length === 0) return { ok: false, loi: "Sheet nháp NHAP_PSLUONG đang trống — không có gì để nạp." };
+  const { list: daDoiChieu, soLoi } = doiChieuNhapPSLuong_(list);
+  if (soLoi > 0) {
+    ghiDeSheet_(SHEET_NHAP_PSLUONG, headerNhap, daDoiChieu);
+    return { ok: false, loi: "Còn " + soLoi + " dòng LỖI trong bảng nháp — sửa hết lỗi (trực tiếp trong sheet NHAP_PSLUONG hoặc tải lại file khác) rồi mới Xác nhận nạp được.", conLoi: true };
+  }
+  if (cheDoGhi === "GHIDE") {
+    ghiDeSheet_(SHEET_PSLUONG, HEADER_PSLUONG, daDoiChieu);
+  } else {
+    appendVaoSheet_(SHEET_PSLUONG, HEADER_PSLUONG, daDoiChieu);
+  }
+  xoaSheetNhap_(SHEET_NHAP_PSLUONG);
+  return { ok: true, soDong: daDoiChieu.length };
+}
+
+/** HỦY — xoá sạch sheet nháp Phát sinh lương, không ghi gì vào bảng chính. */
+function huyNhapPSLuong() {
+  xoaSheetNhap_(SHEET_NHAP_PSLUONG);
+  return { ok: true };
+}
+
+/**
+ * Xoá hẳn 1 sheet nháp nếu nó tồn tại (dùng khi Hủy hoặc sau khi Xác nhận nạp thành công).
+ * ⚠ LỖI THẬT ĐÃ PHÁT HIỆN VÀ SỬA: gọi `moSheet_()` — hàm KHÔNG HỀ TỒN TẠI ở bất
+ * kỳ file .gs nào trong dự án (hàm mở file đúng theo kiến trúc 5 file là
+ * `moSheetChoBang_()`, xem LienKetFile.gs) — khiến MỌI lần "Xác nhận nạp"/"Hủy"
+ * ở tab Nhập liệu (chấm công, sản lượng, bơm dăm) ném lỗi
+ * "ReferenceError: moSheet_ is not defined" ngay bước dọn sheet nháp cuối
+ * cùng, dù dữ liệu chính đã ghi thành công vào NL_CHAMCONG/DL_SANLUONG/
+ * DL_BANDAM trước đó — người dùng thấy báo lỗi dù thao tác thực chất đã nạp
+ * dữ liệu, và sheet nháp bị bỏ sót không xoá.
+ */
 function xoaSheetNhap_(tenSheet) {
-  const ss = moSheet_();
+  const ss = moSheetChoBang_(tenSheet);
   const sh = ss.getSheetByName(tenSheet);
   if (sh) ss.deleteSheet(sh);
 }
 
 /** Trả về URL mở thẳng tới 1 sheet cụ thể (kèm #gid=...) để người dùng bấm mở tab mới sửa tay. */
 function guiUrlSheetNhap_(tenSheet) {
-  const ss = moSheet_();
+  const ss = moSheetChoBang_(tenSheet);
   const sh = ss.getSheetByName(tenSheet);
   if (!sh) return null;
   return ss.getUrl() + "#gid=" + sh.getSheetId();
+}
+
+// ================= NHẬP DỮ LIỆU BAN ĐẦU (nhiều sheet cùng lúc, chạy 1 LẦN) =================
+// ⚠ HOÀN THIỆN CHỨC NĂNG CÒN THIẾU ĐÃ PHÁT HIỆN: tab "Hướng dẫn sử dụng" trên
+// index.html gọi sẵn guiNhapDuLieuBanDau() → nhapDuLieuBanDauTuFile() nhưng hàm
+// này CHƯA TỪNG được lập trình — bấm "Nhập dữ liệu ban đầu" luôn báo lỗi.
+//
+// Dùng khi mới bắt đầu triển khai webapp cho 1 đơn vị: thay vì gõ tay/tải riêng
+// từng bảng, cho phép tải LÊN 1 LẦN 1 file Excel/Google Sheet CÓ NHIỀU SHEET
+// (mỗi sheet đặt tên TRÙNG hoặc GẦN TRÙNG — không phân biệt hoa/thường, khoảng
+// trắng, gạch dưới/gạch ngang — với 1 trong các tên sheet nội bộ SHEET_NHANSU,
+// SHEET_CHAMCONG... xem danhSachSheetBanDau_()) — mỗi sheet nhận diện được sẽ
+// được nạp thẳng vào đúng sheet nội bộ tương ứng (cột khớp tên chuẩn hoá với
+// header nội bộ, cột lạ bị bỏ qua — không đoán/suy diễn dữ liệu). Sheet nào
+// KHÔNG khớp tên nào sẽ liệt kê ở "boQua" để người dùng biết mà đổi tên/tự nhập
+// tay riêng, KHÔNG âm thầm bỏ dữ liệu mà không báo.
+
+/** Toàn bộ sheet nội bộ CÓ THỂ nạp qua "Nhập dữ liệu ban đầu", kèm header chuẩn. */
+function danhSachSheetBanDau_() {
+  return [
+    { ten: SHEET_NHANSU, header: HEADER_NHANSU },
+    { ten: SHEET_CHITIETNS, header: HEADER_CHITIETNS },
+    { ten: SHEET_CHAMCONG, header: headerChamCongDayDu_() },
+    { ten: SHEET_PSLUONG, header: HEADER_PSLUONG },
+    { ten: SHEET_UNGLUONG, header: HEADER_UNGLUONG },
+    { ten: SHEET_SANLUONG, header: HEADER_SANLUONG },
+    { ten: SHEET_BANDAM, header: HEADER_BANDAM },
+    { ten: SHEET_TIENCOM, header: HEADER_TIENCOM },
+    { ten: SHEET_DM_PHONGBAN, header: HEADER_DM_PHONGBAN },
+    { ten: SHEET_DM_CHIPHI, header: HEADER_DM_CHIPHI },
+    { ten: SHEET_DM_CHUCVU, header: HEADER_DM_CHUCVU },
+    { ten: SHEET_DM_LUONG, header: HEADER_DM_LUONG },
+    { ten: SHEET_DM_PHUCAP, header: HEADER_DM_PHUCAP },
+    { ten: SHEET_DM_TANGCA, header: HEADER_DM_TANGCA },
+    { ten: SHEET_DM_HOTRO, header: HEADER_DM_HOTRO },
+    { ten: SHEET_DM_BAOHIEM, header: HEADER_DM_BAOHIEM },
+    { ten: SHEET_DM_TNCN, header: HEADER_DM_TNCN },
+    { ten: SHEET_DM_GTTNCN, header: HEADER_DM_GTTNCN }
+  ];
+}
+
+/** Chuẩn hoá tên sheet để so khớp gần đúng (bỏ hoa/thường, khoảng trắng, gạch dưới/gạch ngang). */
+function chuanHoaTenSheet_(s) {
+  return String(s || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+}
+
+/** Đọc TOÀN BỘ các sheet trong 1 file (blob) thành Map: tên sheet -> mảng 2 chiều. CSV chỉ có 1 "sheet" (tên rỗng). */
+function docTatCaBangTuBlob_(blob, tenFile) {
+  const ten = (tenFile || "").toLowerCase();
+  if (ten.endsWith(".csv")) {
+    const ketQua = {};
+    ketQua[tenFile.replace(/\.csv$/i, "")] = Utilities.parseCsv(blob.getDataAsString("UTF-8"));
+    return ketQua;
+  }
+  const resource = { name: "tmp_import_" + new Date().getTime(), mimeType: MimeType.GOOGLE_SHEETS };
+  const file = Drive.Files.create(resource, blob);
+  try {
+    const ss = SpreadsheetApp.openById(file.id);
+    const ketQua = {};
+    ss.getSheets().forEach(function (sh) { ketQua[sh.getName()] = sh.getDataRange().getValues(); });
+    return ketQua;
+  } finally {
+    Drive.Files.remove(file.id);
+  }
+}
+
+/** Ánh xạ cột theo ĐÚNG TÊN CHUẨN của 1 header nội bộ cho trước (so khớp không phân biệt hoa/thường/khoảng trắng thừa). */
+function anhXaCotTheoHeader_(header) {
+  const theoTenChuan = {};
+  header.forEach(function (h) { theoTenChuan[chuanHoaTieuDe_(h)] = h; });
+  return function (hangTieuDe) {
+    return hangTieuDe.map(function (tieuDe) { return theoTenChuan[chuanHoaTieuDe_(tieuDe)] || null; });
+  };
+}
+
+/**
+ * Nạp 1 lần TOÀN BỘ dữ liệu ban đầu từ 1 file Excel/Google Sheet nhiều sheet.
+ * @param {string} cheDoGhi "GHIDE" (ghi đè hoàn toàn từng sheet nhận diện được) hoặc
+ *   bất kỳ giá trị nào khác = "APPEND" (nối thêm vào cuối, giữ dữ liệu đã có).
+ * @return {{ok: boolean, ketQua: Array<{sheet,nguon,soDong,ghiChu}>, boQua: string[]}}
+ */
+function nhapDuLieuBanDauTuFile(base64, tenFile, mimeType, cheDoGhi) {
+  const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType || "application/octet-stream", tenFile);
+  const cacBang = docTatCaBangTuBlob_(blob, tenFile);
+  const tenSheetTrongFile = Object.keys(cacBang);
+  if (tenSheetTrongFile.length === 0) {
+    return { ok: false, loi: "Không đọc được sheet nào trong file." };
+  }
+
+  const daDung = {}; // tên sheet trong file đã được dùng cho 1 mục tiêu — không dùng lại cho mục tiêu khác
+  const ketQua = [];
+
+  danhSachSheetBanDau_().forEach(function (muc) {
+    const tenChuanMuc = chuanHoaTenSheet_(muc.ten);
+    const tenKhop = tenSheetTrongFile.find(function (t) { return !daDung[t] && chuanHoaTenSheet_(t) === tenChuanMuc; });
+    if (!tenKhop) return; // không có sheet nào trong file khớp tên — bỏ qua, GIỮ NGUYÊN dữ liệu nội bộ đang có
+
+    daDung[tenKhop] = true;
+    const rows = cacBang[tenKhop];
+    const { list, cotBiBoQua } = chuyenBangThanhDanhSachObject_(rows, anhXaCotTheoHeader_(muc.header));
+    if (list.length === 0) {
+      ketQua.push({ sheet: muc.ten, nguon: tenKhop, soDong: 0, ghiChu: "Không đọc được dòng dữ liệu nào (kiểm tra lại tiêu đề cột có khớp tên chuẩn không)." });
+      return;
+    }
+    if (cheDoGhi === "GHIDE") {
+      ghiDeSheet_(muc.ten, muc.header, list);
+    } else {
+      appendVaoSheet_(muc.ten, muc.header, list);
+    }
+    ketQua.push({
+      sheet: muc.ten, nguon: tenKhop, soDong: list.length,
+      ghiChu: cotBiBoQua.length ? ("Bỏ qua cột không nhận diện: " + cotBiBoQua.join(", ")) : ""
+    });
+  });
+
+  const boQua = tenSheetTrongFile.filter(function (t) { return !daDung[t]; });
+  return { ok: true, ketQua: ketQua, boQua: boQua };
 }

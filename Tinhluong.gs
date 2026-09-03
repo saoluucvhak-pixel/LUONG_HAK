@@ -460,20 +460,25 @@ function layCongChuan_(nhanSu, thang, nam, dmLuong, congThucTe) {
 
   // Câu KHÔNG nhắc gì tới "chủ nhật"/"CN" và có ghi rõ "của tháng" mà không trừ gì
   // thêm (vd "Số ngày của tháng ") → công chuẩn = trọn số ngày trong tháng, kể cả CN.
-  const coNoiVeCN = /ngày cn\b|chủ nhật/.test(textThuong);
   const chiGhiSoNgayThang = /^\s*số ngày của tháng\s*$/.test(textThuong);
   if (chiGhiSoNgayThang) return soNgayThang;
 
-  let ketQua = soNgayThang;
-  if (coNoiVeCN || !cachTinh || /cố định/.test(textThuong)) {
-    // Mặc định (áp dụng cả khi "Cách tính" không khai rõ, vd mã "Cố định") — ĐÃ XÁC
-    // MINH đúng qua dữ liệu thật: số ngày trong tháng trừ số Chủ nhật.
-    let soCN = 0;
-    for (let d = 1; d <= soNgayThang; d++) {
-      if (new Date(nam, thang - 1, d).getDay() === 0) soCN++;
-    }
-    ketQua = soNgayThang - soCN;
+  // ⚠ LỖI THẬT ĐÃ PHÁT HIỆN VÀ SỬA: bản trước chỉ trừ số Chủ nhật khi câu "Cách
+  // tính" CÓ nhắc rõ "CN"/"chủ nhật" (biến `coNoiVeCN` cũ) — khiến mã TG3 ("Số
+  // ngày của tháng - 4") và TG4 ("Số ngày của tháng - 2") — vốn KHÔNG có chữ
+  // "CN" trong câu — bị tính SAI thành (số ngày cả tháng − N) thay vì đúng theo
+  // chính chú thích ngay phía trên hàm này: "'...- N' → lấy công thức CN ở trên
+  // RỒI TRỪ THÊM N". Vd tháng 31 ngày có 4 Chủ nhật: TG3 phải ra 27−4=23 nhưng
+  // code cũ tính ra 31−4=27 (dư 4 công), làm "Công chuẩn" sai → kéo theo "Đơn
+  // giá lương TG", tăng ca, phụ cấp theo tỷ lệ công đều bị tính sai theo cho bất
+  // kỳ ai dùng mã lương TG3/TG4. Sửa: LUÔN trừ số Chủ nhật trước (mặc định, áp
+  // dụng cả khi "Cách tính" không khai rõ hoặc ghi "Cố định" — đã xác minh đúng
+  // qua dữ liệu thật), rồi mới trừ thêm N nếu câu có ghi "- N" ở cuối.
+  let soCN = 0;
+  for (let d = 1; d <= soNgayThang; d++) {
+    if (new Date(nam, thang - 1, d).getDay() === 0) soCN++;
   }
+  let ketQua = soNgayThang - soCN;
 
   const mTru = textThuong.match(/-\s*(\d+)\s*$/);
   if (mTru) ketQua -= parseInt(mTru[1], 10);
