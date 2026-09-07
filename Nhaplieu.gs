@@ -13,7 +13,7 @@
 function docBangTuBlob_(blob, tenFile) {
   const ten = (tenFile || "").toLowerCase();
   if (ten.endsWith(".csv")) {
-    return Utilities.parseCsv(blob.getDataAsString("UTF-8"));
+    return chuanHoaNgayTrongBangCSV_(Utilities.parseCsv(blob.getDataAsString("UTF-8")));
   }
   // .xlsx/.xls — chuyển tạm thành Google Sheet để đọc, sau đó xoá file tạm
   const resource = { name: "tmp_import_" + new Date().getTime(), mimeType: MimeType.GOOGLE_SHEETS };
@@ -25,6 +25,42 @@ function docBangTuBlob_(blob, tenFile) {
   } finally {
     Drive.Files.remove(file.id);
   }
+}
+
+/**
+ * ⚠ LỖI THẬT ĐÃ PHÁT HIỆN VÀ SỬA (kiểm chứng qua test tích hợp giả lập tải file
+ * .csv thật, phát hiện MỌI dòng bị báo "Ngày ... không hợp lệ" dù dữ liệu đúng):
+ * đọc file .xlsx qua `SpreadsheetApp` (nhánh dưới) tự động nhận diện ô ngày
+ * thành Date object thật — nhưng đọc .csv qua `Utilities.parseCsv()` trả về
+ * TOÀN BỘ giá trị dưới dạng CHUỖI TEXT thuần, kể cả cột ngày. Mọi hàm đối
+ * chiếu (doiChieuNhapChamCong_/doiChieuNhapSanLuong_/doiChieuNhapUngLuong_/
+ * doiChieuNhapPSLuong_) đều kiểm tra "... instanceof Date" để coi là hợp lệ —
+ * khiến tải file .csv lên (kể cả đúng mẫu do CHÍNH webapp xuất ra qua nút
+ * "Tải mẫu") LUÔN báo lỗi ở MỌI dòng, dù dữ liệu hoàn toàn đúng. Sửa: tự động
+ * nhận diện và chuyển các ô dạng "dd/mm/yyyy" hoặc "yyyy-mm-dd" thành Date
+ * object thật ngay sau khi đọc CSV, khớp đúng hành vi đọc .xlsx đã có sẵn.
+ */
+function chuanHoaNgayTrongBangCSV_(rows) {
+  if (!rows || rows.length < 2) return rows;
+  return [rows[0]].concat(rows.slice(1).map(function (row) {
+    return row.map(chuanHoaOCSVThanhNgayNeuHopLe_);
+  }));
+}
+
+function chuanHoaOCSVThanhNgayNeuHopLe_(v) {
+  if (typeof v !== "string") return v;
+  const s = v.trim();
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // dd/MM/yyyy (mẫu CSV webapp xuất ra)
+  if (m) {
+    const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    if (!isNaN(d.getTime())) return d;
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); // yyyy-MM-dd (ISO)
+  if (m) {
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (!isNaN(d.getTime())) return d;
+  }
+  return v;
 }
 
 function chuanHoaTieuDe_(s) {
