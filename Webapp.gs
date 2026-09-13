@@ -3,7 +3,8 @@
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("HAK Group — Tính lương & Kiểm soát bảng lương")
-    .addMetaTag("viewport", "width=device-width, initial-scale=1");
+    .addMetaTag("viewport", "width=device-width, initial-scale=1")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 /** Gọi từ nút "Tính lương" trên giao diện. */

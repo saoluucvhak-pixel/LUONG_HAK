@@ -237,3 +237,50 @@ function appendVaoSheet_(tenSheet, header, danhSachObject) {
   const rows = danhSachObject.map(obj => header.map(ten => (obj[ten] !== undefined ? obj[ten] : "")));
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, header.length).setValues(rows);
 }
+
+/**
+ * ⚠ HOÀN THIỆN CHỨC NĂNG CÒN THIẾU ĐÃ PHÁT HIỆN: tab "Bảng lương" trên
+ * index.html gọi sẵn nút "Kiểm tra ngoài kỳ" → guiKiemTraDuLieuNgoaiKy() →
+ * kiemTraDuLieuNgoaiKy_() nhưng hàm này CHƯA TỪNG được lập trình — bấm nút này
+ * luôn báo lỗi thay vì kiểm tra.
+ *
+ * Rà 6 bảng dữ liệu nạp theo NGÀY (Chấm công, Sản lượng, Bơm dăm, Phát sinh
+ * lương, Ứng lương, Tiền cơm) tìm dòng có ngày KHÔNG thuộc đúng kỳ (nam, thang)
+ * đang chọn — cảnh báo SỚM trường hợp lỡ tải nhầm dữ liệu của kỳ khác vào cùng
+ * sheet (dữ liệu các kỳ đều nằm chung 1 sheet, chỉ phân biệt qua cột ngày) TRƯỚC
+ * khi bấm "Tính lương", tránh tính nhầm cộng dồn sai kỳ mà không hay biết.
+ * @return {{ tongSoDongNgoaiKy: number, chiTiet: Array<{sheet, soDong, viDu: string[]}> }}
+ */
+function kiemTraDuLieuNgoaiKy_(nam, thang) {
+  const namSo = Number(nam);
+  const thangSo = Number(thang);
+  const dsKiemTra = [
+    { sheet: SHEET_CHAMCONG, header: headerChamCongDayDu_(), cotNgay: "Ngày tính công" },
+    { sheet: SHEET_SANLUONG, header: HEADER_SANLUONG, cotNgay: "Ngày cân" },
+    { sheet: SHEET_BANDAM, header: HEADER_BANDAM, cotNgay: "Ngày cân" },
+    { sheet: SHEET_PSLUONG, header: HEADER_PSLUONG, cotNgay: "Ngày hạch toán" },
+    { sheet: SHEET_UNGLUONG, header: HEADER_UNGLUONG, cotNgay: "Ngày hạch toán" },
+    { sheet: SHEET_TIENCOM, header: HEADER_TIENCOM, cotNgay: "Ngày" }
+  ];
+
+  let tongSoDongNgoaiKy = 0;
+  const chiTiet = dsKiemTra.map(function (muc) {
+    const list = docSheetThanhObject_(muc.sheet, muc.header);
+    const ngoaiKy = list.filter(function (r) {
+      const ngay = r[muc.cotNgay];
+      if (!(ngay instanceof Date)) return false;
+      return ngay.getFullYear() !== namSo || (ngay.getMonth() + 1) !== thangSo;
+    });
+    tongSoDongNgoaiKy += ngoaiKy.length;
+    return {
+      sheet: muc.sheet,
+      soDong: ngoaiKy.length,
+      viDu: ngoaiKy.slice(0, 3).map(function (r) {
+        const maNV = r["Mã NV"] || r["Mã nhân viên"] || "";
+        return (maNV ? (maNV + " ") : "") + Utilities.formatDate(r[muc.cotNgay], Session.getScriptTimeZone(), "dd/MM/yyyy");
+      })
+    };
+  });
+
+  return { tongSoDongNgoaiKy: tongSoDongNgoaiKy, chiTiet: chiTiet };
+}
