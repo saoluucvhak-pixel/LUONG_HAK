@@ -9,7 +9,7 @@
   "build": {
     "appId": "vn.hak.luong",
     "productName": "Tinh Luong HAK",
-    "files": ["main.js", "index.html", "style.css", "app.js", "engine.js"],
+    "files": ["main.js", "index.html", "style.css", "app.js", "engine.js", "xlsx.full.min.js"],
     "win": { "target": "nsis" },
     "nsis": { "oneClick": true, "perMachine": false, "createDesktopShortcut": true, "createStartMenuShortcut": true },
     "artifactName": "TinhLuongHAK-Setup-${version}.${ext}"

@@ -72,6 +72,119 @@
     return "﻿<html><head><meta charset='utf-8'></head><body><table border='1'><tr>" + cols.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>" +
       rows.map(function (r) { return "<tr>" + cols.map(function (c) { return "<td>" + esc(r[c]) + "</td>"; }).join("") + "</tr>"; }).join("") + "</table></body></html>";
   }
+
+  // ---------- Excel thật (.xlsx) ----------
+  var SAMPLES = {
+    nhansu: [{ "Mã nhân viên": "NV001", "Họ và tên": "Nguyễn Văn An", "Mã PB": "SX", "Mã CV": "CN", "Ngày vào làm": "2024-03-01", "Lương cơ bản": 5000000, "Lương thỏa thuận": 9000000, "Mã tiền lương 1": "TG1", "Mã BHXH": "BH01", "Mã TNCN": "TNCN2", "Mã GT_TNCN_BT": "BT", "Mã GT_TNCN_PT": "PT", "Người phụ thuộc": 1, "Số CCCD": "049090001234", "Số tài khoản": "0123456789", "Tên Ngân hàng": "Vietcombank" }],
+    chamcong: [{ "Kỳ": "2026-09", "Mã NV": "NV001", "Hình thức công": "BT", "01": 1, "02": 1, "03": 1, "04": 1, "05": 1, "06": "", "07": 1, "08": 1, "09": "1QC" }, { "Kỳ": "2026-09", "Mã NV": "NV001", "Hình thức công": "TC", "01": 2, "02": 2 }],
+    sanluong: [{ "Phiếu cân": "PC0001", "Ngày cân": "2026-09-15", "Biển số": "43C-12345", "KL hàng (Tấn)": 28.5, "Mã NV": "NV001" }],
+    bandam: [{ "Phiếu cân": "PC0001", "Ngày cân": "2026-09-15", "Biển số": "43C-12345", "KL hàng (Tấn)": 1, "Mã NV": "NV001" }],
+    psluong: [{ "Ngày hạch toán": "2026-09-30", "Mã NV": "NV001", "Diễn giải": "Thưởng chuyên cần", "Thưởng": 500000, "Thu nhập khác": 0, "Trừ khác": 0 }],
+    ungluong: [{ "Ngày hạch toán": "2026-09-15", "Mã NV": "NV001", "Diễn giải": "Tạm ứng kỳ 1", "Tạm ứng": 2000000 }],
+    tiencom: [{ "Ngày": "2026-09-15", "Mã NV": "NV001", "Số suất cơm": 1, "Ghi chú": "" }],
+    dm_luong: [{ "Hiệu lực từ": "2020-01-01", "Mã lương": "TG1", "Mã hình thức lương": "TG", "Hình thức lương": "Lương thời gian", "Cách tính": "Số ngày của tháng - tất cả ngày CN" }, { "Hiệu lực từ": "2020-01-01", "Mã lương": "SP", "Mã hình thức lương": "LSP", "Hình thức lương": "Lương sản phẩm", "Số tiền khoán": 25000, "ĐK_Bù lương (công tối thiểu)": 5, "Đơn giá bù lương": 300000, "Cách tính": "Số ngày của tháng - tất cả ngày CN" }],
+    dm_phucap: [{ "Hiệu lực từ": "2020-01-01", "Mã phụ cấp": "TN.01", "Tên phụ cấp": "Phụ cấp trách nhiệm", "Số tiền": 500000, "Cách tính": "Cố định" }, { "Hiệu lực từ": "2020-01-01", "Mã phụ cấp": "QC", "Tên phụ cấp": "Phụ cấp công tác (theo nhãn chấm công QC)", "Số tiền": 100000 }],
+    dm_tangca: [{ "Hiệu lực từ": "2020-01-01", "Mã tăng ca": "TC4", "Nội dung tăng ca": "Tăng ca 150%", "Hệ số tăng ca": "150%" }],
+    dm_hotro: [{ "Hiệu lực từ": "2020-01-01", "Mã hỗ trợ": "HT.01", "Tên hỗ trợ": "Tiền cơm", "Số tiền": 20000 }],
+    dm_baohiem: [{ "Hiệu lực từ": "2024-01-01", "Mã bảo hiểm": "BH01", "Nội dung": "BHXH bắt buộc", "DN.BHXH": 0.175, "DN.BHYT": 0.03, "DN.BHTN": 0.01, "DN.KPCD": 0.02, "NLD.BHXH": 0.08, "NLD.BHYT": 0.015, "NLD.BHTN": 0.01, "NLD.KPCD": 0 }],
+    dm_tncn: [{ "Hiệu lực từ": "2020-01-01", "Bậc": 1, "Tỷ lệ đóng thuế": 0.05, "Thu nhập tháng (Min)": 0, "Thu nhập tháng (Max)": 5000000 }, { "Hiệu lực từ": "2020-01-01", "Bậc": 2, "Tỷ lệ đóng thuế": 0.1, "Thu nhập tháng (Min)": 5000000, "Thu nhập tháng (Max)": 10000000 }],
+    dm_giamtru: [{ "Hiệu lực từ": "2026-01-01", "Mã giảm trừ": "BT", "Số người": 1, "Số tiền": 15500000 }, { "Hiệu lực từ": "2026-01-01", "Mã giảm trừ": "PT", "Số người": 1, "Số tiền": 6200000 }],
+    dm_phongban: [{ "Mã phòng ban": "SX", "Tên phòng ban": "Sản xuất" }],
+    dm_chucvu: [{ "Mã chức vụ": "CN", "Tên chức vụ": "Công nhân" }]
+  };
+  function excelCell(col, v) { // số thì lưu số, còn lại lưu chữ
+    if (v === "" || v == null) return "";
+    if (typeof v === "number") return v;
+    if (NUMCOLS.test(col) && !DATECOLS.test(col) && /^[\d.,%\s-]+$/.test(String(v)) && String(v).indexOf("%") < 0) return E.num(v);
+    if (/^\d\d$/.test(col) && /^\d+([.,]\d+)?$/.test(String(v))) return E.num(v);
+    return v;
+  }
+  function saveXlsx(filename, sheets) { // sheets: [{name, cols, rows}]
+    if (!window.XLSX) { alert("Thiếu thư viện Excel"); return; }
+    var wb = XLSX.utils.book_new();
+    sheets.forEach(function (sh) {
+      var aoa = [sh.cols].concat(sh.rows.map(function (r) { return sh.cols.map(function (c) { return excelCell(c, r[c]); }); }));
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = sh.cols.map(function (c) { return { wch: Math.max(/^\d\d$/.test(c) ? 4 : 10, Math.min(30, c.length + 3)) }; });
+      XLSX.utils.book_append_sheet(wb, ws, sheetName(sh.name));
+    });
+    XLSX.writeFile(wb, filename);
+  }
+  function sheetName(t) { return t.replace(/[\\\/\?\*\[\]:]/g, "").replace(/\s+/g, " ").trim().slice(0, 31); }
+  function slug(t) { return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/[^A-Za-z0-9]+/g, ""); }
+  function templateSheet(key) { var d = ALL[key]; return { name: d.ten, cols: d.cols, rows: SAMPLES[key] || [] }; }
+  function downloadTemplate(key) {
+    var d = ALL[key];
+    var guide = [{ "Cột": "Cách dùng", "Giải thích": "Xóa dòng ví dụ rồi nhập dữ liệu thật của bạn. KHÔNG đổi tên cột (dòng 1). Có thể bỏ bớt cột không dùng." }];
+    if (d.hint) guide.push({ "Cột": "Lưu ý", "Giải thích": d.hint });
+    guide.push({ "Cột": "Ngày tháng", "Giải thích": "Nhập kiểu ngày Excel bình thường hoặc 2026-09-15." });
+    guide.push({ "Cột": "Nhập vào app", "Giải thích": "Mở app → mục \"" + d.ten + "\" → nút ⬆ Nhập Excel → chọn file này." });
+    saveXlsx("Mau_" + slug(d.ten) + ".xlsx", [templateSheet(key), { name: "Hướng dẫn", cols: ["Cột", "Giải thích"], rows: guide }]);
+  }
+  function downloadAllTemplates() { saveXlsx("Mau_TatCa_LuongHAK.xlsx", Object.keys(ALL).map(templateSheet)); toast("Đã tải file mẫu — mỗi bảng là 1 sheet"); }
+  function pad2(n) { return ("0" + n).slice(-2); }
+  function cellText(col, v) {
+    if (v instanceof Date) { var y = v.getFullYear(), m = pad2(v.getMonth() + 1), d = pad2(v.getDate()); return col === "Kỳ" ? y + "-" + m : y + "-" + m + "-" + d; }
+    if (v == null) return "";
+    if (typeof v === "number") return String(Math.round(v * 1e9) / 1e9);
+    return String(v).trim();
+  }
+  // đọc 1 sheet -> mảng object theo cột của bảng; trả về số dòng thêm
+  function loadRows(key, ws) {
+    var def = ALL[key], rows = XLSX.utils.sheet_to_json(ws, { raw: true, defval: "" }), n = 0;
+    rows.forEach(function (src) {
+      var r = {}, has = false;
+      Object.keys(src).forEach(function (h0) {
+        var c = String(h0).trim();
+        if (/^\d$/.test(c) && def.cols.indexOf("0" + c) >= 0) c = "0" + c;
+        if (def.cols.indexOf(c) < 0) return;
+        var t = cellText(c, src[h0]); if (t !== "") { r[c] = t; has = true; }
+      });
+      if (!has) return;
+      if (def.kyCol && !r[def.kyCol]) r[def.kyCol] = kyStr();
+      db[key].push(r); n++;
+    });
+    return n;
+  }
+  function importFile(key, done) {
+    var f = h("input", { type: "file", accept: ".xlsx,.xls,.csv,.txt" });
+    f.addEventListener("change", function () {
+      var file = f.files[0]; if (!file) return;
+      var fr = new FileReader();
+      fr.onload = function () {
+        try {
+          var wb = XLSX.read(fr.result, { type: "array", cellDates: true });
+          var name = wb.SheetNames.filter(function (x) { return x === sheetName(ALL[key].ten); })[0] || wb.SheetNames[0];
+          var n = loadRows(key, wb.Sheets[name]);
+          if (!n) { alert("Không đọc được dòng nào. Kiểm tra dòng 1 phải là tên cột đúng như file mẫu (bấm 'Tải file mẫu')."); return; }
+          save(); done(); toast("Đã nhập " + n + " dòng từ \"" + name + "\"");
+        } catch (e) { alert("Không đọc được file: " + e.message); }
+      };
+      fr.readAsArrayBuffer(file);
+    });
+    f.click();
+  }
+  function importAllFile() {
+    var f = h("input", { type: "file", accept: ".xlsx,.xls" });
+    f.addEventListener("change", function () {
+      var file = f.files[0]; if (!file) return;
+      var fr = new FileReader();
+      fr.onload = function () {
+        try {
+          var wb = XLSX.read(fr.result, { type: "array", cellDates: true }), msg = [];
+          Object.keys(ALL).forEach(function (k) {
+            var ws = wb.Sheets[sheetName(ALL[k].ten)]; if (!ws) return;
+            var n = loadRows(k, ws); if (n) msg.push(ALL[k].ten + ": " + n);
+          });
+          if (!msg.length) { alert("Không thấy sheet nào đúng tên (Nhân sự, Chấm công, Mã lương...). Hãy dùng file 'Tải toàn bộ file mẫu'."); return; }
+          save(); render(); alert("Đã nhập:\n" + msg.join("\n"));
+        } catch (e) { alert("Không đọc được file: " + e.message); }
+      };
+      fr.readAsArrayBuffer(file);
+    });
+    f.click();
+  }
+
   function modal(title, body, footer) {
     var m = $("#modal"); m.innerHTML = ""; m.className = "";
     var close = function () { m.className = "hide"; m.innerHTML = ""; };
@@ -115,10 +228,11 @@
     var newRow = function () { var r = Object.assign({}, def.def || {}); if (def.kyCol) r[def.kyCol] = kyStr(); if (def.dateCol) r[def.dateCol] = kyStr() + "-01"; return r; };
     bar.appendChild(btn("＋ Thêm dòng", "pri", function () { db[key].push(newRow()); save(); st.q = ""; q.value = ""; draw(); var tw = body; tw.scrollTop = tw.scrollHeight; }));
     bar.appendChild(q); bar.appendChild(cnt); bar.appendChild(h("span", { class: "sp" }));
-    bar.appendChild(btn("⬆ Nhập CSV", "", function () { importCsv(key, def, draw); }));
-    bar.appendChild(btn("⬇ Excel", "", function () { var rows = db[key].filter(function (r) { return !theoKy || rowInKy(r, def); }); download(def.ten + (theoKy ? "_" + kyStr() : "") + ".xls", "application/vnd.ms-excel", xls(def.cols, rows)); }));
+    bar.appendChild(btn("📄 Tải file mẫu", "", function () { downloadTemplate(key); }, "File Excel mẫu có sẵn tên cột + dòng ví dụ"));
+    bar.appendChild(btn("⬆ Nhập Excel", "", function () { importFile(key, draw); }, "Nhập từ file .xlsx / .xls / .csv"));
+    bar.appendChild(btn("⬇ Xuất Excel", "", function () { var rows = db[key].filter(function (r) { return !theoKy || rowInKy(r, def); }); saveXlsx(slug(def.ten) + (theoKy ? "_" + kyStr() : "") + ".xlsx", [{ name: def.ten, cols: def.cols, rows: rows }]); }));
     card.appendChild(bar);
-    card.appendChild(h("div", { class: "hint", text: (def.hint ? def.hint + " " : "") + "Mẹo: copy nhiều dòng từ Excel (đúng thứ tự cột) rồi Ctrl+V vào một ô để dán hàng loạt." }));
+    card.appendChild(h("div", { class: "hint", text: (def.hint ? def.hint + " " : "") + "Nhập hàng loạt: bấm '📄 Tải file mẫu' → điền Excel → '⬆ Nhập Excel'. Hoặc copy nhiều dòng từ Excel rồi Ctrl+V vào một ô." }));
     card.appendChild(body); wrap.appendChild(card);
     var vis = def.cols.filter(function (c) { return (def.hide || []).indexOf(c) < 0; });
 
@@ -243,10 +357,11 @@
     q.addEventListener("input", function () { st.q = q.value; draw(); q.focus(); });
     bar.appendChild(btn("＋ Thêm nhân viên", "pri", function () { formNhanSu({}, true); }));
     bar.appendChild(q); bar.appendChild(h("span", { class: "sp" }));
-    bar.appendChild(btn("⬆ Nhập CSV", "", function () { importCsv("nhansu", S.nhansu, draw); }));
-    bar.appendChild(btn("⬇ Excel", "", function () { download("NhanSu.xls", "application/vnd.ms-excel", xls(S.nhansu.cols, db.nhansu)); }));
+    bar.appendChild(btn("📄 Tải file mẫu", "", function () { downloadTemplate("nhansu"); }));
+    bar.appendChild(btn("⬆ Nhập Excel", "", function () { importFile("nhansu", function () { draw(); updateNav(); }); }));
+    bar.appendChild(btn("⬇ Xuất Excel", "", function () { saveXlsx("NhanSu.xlsx", [{ name: "Nhân sự", cols: S.nhansu.cols, rows: db.nhansu }]); }));
     card.appendChild(bar);
-    card.appendChild(h("div", { class: "hint", text: "Bấm vào một dòng để sửa. Muốn nhập hàng loạt: dùng 'Nhập CSV' (dòng đầu là tên cột như file Excel cũ)." }));
+    card.appendChild(h("div", { class: "hint", text: "Bấm vào một dòng để sửa. Nhập hàng loạt: bấm '📄 Tải file mẫu', điền vào Excel rồi bấm '⬆ Nhập Excel'." }));
     var tw = h("div", { class: "tw" }); card.appendChild(tw); wrap.appendChild(card);
     function draw() {
       tw.innerHTML = ""; var qq = st.q.trim().toLowerCase();
@@ -311,7 +426,7 @@
     [["Bảng lương", "bl"], ["BHXH", "bh"], ["Thuế TNCN", "tn"]].forEach(function (o) { mn.appendChild(h("option", { value: o[1], text: o[0] })); });
     mn.addEventListener("change", function () {
       var m = { bl: [COLS_FULL, r.bangluong, "BangLuong"], bh: [r.bhxh[0] ? Object.keys(r.bhxh[0]) : [], r.bhxh, "BHXH"], tn: [r.tncn[0] ? Object.keys(r.tncn[0]) : [], r.tncn, "ThueTNCN"] }[mn.value];
-      if (m) download(m[2] + "_" + r.ky + ".xls", "application/vnd.ms-excel", xls(m[0], m[1])); mn.selectedIndex = 0;
+      if (m) saveXlsx(m[2] + "_" + r.ky + ".xlsx", [{ name: m[2], cols: m[0], rows: m[1] }]); mn.selectedIndex = 0;
     });
     bar.appendChild(mn);
     card.appendChild(h("div", { class: "hint", text: "Bấm vào một dòng để xem chi tiết cách tính và in phiếu lương của người đó." }));
@@ -373,6 +488,7 @@
     var g = h("div", { class: "steps" });
     steps.forEach(function (s, i) { g.appendChild(h("div", { class: "step" + (s[3] ? " done" : ""), on: { click: function () { st.tab = s[0]; saveUi(); render(); } } }, [h("div", { class: "no", text: s[3] ? "✓" : i + 1 }), h("div", { html: "<b>" + s[1] + "</b><small>" + s[2] + "</small>" })])); });
     card.appendChild(g); w.appendChild(card);
+    w.appendChild(h("div", { class: "card", html: "<h3>Có sẵn file Excel của bạn?</h3><div class='hint'>Tải file mẫu, dán dữ liệu của bạn vào đúng cột rồi nhập vào app — không phải gõ lại.</div>" }, [h("div", { class: "bar" }, [btn("📄 Tải toàn bộ file mẫu Excel", "pri", downloadAllTemplates), btn("⬆ Nhập từ file Excel tổng", "", importAllFile)])]));
     w.appendChild(h("div", { class: "warn", html: "<b>Nhớ sao lưu:</b> dữ liệu nằm trên máy này. Cuối mỗi kỳ lương hãy vào <b>Sao lưu</b> → <b>Sao lưu ra file</b> và cất file ở nơi an toàn (USB, Google Drive...)." }));
     return w;
   }
@@ -390,6 +506,12 @@
       f.click();
     }));
     bar.appendChild(btn("📋 Nạp danh mục mẫu", "", napMau));
+    c.appendChild(bar);
+    c.appendChild(h("h3", { text: "Nhập dữ liệu từ Excel", style: "margin-top:18px" }));
+    c.appendChild(h("div", { class: "hint", text: "Cách nhanh nhất: tải 1 file mẫu có đủ các sheet (Nhân sự, Chấm công, Mã lương...), điền dữ liệu rồi nhập lại 1 lần. Hoặc vào từng mục và dùng nút 'Tải file mẫu' riêng." }));
+    bar = h("div", { class: "bar" });
+    bar.appendChild(btn("📄 Tải toàn bộ file mẫu", "pri", downloadAllTemplates));
+    bar.appendChild(btn("⬆ Nhập từ file Excel tổng", "", importAllFile));
     bar.appendChild(h("span", { class: "sp" }));
     bar.appendChild(btn("🗑 Xóa toàn bộ dữ liệu", "red", function () { if (confirm("XÓA TOÀN BỘ dữ liệu? Không thể hoàn tác!") && confirm("Chắc chắn chứ?")) { db = {}; Object.keys(ALL).forEach(function (k) { db[k] = []; }); save(); st.kq = null; render(); } }));
     c.appendChild(bar);
