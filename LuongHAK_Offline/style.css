@@ -1,0 +1,35 @@
+:root{--bg:#f4f6f8;--card:#fff;--ink:#1c2630;--mut:#6b7886;--pri:#0b6e4f;--line:#d9dfe5}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 "Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--pri);color:#fff;padding:8px 14px;position:sticky;top:0;z-index:5}
+h1{margin:0 0 6px;font-size:18px}h1 small{font-weight:400;opacity:.8}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav button{background:rgba(255,255,255,.15);color:#fff;border:0;padding:6px 12px;border-radius:5px;cursor:pointer;font:inherit}
+nav button.on{background:#fff;color:var(--pri);font-weight:600}
+main{padding:12px 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar label{color:var(--mut)}
+button.b,select,input.i{font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:5px;background:#fff}
+button.b{cursor:pointer}button.b:hover{background:#eef3f0}
+button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}button.pri:hover{background:#095a41}
+button.red{color:#b3261e}
+.gridwrap{overflow:auto;max-height:68vh;border:1px solid var(--line);border-radius:6px;background:#fff}
+table{border-collapse:collapse;font-size:13px}
+th,td{border:1px solid var(--line);padding:0;white-space:nowrap}
+th{background:#e9eef2;position:sticky;top:0;padding:5px 8px;z-index:2}
+td input{border:0;padding:4px 6px;width:100%;min-width:70px;font:inherit;background:transparent}
+td input:focus{outline:2px solid var(--pri);background:#fffbe6}
+td.ro{padding:4px 8px;text-align:right}td.txt{padding:4px 8px}
+td.act{padding:2px 6px}
+tr:nth-child(even) td{background:#fafbfc}
+tfoot td{font-weight:700;background:#e9f5ef;padding:4px 8px;text-align:right}
+.hint{color:var(--mut);font-size:12.5px;margin:6px 0}
+.warn{background:#fff4e5;border:1px solid #f0c27b;padding:8px 10px;border-radius:6px;margin:8px 0}
+.kpi{display:flex;gap:12px;flex-wrap:wrap}.kpi div{background:#e9f5ef;padding:8px 14px;border-radius:6px}.kpi b{display:block;font-size:18px}
+#toast{position:fixed;bottom:16px;right:16px;background:#222;color:#fff;padding:8px 14px;border-radius:6px;opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:.95}
+.slip{page-break-after:always;border:1px solid #888;padding:14px;margin:10px 0;background:#fff;max-width:640px}
+.slip h3{text-align:center;margin:0 0 8px}.slip table{width:100%}.slip td{padding:3px 6px}
+.slip td:last-child{text-align:right}
+@media print{header,.bar,.hint,.noprint{display:none!important}body{background:#fff}main{padding:0}.card{border:0;padding:0}}
