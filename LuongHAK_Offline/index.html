@@ -2,16 +2,23 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<title>Tính lương HAK - Offline</title>
+<title>Tính lương HAK</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>💰 Tính lương HAK <small>(chạy offline)</small></h1>
-  <nav id="tabs"></nav>
-</header>
-<main id="main"></main>
+<div id="app">
+  <aside id="side">
+    <div class="brand"><div class="logo">HAK</div><div><b>Tính lương</b><small>Chạy offline</small></div></div>
+    <nav id="nav"></nav>
+    <div class="sidefoot" id="sidefoot"></div>
+  </aside>
+  <section id="content">
+    <header id="top"></header>
+    <main id="main"></main>
+  </section>
+</div>
+<div id="modal" class="hide"></div>
 <div id="toast"></div>
 <script src="engine.js"></script>
 <script src="app.js"></script>
