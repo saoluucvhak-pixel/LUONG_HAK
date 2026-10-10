@@ -14,7 +14,7 @@ const results = [];
 function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra: extra || "" }); console.log((cond ? "PASS " : "FAIL ") + name + (extra ? " — " + extra : "")); }
 
 const ADMIN = { u: "admin", n: "Quản trị E2E", p: "Admin2026e2e" };
-let dialogs = [];
+let dialogs = [], dismissConfirm = false; // dismissConfirm: bấm "Hủy" ở hộp xác nhận tiếp theo
 // Đăng nhập (hoặc tạo Admin đầu tiên nếu dữ liệu chưa có tài khoản). Màn hình khôi phục (file hỏng) không cần đăng nhập.
 async function auth(w, who) {
   who = who || ADMIN;
@@ -39,7 +39,7 @@ async function launch(dataDir, opt) {
   const w = await app.firstWindow(); const errs = [];
   w.on("pageerror", (e) => errs.push(e.message));
   w.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
-  w.on("dialog", (d) => { dialogs.push(d.message()); d.accept(d.type() === "prompt" ? "e2e" : undefined); });
+  w.on("dialog", (d) => { dialogs.push(d.message()); if (d.type() === "confirm" && dismissConfirm) { dismissConfirm = false; d.dismiss(); } else d.accept(d.type() === "prompt" ? "e2e" : undefined); });
   await w.waitForSelector("#main > *");
   const a = opt.noAuth ? {} : await auth(w, opt.who);
   return { app, w, errs, a };
@@ -189,6 +189,31 @@ async function launch(dataDir, opt) {
   const k1 = sv2.nguoidung.find((u) => u.tenDangNhap === "ketoan1"), hoito = sv2.auditlog.filter((x) => /HỒI TỐ/.test(x.chiTiet));
   ok("Mật khẩu lưu dạng băm PBKDF2 (không lưu mật khẩu rõ), có muối riêng", sv2.nguoidung.length === 2 && k1.hash.length === 64 && k1.salt.length === 32 && k1.iter >= 210000 && !JSON.stringify(sv2.nguoidung).includes("Moi12345kt") && k1.salt !== sv2.nguoidung[0].salt);
   ok("Nhật ký ghi tài khoản đăng nhập: đăng nhập, thêm người dùng, sửa HỒI TỐ bởi Admin", sv2.auditlog.some((x) => x.thaoTac === "Thêm người dùng" && /\[admin\]/.test(x.nguoi)) && sv2.auditlog.some((x) => x.thaoTac === "Đăng nhập" && /\[ketoan1\]/.test(x.nguoi)) && hoito.length >= 1 && hoito.every((x) => /\[admin\]/.test(x.nguoi)), hoito.map((x) => x.nguoi).join(","));
+
+  // A3-01: đổi Số HĐLĐ của hợp đồng có hiệu lực trong kỳ đã chốt rồi bấm HỦY → phụ lục KHÔNG được đổi theo (trước đây bị đổi trước khi hỏi → mồ côi)
+  {
+    const d0 = JSON.parse(fs.readFileSync(path.join(DATA, "data.json"), "utf8")), ma = d0.nhanvien[0]["Mã NV"];
+    d0.hopdong.push({ _id: "e2ehd2", "Mã NV": ma, "Số HĐLĐ": "E2E-HD2", "Ngày vào làm": "2026-09-20", "Hình thức HĐLĐ": "Xác định thời hạn" });
+    d0.chitiethd.push({ _id: "e2epl2", "Mã NV": ma, "Số HĐLĐ": "E2E-HD2", "Hiệu lực từ": "2026-10-01", "Mã lương": "TG1", "Lương thỏa thuận": "13000000", "Mức đóng bảo hiểm": "BH01", "Thuế TNCN": "LT01", "HTTT": "Tiền mặt" });
+    fs.writeFileSync(path.join(DATA, "data.json"), JSON.stringify(d0));
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=nhansu]"); await w.locator("#main table tbody tr").first().click();
+    await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
+    const hdCard = () => w.locator(".card", { has: w.locator('h3:has-text("Hợp đồng lao động")') });
+    const plRows = async () => { await hdCard().locator("tbody tr", { hasText: "E2E-HD2" }).click(); await w.waitForTimeout(250); return w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') }).locator("tbody tr").count(); };
+    const n0 = await plRows();
+    dialogs = []; dismissConfirm = true;
+    await hdCard().locator("tbody tr", { hasText: "E2E-HD2" }).locator('button[title="Sửa"]').click(); await w.waitForSelector(".dlg");
+    await w.locator(".dlg .fld", { hasText: "Số HĐLĐ" }).first().locator("input").fill("E2E-HD2-MOI");
+    await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
+    const asked = dialogs.some((d) => /kỳ lương ĐÃ CHỐT/.test(d)); dismissConfirm = false;
+    if (await w.locator(".dlg").count()) await w.click(".dlg header button");
+    await w.click("#nav button[data-k=home]"); await w.click("#nav button[data-k=nhansu]"); await w.locator("#main table tbody tr").first().click();
+    await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
+    const n1 = await plRows();
+    ok("A3-01: đổi Số HĐLĐ hồi tố rồi bấm Hủy → phụ lục vẫn thuộc hợp đồng cũ (không mồ côi)", asked && n0 === 1 && n1 === 1, "hỏi xác nhận=" + asked + " · phụ lục HĐ2 trước/sau: " + n0 + "/" + n1);
+    await app.close();
+  }
 
   // Quên mật khẩu Admin → mã khôi phục (mã sai bị từ chối; dùng xong cấp mã mới)
   ({ app, w, errs } = await launch(null, { noAuth: true }));

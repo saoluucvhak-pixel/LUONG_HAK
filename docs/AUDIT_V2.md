@@ -34,7 +34,7 @@
 ```
 
 **Nhận xét kiến trúc** (đưa vào PR3/PR4, không sửa ở PR1):
-- **K-01:** không có lớp repository. 13 nhóm thao tác ghi nằm rải trong `app.js` (§3). Việc kiểm tra quyền và kỳ chốt được gọi lặp ở từng chỗ. Hiện tất cả đều có kiểm tra (§3), nhưng thêm màn hình mới dễ quên kiểm tra.
+- **K-01** (→ ✅ một phần ở PR3, alpha.6: lưới, form hồ sơ, xóa hồ sơ đi qua `core/repository.js`; ngoại lệ khóa bằng U-REPO-08): không có lớp repository. 13 nhóm thao tác ghi nằm rải trong `app.js` (§3). Việc kiểm tra quyền và kỳ chốt được gọi lặp ở từng chỗ. Hiện tất cả đều có kiểm tra (§3), nhưng thêm màn hình mới dễ quên kiểm tra.
 - **K-02:** mỗi lần lưu ghi lại toàn bộ file JSON: 169 ms ở 5.000 NV (RISK-01). Mục tiêu là SQLite `node:sqlite` (PR4; đã xác minh chạy được trên Electron 43 / Node 24.21).
 - **K-03:** `staffForPayroll` / `hienHanh` quét toàn bộ bảng cho mỗi nhân viên, độ phức tạp O(N²) → ✅ đã sửa ở PR2 (alpha.5, chỉ mục Mã NV — `PERFORMANCE_REPORT.md`).
 
@@ -55,6 +55,7 @@ Mức độ: Critical / High / Medium / Low.
 | A2-09 | Medium | danh mục `dm_luong` mặc định | Chưa đặt *Ngưỡng truy thu BH (công)* | I-16 / I-19: 2 công vẫn trừ đủ BH 630.000 | Có thể thu BH sai khi vào làm / nghỉ giữa tháng | **Không sửa** (chính sách BH) — hỏi Q-23 | I-16, I-19 | ⏳ Chờ Q-23 |
 | A2-10 | Low | `app.js` `nghiViec` | Đổi *Trạng thái* nhân viên không qua guard. Ngày chấm dứt HĐ (thứ quyết định tính lương) **có** qua guard | Đọc code | Không đổi bảng lương (trạng thái chỉ để cảnh báo) | Ghi nhận; gom vào repository ở PR3 | — | ⏳ PR3 |
 | A2-11 | Low | `app.js` xóa nhân viên | Theo thiết kế, xóa hồ sơ không xóa chấm công / sản lượng | Đọc code + thông báo xác nhận | Còn dòng mồ côi; *Kiểm tra dữ liệu* báo "Mã NV không có trong Nhân sự" | Giữ nguyên (không xóa dữ liệu không nhận diện) | U-SCH-02 | Ghi nhận |
+| A3-01 | High | `app.js` `hrForm` (hợp đồng) | Đổi Số HĐLĐ: bảng con (phụ lục, nghỉ phép…) bị đổi **trước** `guardChange` | E2E alpha.5: hợp đồng có hiệu lực trong kỳ đã chốt, đổi số rồi bấm Hủy → phụ lục 1 → 0 | Phụ lục mồ côi, không được tính lương; người không phải Admin bị chặn cũng gây ra | PR3: `core/repository.js` kiểm tra hết rồi mới sửa | U-REPO-02, E2E A3-01 | ✅ Đã sửa (PR3) |
 | SEC-03 | Medium | `xlsx.full.min.js` (SheetJS 0.18.5) | Bản npm cuối cùng có CVE-2023-30533 và CVE-2024-22363 khi đọc file độc hại | — | Đọc file Excel độc hại có thể treo app | Giữ giới hạn 20 MB + sandbox/CSP; thay bằng 0.20.3 khi mạng cho phép `cdn.sheetjs.com` (kiểm lại 10/10/2026: **403**). Xem §4 | — | ⏳ Chờ mạng |
 | RISK-01 | Medium | `main/storage.js` | Mỗi lần lưu ghi lại toàn bộ JSON | 5.000 NV: lưu 169 ms, sao lưu ~250 ms | Chậm khi dữ liệu lớn | PR2 (chỉ mục) + PR4 (SQLite) | Benchmark PR2 | ⏳ PR2/PR4 |
 
