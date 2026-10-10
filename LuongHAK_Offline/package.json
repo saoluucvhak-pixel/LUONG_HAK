@@ -1,6 +1,6 @@
 {
   "name": "luong-hak",
-  "version": "1.4.0",
+  "version": "2.0.0-alpha.1",
   "description": "Tính lương HAK - chạy offline",
   "main": "main.js",
   "author": "HAK",

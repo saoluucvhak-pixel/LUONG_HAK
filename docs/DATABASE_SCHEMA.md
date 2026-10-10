@@ -8,8 +8,8 @@ File `%APPDATA%\Tinh Luong HAK\data.json` là một object; mỗi khóa là mộ
 |---|---|---|---|
 | Hệ thống | `schemaVersion` | — | 2 từ v1.4.0 |
 | | `congty` | — | 1 dòng |
-| | `auditlog` | — | `{luc, thaoTac, chiTiet}`, giữ 5.000 dòng gần nhất |
-| Chốt kỳ | `kyluong` | `ky` (duy nhất) | snapshot: `{ky, version, ngayChot, ghiChu, engineVersion, buTheoNgay, kq, totals, checksum, input:{staff, data, danhmuc}}` |
+| | `auditlog` | — | `{luc, nguoi, thaoTac, chiTiet}` (`nguoi` từ 2.0-P1). Giữ 20.000 dòng gần nhất; trước khi cắt bớt, app sao lưu `nhat-ky-truoc-cat_*` |
+| Chốt kỳ | `kyluong` | `ky` (duy nhất) | snapshot: `{ky, version, ngayChot, nguoiChot, ghiChu, engineVersion, buTheoNgay, kq, totals, checksum, input:{staff, data, danhmuc}, inputChecksum}`. `inputChecksum` có từ 2.0-P1; bản chốt cũ không có trường này vẫn hợp lệ |
 | | `kyluong_lichsu` | `ky + version` | bản chốt đã mở chốt + `moChot:{luc, lyDo, nguoi}` — không bao giờ xóa |
 | Danh mục | `dm_luong` | Mã lương + Hiệu lực từ | có Hiệu lực từ/đến |
 | | `dm_phucap`, `dm_tangca`, `dm_hotro`, `dm_baohiem`, `dm_tncn`, `dm_giamtru` | Mã + Hiệu lực từ | |
@@ -21,12 +21,33 @@ File `%APPDATA%\Tinh Luong HAK\data.json` là một object; mỗi khóa là mộ
 | | `hopdong` | Mã NV + Số HĐLĐ | |
 | | `chitiethd` | Mã NV + Số HĐLĐ + Hiệu lực từ | **nguồn dữ liệu tính lương** |
 | | `congtac`, `hocvan`, `suckhoe`, `lienhe`, `nghenghiep`, `khamsk`, `quyenloiphep`, `nghiphep`, `nghiom`, `noiquy`, `khenthuong`, `tailieu` | xem `core/importer.js` KEYS | |
-| Phát sinh | `chamcong` | Kỳ + Mã NV + Hình thức công | 31 cột ngày `01`…`31` |
+| Phát sinh | `chamcong` | Kỳ + Mã NV + Hình thức công — chuẩn hóa: kỳ `YYYY-MM`, hình thức viết hoa, để trống = BT | 31 cột ngày `01`…`31`. Engine cộng **mọi** dòng. Từ 2.0-P1, nhập Excel giữ đúng 1 dòng / khóa (gộp theo ngày, xung đột nếu trùng ngày) |
 | | `sanluong`, `bandam` | Phiếu cân + Mã NV | |
 | | `tiencom` | Ngày + Mã NV | |
 | | `psluong`, `ungluong` | (không có — chặn dòng trùng y hệt) | ⚠ Phase 4: thêm Số chứng từ làm khóa |
 
 Quy ước giá trị (chuẩn hóa bởi `core/validate.js`): ngày `YYYY-MM-DD`, kỳ `YYYY-MM`, tiền là chuỗi số thuần (`"1500000"`), mã định danh là chuỗi (giữ số 0 đầu).
+
+### Kiểm tra cấu trúc khi mở (`core/schema.js`, từ 2.0-P1)
+- **fatal** → chế độ chỉ xem / khôi phục, không ghi. Gồm:
+  - gốc không phải object;
+  - `schemaVersion` sai kiểu, hoặc > 2 (file của bản mới hơn);
+  - bảng đã biết nhưng không phải danh sách.
+- **error** (liệt kê ở *Kiểm tra dữ liệu*):
+  - dòng không phải bản ghi;
+  - Mã NV thiếu, không phải chữ, hoặc thừa khoảng trắng;
+  - ngày / tiền / kỳ không đọc được;
+  - Mã NV không có trong Nhân sự;
+  - phụ lục không thuộc hợp đồng;
+  - kỳ chốt trùng, thiếu bảng lương, hoặc checksum lệch;
+  - lịch sử chốt thiếu thông tin mở chốt.
+- **info**: bảng không nhận diện được → giữ nguyên.
+
+### Thư mục sao lưu (`backups/`, từ 2.0-P1)
+- Tên file: `<loại>_<YYYYMMDD-HHmmss-SSS>_<6 ký tự hex>.json`. Riêng bản đầu ngày: `daily_<YYYY-MM-DD>.json`.
+- Kèm `<tên>.sha256` = `{sha256, size, created, tag, schemaVersion}`.
+- Bản tạo trước 2.0 không có `.sha256` → trạng thái "chưa có mã kiểm tra", vẫn khôi phục được.
+- File dữ liệu hỏng được cất thành `data.corrupt_<thời điểm>_<mã>.json.bak`.
 
 ## 2. Đích: SQLite (Phase 2) — thiết kế
 
