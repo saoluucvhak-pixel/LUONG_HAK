@@ -1,42 +1,52 @@
 const { app, BrowserWindow, Menu, ipcMain, shell } = require("electron");
 const path = require("path");
-const fs = require("fs");
+const { createStorage } = require("./main/storage");
 
-// Dữ liệu lưu thành file JSON trong thư mục dữ liệu của app (%APPDATA%\Tinh Luong HAK),
-// mỗi ngày tự giữ 1 bản sao lưu trong thư mục backups (giữ 60 bản gần nhất).
-const dataDir = app.getPath("userData");
-const dataFile = path.join(dataDir, "data.json");
-const backupDir = path.join(dataDir, "backups");
+// Dữ liệu: %APPDATA%\Tinh Luong HAK\data.json — sao lưu trong thư mục backups (xem main/storage.js).
+// Gỡ cài đặt KHÔNG xóa thư mục này (electron-builder: deleteAppDataOnUninstall mặc định false).
+let storage = null;
 
-function today() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+// Kiểm thử tự động có thể chỉ định thư mục dữ liệu riêng (không đụng dữ liệu thật)
+if (process.env.HAK_USER_DATA) app.setPath("userData", process.env.HAK_USER_DATA);
 
-ipcMain.on("store-load", (e) => {
-  try { e.returnValue = fs.existsSync(dataFile) ? fs.readFileSync(dataFile, "utf8") : null; } catch (err) { e.returnValue = null; }
-});
-ipcMain.on("store-save", (e, str) => {
-  try {
-    fs.mkdirSync(dataDir, { recursive: true });
-    fs.writeFileSync(dataFile + ".tmp", str, "utf8");
-    fs.renameSync(dataFile + ".tmp", dataFile);
-    fs.mkdirSync(backupDir, { recursive: true });
-    const b = path.join(backupDir, "data_" + today() + ".json");
-    fs.copyFileSync(dataFile, b);
-    const all = fs.readdirSync(backupDir).filter((f) => /^data_.*\.json$/.test(f)).sort();
-    all.slice(0, Math.max(0, all.length - 60)).forEach((f) => fs.unlinkSync(path.join(backupDir, f)));
-    e.returnValue = true;
-  } catch (err) { e.returnValue = String(err && err.message || err); }
-});
-ipcMain.on("store-info", (e) => { e.returnValue = { dataFile, backupDir }; });
-ipcMain.on("open-data-folder", () => { fs.mkdirSync(dataDir, { recursive: true }); shell.openPath(dataDir); });
+// Chỉ cho chạy 1 cửa sổ app: 2 bản cùng ghi 1 file dữ liệu sẽ ghi đè lẫn nhau.
+if (!app.requestSingleInstanceLock()) { app.quit(); }
+
+function registerIpc() {
+  ipcMain.on("store-load", (e) => { e.returnValue = storage.load(); });
+  ipcMain.on("store-save", (e, text) => { e.returnValue = storage.save(text); });
+  ipcMain.on("store-info", (e) => { e.returnValue = storage.info(); });
+  ipcMain.on("store-backup", (e, tag) => { try { e.returnValue = storage.backup(tag); } catch (err) { e.returnValue = null; } });
+  ipcMain.on("store-list", (e) => { try { e.returnValue = storage.list(); } catch (err) { e.returnValue = []; } });
+  ipcMain.on("store-read", (e, name) => { try { e.returnValue = storage.readBackup(name); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
+  ipcMain.on("store-quarantine", (e) => { try { e.returnValue = storage.quarantineCorrupt(); } catch (err) { e.returnValue = null; } });
+  ipcMain.on("open-data-folder", () => { shell.openPath(path.dirname(storage.dataFile)); });
+}
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1280, height: 800, title: "Tính lương HAK",
-    webPreferences: { contextIsolation: true, preload: path.join(__dirname, "preload.js") }
+    width: 1280, height: 800, title: "Nhân sự - Tiền lương HAK",
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, "preload.js") }
   });
   Menu.setApplicationMenu(null);
+  // Bảo mật: không mở cửa sổ mới / không điều hướng ra ngoài app
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("will-navigate", (ev, url) => { if (!url.startsWith("file://")) ev.preventDefault(); });
+  // Tải file (xuất Excel, sao lưu): mặc định Electron hỏi nơi lưu. Kiểm thử tự động có thể chỉ định thư mục.
+  if (process.env.HAK_DOWNLOAD_DIR) win.webContents.session.on("will-download", (ev, item) => { item.setSavePath(path.join(process.env.HAK_DOWNLOAD_DIR, item.getFilename())); });
   win.loadFile(path.join(__dirname, "index.html"));
   win.maximize();
+  return win;
 }
-app.whenReady().then(createWindow);
+
+app.on("second-instance", () => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (w) { if (w.isMinimized()) w.restore(); w.focus(); }
+});
+app.whenReady().then(() => {
+  storage = createStorage(app.getPath("userData"));
+  try { storage.backup("startup"); } catch (e) { /* lần đầu chưa có dữ liệu */ }
+  registerIpc();
+  createWindow();
+});
 app.on("window-all-closed", () => app.quit());

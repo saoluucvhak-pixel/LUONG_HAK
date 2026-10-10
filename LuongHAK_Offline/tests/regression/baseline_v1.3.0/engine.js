@@ -24,19 +24,6 @@
     var n = parseFloat(s);
     return isNaN(n) ? 0 : n;
   }
-  // Số TIỀN: hiểu đúng cách nhập Việt Nam "500.000" / "1.500.000" (dấu chấm = hàng nghìn).
-  // num() giữ nguyên hành vi cũ cho tỷ lệ, hệ số, số công, khối lượng ("0.175", "1.5", "28.5").
-  function money(v) {
-    if (v === "" || v == null) return 0;
-    if (typeof v === "number") return isFinite(v) ? v : 0;
-    var s = String(v).trim().replace(/\s|đ|VNĐ|VND/gi, ""), neg = /^-/.test(s); if (neg) s = s.slice(1);
-    var n;
-    if (/^[1-9]\d{0,2}(\.\d{3})+(,\d+)?$/.test(s)) n = parseFloat(s.replace(/\./g, "").replace(",", "."));
-    else if (/^[1-9]\d{0,2}(,\d{3})+(\.\d+)?$/.test(s)) n = parseFloat(s.replace(/,/g, ""));
-    else n = num(s);
-    n = isNaN(n) ? 0 : n;
-    return neg ? -n : n;
-  }
   function tachCong(v) { // "1QC" -> {soCong:1, nhan:"QC"}
     if (v === "" || v == null) return { soCong: 0, nhan: "" };
     if (typeof v === "number") return { soCong: v, nhan: "" };
@@ -76,11 +63,11 @@
     if (!tn || tn <= 0) return 0;
     var thue = 0;
     bieu.forEach(function (b) {
-      var min = money(b["Thu nhập từ"] != null && b["Thu nhập từ"] !== "" ? b["Thu nhập từ"] : b["Thu nhập tháng (Min)"]);
+      var min = num(b["Thu nhập từ"] != null && b["Thu nhập từ"] !== "" ? b["Thu nhập từ"] : b["Thu nhập tháng (Min)"]);
       var maxRaw = b["Thu nhập đến"] != null && b["Thu nhập đến"] !== "" ? b["Thu nhập đến"] : b["Thu nhập tháng (Max)"];
       var tyLe = pct(b["Tỷ lệ"] != null && b["Tỷ lệ"] !== "" ? b["Tỷ lệ"] : b["Tỷ lệ đóng thuế"]);
       if (tn <= min) return;
-      var tran = (maxRaw === "" || maxRaw == null || money(maxRaw) === 0) ? tn : Math.min(tn, money(maxRaw));
+      var tran = (maxRaw === "" || maxRaw == null || num(maxRaw) === 0) ? tn : Math.min(tn, num(maxRaw));
       if (tran - min > 0) thue += (tran - min) * tyLe;
     });
     return Math.round(thue);
@@ -156,7 +143,7 @@
       if (!trongKy(r, cotNgay, nam, thang)) return;
       var ma = r["Mã NV"]; if (!ma) return;
       var o = map[ma] || (map[ma] = {}); cols.forEach(function (c) { o[c] = (o[c] || 0); });
-      cols.forEach(function (c) { o[c] += money(r[c]); });
+      cols.forEach(function (c) { o[c] += num(r[c]); });
     });
     return map;
   }
@@ -196,7 +183,7 @@
       var nghi = ns["Ngày nghỉ/thay đổi"];
       if (nghi && new Date(nghi) < dauKy) return;
       var c = cc[ma] || { tongCong: 0, congChuNhat: 0, congTangCa: 0, congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0, nhanTheoNgay: {}, congChinhTheoNgay: {} };
-      var luongTT = money(ns["Lương thỏa thuận"]);
+      var luongTT = num(ns["Lương thỏa thuận"]);
       var maTL1 = ns["Mã tiền lương 1"] || "";
       var dmL = dmLuong[ns["Mã tiền lương 1"]] || dmLuong[ns["Mã tiền lương 2"]] || null;
       if (!dmL && maTL1) out.canhbao.push(ma + ": mã lương '" + maTL1 + "' chưa có trong Danh mục lương (hoặc hết hiệu lực)");
@@ -210,14 +197,14 @@
       if (maTL1 === "CĐ") luongTG = luongTT;
       else if (maTL1 === "CN1" || maTL1 === "CN2" || maTL1 === "SP") luongTG = Math.round(luongTT * congTinhTG);
       else luongTG = Math.round(donGiaTG * congTinhTG);
-      var luongPhu = dmL ? money(dmL["Lương phụ"]) : 0;
+      var luongPhu = dmL ? num(dmL["Lương phụ"]) : 0;
 
       // Lương sản lượng + bù
-      var tan = sl.tong[ma] || 0, donGiaSL = dmL ? money(dmL["Số tiền khoán"]) : 0;
+      var tan = sl.tong[ma] || 0, donGiaSL = dmL ? num(dmL["Số tiền khoán"]) : 0;
       var luongSL = 0, luongBu = 0;
       if (laSL) {
         luongSL = Math.round(tan * donGiaSL);
-        var nguong = num(dmL["ĐK_Bù lương (công tối thiểu)"]), giaBu = money(dmL["Đơn giá bù lương"]);
+        var nguong = num(dmL["ĐK_Bù lương (công tối thiểu)"]), giaBu = num(dmL["Đơn giá bù lương"]);
         if (buTheoNgay) {
           if (nguong > 0 && giaBu > 0) {
             var cn = c.congChinhTheoNgay, sn = sl.ngay[ma] || {};
@@ -237,41 +224,40 @@
       var xe = bd.tong[ma] || 0;
       var dm2 = dmLuong[ns["Mã tiền lương 2"]] || null;
       var laSP2 = !!(dm2 && /SP/i.test(dm2["Mã hình thức lương"] || ""));
-      var giaBD = laSP2 ? money(dm2["Số tiền khoán"]) : (dmL ? money(dmL["Đơn giá bơm dăm"]) : 0);
+      var giaBD = laSP2 ? num(dm2["Số tiền khoán"]) : (dmL ? num(dmL["Đơn giá bơm dăm"]) : 0);
       var luongBD = Math.round(xe * giaBD);
 
       // Tăng ca
       var dmT = dmTC[ns["Mã tăng ca"]] || null, tienTC = 0;
       if (cChuan > 0) {
         if (maTL1 === "CN1" || maTL1 === "CN2") tienTC = Math.round(luongTT * c.congTangCa);
-        else if (ns["Mã tăng ca"] === "TC5" && dmT) tienTC = Math.round(money(dmT["Tiền tăng ca (nếu tính cố định)"]) / cChuan * c.congTangCa);
+        else if (ns["Mã tăng ca"] === "TC5" && dmT) tienTC = Math.round(num(dmT["Tiền tăng ca (nếu tính cố định)"]) / cChuan * c.congTangCa);
         else if (dmT) tienTC = Math.round(donGiaTG * heSoTangCa(ns["Mã tăng ca"], c.tongCong, c.congTrungChuyen, c.congLe, cChuan, c.congChuNhat, c.congTangCa, pct(dmT["Hệ số tăng ca"]), c.congPhep, c.congDiChuyen));
       }
 
       // Phụ cấp
       var pc = dmPC[ns["Mã phụ cấp"]], tienPC = 0;
       if (pc) {
-        var soPC = money(pc["Số tiền"]);
+        var soPC = num(pc["Số tiền"]);
         var coDinh = /cố định/i.test(String(pc["Cách tính"] || "")) || !pc["Cách tính"];
         if (coDinh) tienPC = soPC || Math.round(luongTT * pct(pc["Tỷ lệ"]));
         else if (cChuan > 0) { var du = cChuan - num(pc["Tham chiếu"]); tienPC = c.tongCong >= du ? soPC : Math.round(soPC / cChuan * c.tongCong); }
       }
       // Hỗ trợ lương (Mã hỗ trợ 2) & tiền cơm (Mã hỗ trợ)
       var ht2 = dmHT[ns["Mã hỗ trợ 2"]], luongHT = 0;
-      if (ht2 && cChuan > 0 && c.tongCong - cChuan <= 0) luongHT = Math.round((cChuan - c.tongCong) * money(ht2["Số tiền"]));
+      if (ht2 && cChuan > 0 && c.tongCong - cChuan <= 0) luongHT = Math.round((cChuan - c.tongCong) * num(ht2["Số tiền"]));
       var ht1 = dmHT[ns["Mã hỗ trợ"]], ngayCom = (c.congCom || 0) + (comMap[ma] || 0);
-      var tienCom = ht1 ? Math.round(ngayCom * money(ht1["Số tiền"])) : 0;
+      var tienCom = ht1 ? Math.round(ngayCom * num(ht1["Số tiền"])) : 0;
       // Phụ cấp công tác theo nhãn chấm công
       var dem = {}, pcCT = 0;
       Object.keys(c.nhanTheoNgay).forEach(function (k) { var n = c.nhanTheoNgay[k]; if (n) dem[n] = (dem[n] || 0) + 1; });
-      Object.keys(dem).forEach(function (n) { if (dmPC[n]) pcCT += dem[n] * money(dmPC[n]["Số tiền"]); });
+      Object.keys(dem).forEach(function (n) { if (dmPC[n]) pcCT += dem[n] * num(dmPC[n]["Số tiền"]); });
 
       var p = ps[ma] || { "Thưởng": 0, "Thu nhập khác": 0, "Trừ khác": 0 }, u = ung[ma] || { "Tạm ứng": 0 };
       var tongTN = luongTG + luongPhu + luongSL + luongBu + luongBD + tienTC + tienPC + pcCT + luongHT + tienCom + p["Thưởng"] + p["Thu nhập khác"];
 
       // BHXH
-      var bh = dmBH[ns["Mã BHXH"]], luongBH = money(ns["Lương cơ bản"]) || luongTT, bhNLD = 0, truyThu = 0;
-      if (bh && luongBH > 0 && luongBH < 1000) out.canhbao.push(ma + ": lương đóng BH = " + luongBH + "đ — quá nhỏ, kiểm tra lại 'Lương cơ bản' trong phụ lục hợp đồng");
+      var bh = dmBH[ns["Mã BHXH"]], luongBH = num(ns["Lương cơ bản"]) || luongTT, bhNLD = 0, truyThu = 0;
       if (bh) {
         var tlNLD = num(bh["NLD.BHXH"]) + num(bh["NLD.BHYT"]) + num(bh["NLD.BHTN"]);
         var ng = dmL ? num(dmL["Ngưỡng truy thu BH (công)"]) : 0;
@@ -293,7 +279,7 @@
       // TNCN
       var maT = ns["Mã TNCN"] || "", npt = num(ns["Người phụ thuộc"]);
       var gtBT = dmGT[ns["Mã GT_TNCN_BT"]], gtPT = dmGT[ns["Mã GT_TNCN_PT"]];
-      var tienGTBT = gtBT ? money(gtBT["Số tiền"]) : 0, tongGTPT = npt * (gtPT ? money(gtPT["Số tiền"]) : 0);
+      var tienGTBT = gtBT ? num(gtBT["Số tiền"]) : 0, tongGTPT = npt * (gtPT ? num(gtPT["Số tiền"]) : 0);
       var chiuThue = 0, tinhThue = 0, thue = 0;
       // Phương thức thuế: mã cũ TNCN0/1/2, hoặc mã trong danh mục Thuế TNCN (Nội dung "Khấu trừ vãng lai" / "Lũy tiến")
       var pt = dmPTThue[maT], kieu, tyLeVL = 0.10;
@@ -307,12 +293,7 @@
       } else { kieu = "LT"; out.canhbao.push(ma + ": mã thuế TNCN '" + maT + "' chưa có trong danh mục — tạm tính lũy tiến"); }
       if (kieu === "VL") { chiuThue = tongTN; tinhThue = tongTN; thue = Math.round(tongTN * tyLeVL); }
       else if (kieu === "MIEN") { chiuThue = tongTN - bhNLD; }
-      else {
-        if (!gtBT) out.canhbao.push(ma + ": thuế lũy tiến nhưng không tìm thấy mức giảm trừ bản thân hiệu lực trong kỳ (mã '" + (ns["Mã GT_TNCN_BT"] || "") + "') — thuế có thể bị tính cao");
-        if (npt > 0 && !gtPT) out.canhbao.push(ma + ": có " + npt + " người phụ thuộc nhưng không tìm thấy mức giảm trừ người phụ thuộc hiệu lực trong kỳ");
-        if (!bieu.length) out.canhbao.push(ma + ": không có biểu thuế lũy tiến hiệu lực trong kỳ — thuế = 0");
-        chiuThue = tongTN - bhNLD - tienCom; tinhThue = Math.max(0, chiuThue - tienGTBT - tongGTPT); thue = tinhThueLuyTien(tinhThue, bieu);
-      }
+      else { chiuThue = tongTN - bhNLD - tienCom; tinhThue = Math.max(0, chiuThue - tienGTBT - tongGTPT); thue = tinhThueLuyTien(tinhThue, bieu); }
       if (thue > 0) out.tncn.push({
         "Mã NV": ma, "Họ và tên": ns["Họ và tên"], "Thu nhập chịu thuế": chiuThue,
         "Giảm trừ bản thân": kieu === "VL" ? 0 : tienGTBT, "Số người phụ thuộc": npt,
@@ -322,7 +303,6 @@
       var truKhac = p["Trừ khác"], tamUng = u["Tạm ứng"];
       var cl = tongTN - bhNLD - truyThu - thue - truKhac - tamUng;
       var thucLinh = cl >= 0 ? Math.round(cl / 1000) * 1000 : 0;
-      if (cl < 0) out.canhbao.push(ma + ": các khoản trừ (BH, thuế, tạm ứng, trừ khác) vượt thu nhập " + Math.round(-cl).toLocaleString("vi-VN") + "đ — thực lĩnh để 0, phần còn thiếu CHƯA được chuyển sang kỳ sau, cần xử lý thủ công");
       out.bangluong.push({
         "Mã NV": ma, "Họ và tên": ns["Họ và tên"],
         "Phòng ban": (pb[ns["Mã PB"]] || {})["Tên phòng ban"] || ns["Mã PB"] || "",
@@ -338,7 +318,6 @@
     return out;
   }
 
-  var ENGINE_VERSION = "1.4.0";
-  var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, tachCong: tachCong, num: num, pct: pct };
+  var api = { tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, tachCong: tachCong, num: num, pct: pct };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LuongEngine = api;
 })(typeof window !== "undefined" ? window : this);

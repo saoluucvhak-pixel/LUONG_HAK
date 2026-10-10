@@ -4,6 +4,7 @@
 (function (root) {
   "use strict";
 
+  var YN = ["Có", "Không"];
   // t: text | date | dt (ngày giờ) | num | money | pct | sel | ref | multi | yesno | area
   var HR = {
     nhanvien: { ten: "Nhân viên", icon: "👤", f: [
@@ -162,8 +163,6 @@
       if (ml.length > 2) warn.push(ma + ": có " + ml.length + " mã lương, app chỉ dùng 2 mã đầu (" + ml.slice(0, 2).join(", ") + ")");
       if (tc.length > 1) warn.push(ma + ": có nhiều mã tăng ca, app dùng mã đầu " + tc[0]);
       var tk = latestBy(rowsOf(db, "thanhtoan", ma), "Hiệu lực từ", b.cuoi);
-      if (nv["Trạng thái"] === "Đã nghỉ việc" && !hd["Ngày chấm dứt"]) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trạng thái 'Đã nghỉ việc' nhưng hợp đồng " + hd["Số HĐLĐ"] + " chưa có Ngày chấm dứt — vẫn đang được tính lương");
-      if (ct["HTTT"] === "Chuyển khoản" && !(tk && tk["Số tài khoản"])) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trả lương chuyển khoản nhưng chưa có số tài khoản");
       var cn = latestBy(rowsOf(db, "canhan", ma), "Hiệu lực từ", b.cuoi);
       out.push({
         "Mã nhân viên": ma, "Họ và tên": nv["Họ và tên"], "Mã PB": ct["Phòng ban"] || "", "Mã CV": ct["Chức vụ"] || "",
