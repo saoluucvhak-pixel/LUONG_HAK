@@ -59,6 +59,21 @@ Nguyên tắc:
 | `core/permissions` (2.0-α2) | `can(user, quyền)` · `need(user, quyền)` · `ROLES` · `PERMS` · `validatePassword` · `wouldRemoveLastAdmin` · chống dò mật khẩu | tài khoản đang đăng nhập | đúng/sai · ném lỗi `EPERM_APP` |
 | `preload` + `main.js` (2.0-α2) | `authSalt()` · `authHash(pw, salt, iter)` · `authVerify(pw, salt, iter, hash)` | mật khẩu | PBKDF2-SHA256 tính ở tiến trình chính, so sánh `timingSafeEqual`. Bản chạy trình duyệt dùng WebCrypto (U-PERM-08 chứng minh 2 cách cho cùng kết quả) |
 
+| `core/validate` (2.0-α4) | `dayCell(day, v, ky)` · `daysInKy(ky)` | 1 ô chấm công | `{error, warn, soCong, nhan}` — 1 quy tắc cho nhập Excel, lưới, dán, kiểm tra dữ liệu, repository |
+| `hr.js` (2.0-α5) | `buildIndex(db)` · `hienHanh(db, ma, asOf, ix)` | dữ liệu | chỉ mục `Map` theo Mã NV, dựng mỗi lượt (không cache giữa các lần gọi) |
+| **`core/repository`** (2.0-α6) | `createRepo({db, can, audit, uid, tableName, hdChildren})` → `plan(op, table, target, values, {what, checkDup})` · `apply(plan, {audit, action})` | 1 thao tác thêm / sửa / xóa | `plan`: `{ok, code, msg, retro, impact, confirmMsg}` — **không sửa gì**; `apply`: kiểm tra lại rồi mới ghi + nhật ký trước/sau. Thứ tự kiểm tra: quyền → ô ngày → trùng khóa → Q-15 → kỳ chốt / hồi tố. Đổi Số HĐLĐ / xóa HĐ kéo theo bảng con **sau** khi mọi kiểm tra đã qua |
+
+### 3.1 Tầng repository (2.0-α6)
+```
+UI (app.js) ──plan()──▶ core/repository ──▶ validate · importer.keyOf · period-guard   (chỉ đọc)
+   │  ◀── {ok:false, msg} → báo lý do, không đổi gì
+   │  ◀── {ok:true, retro, confirmMsg} → (tuỳ màn hình) hỏi xác nhận; Hủy = không đổi gì
+   └──apply()──▶ kiểm tra lại → sửa db → nhật ký (audit) ──▶ app.save() → main/storage
+```
+- Đã đi qua repository: lưới nhập liệu (thêm / sửa ô / dán / xóa), form hồ sơ nhân sự (thêm / sửa), xóa hồ sơ phụ.
+- Ngoại lệ còn ghi thẳng (có lý do, khóa bằng test U-REPO-08): nhật ký; tài khoản và mã khôi phục; hồ sơ công ty; trợ lý thêm nhân viên mới; xóa nhân viên; nạp danh mục mẫu vào bảng trống; tạo bảng thiếu khi mở dữ liệu; hoàn tác gộp chấm công. Nhập Excel dùng `importer.plan/apply` với kiểm tra quyền và kỳ chốt riêng; gộp chấm công dùng `integrity.mergeChamCong`.
+- Bước tiếp theo (PR4): repository là chỗ duy nhất cần đổi khi chuyển sang SQLite cho các thao tác này.
+
 ## 4. Luồng tính & chốt lương (Phase 1)
 
 ```

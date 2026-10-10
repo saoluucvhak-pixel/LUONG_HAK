@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var KEY = "luonghak_db_v1";
-  var E = window.LuongEngine, C = window.HAKCore, VAL = C.validate, IMP = C.importer, INT = C.integrity, CLS = C.close, GRD = C.guard, SCH = C.schema, PERM = C.perm;
+  var E = window.LuongEngine, C = window.HAKCore, VAL = C.validate, IMP = C.importer, INT = C.integrity, CLS = C.close, GRD = C.guard, SCH = C.schema, PERM = C.perm, RP = C.repo;
   var DAYS = []; for (var i = 1; i <= 31; i++) DAYS.push(("0" + i).slice(-2));
 
   // ---------- Định nghĩa bảng ----------
@@ -29,6 +29,18 @@
   };
   var HRT = {}; Object.keys(HRM.HR).forEach(function (k) { HRT[k] = { ten: HRM.HR[k].ten, cols: HRM.HR[k].store, hr: true }; });
   var ALL = Object.assign({}, S, DM, HRT);
+  // Mọi thêm / sửa / xóa bản ghi nghiệp vụ đi qua repository (core/repository.js): quyền → ô ngày → trùng khóa → Q-15 → kỳ chốt / hồi tố, kiểm tra xong mới sửa dữ liệu
+  var REPO = RP.createRepo({ db: function () { return db; }, can: function (p) { return can(p); }, audit: function (a, d) { audit(a, d); }, uid: function () { return HRM.uid(); },
+    tableName: function (t) { return ALL[t] ? ALL[t].ten : t; }, hdChildren: HRM.HD_TABS });
+  /** Ghi theo kế hoạch của repository: bị chặn → báo lý do; hồi tố + o.confirm → hỏi xác nhận (Hủy = không đổi gì). Trả kết quả hoặc null. */
+  function commit(p, o) {
+    o = o || {};
+    if (!p.ok) { alert(p.msg); return null; }
+    if (p.retro && o.confirm && !confirm(p.confirmMsg)) return null;
+    var r = REPO.apply(p, o);
+    if (!r.ok) { alert(r.msg); return null; }
+    return r;
+  }
   var DATECOLS = /^(Ngày|Hiệu lực)/;
   var NUMCOLS = /(Lương|Số tiền|Số suất|KL hàng|Thưởng|Thu nhập|Trừ khác|Tạm ứng|Đơn giá|Tỷ lệ|DN\.|NLD\.|Bậc|Người phụ thuộc|Số người|Tham chiếu|Hệ số|Ngưỡng|ĐK_|Tiền)/;
   var COLW = { "Mã NV": 96, "Họ và tên": 170, "Diễn giải": 200, "Cách tính": 260, "Tên phụ cấp": 160, "Hình thức lương": 150, "Nội dung": 180, "Nội dung tăng ca": 160, "Nội dung khấu trừ": 160, "Tên hỗ trợ": 150, "Tên phòng ban": 200, "Tên chức vụ": 200, "Ghi chú": 200, "Hình thức công": 90, "Mã nhân viên": 110, "Tên Ngân hàng": 150 };
@@ -385,7 +397,7 @@
     var q = h("input", { class: "i search", placeholder: "🔍 Tìm trong bảng...", value: st.q });
     q.addEventListener("input", function () { st.q = q.value; draw(); q.focus(); });
     var newRow = function () { var r = Object.assign({}, def.def || {}); if (def.kyCol) r[def.kyCol] = kyStr(); if (def.dateCol) r[def.dateCol] = kyStr() + "-01"; return r; };
-    if (!locked) bar.appendChild(btn("＋ Thêm dòng", "pri", function () { if (!need(editPerm)) return; db[key].push(newRow()); save(); st.q = ""; q.value = ""; draw(); var tw = body; tw.scrollTop = tw.scrollHeight; }));
+    if (!locked) bar.appendChild(btn("＋ Thêm dòng", "pri", function () { if (!need(editPerm)) return; if (!commit(REPO.plan("insert", key, null, newRow(), { what: "thêm dòng" }), { audit: theoKy ? false : "retro", action: "Thêm dòng danh mục" })) return; save(); st.q = ""; q.value = ""; draw(); var tw = body; tw.scrollTop = tw.scrollHeight; }));
     bar.appendChild(q); bar.appendChild(cnt); bar.appendChild(h("span", { class: "sp" }));
     bar.appendChild(btn("📄 Tải file mẫu", "", function () { downloadTemplate(key); }, "File Excel mẫu có sẵn tên cột + dòng ví dụ"));
     if (!locked) bar.appendChild(btn("⬆ Nhập Excel", "", function () { importFile(key, draw); }, "Nhập từ file .xlsx / .xls / .csv"));
@@ -434,20 +446,15 @@
             if (!need(editPerm)) { inp.value = r[c] == null ? "" : r[c]; return; }
             var n = VAL.normCell(c, v);
             if (n.error) { toast("⚠ " + c + ": " + n.error); inp.value = r[c] == null ? "" : r[c]; return; }
+            var patch = {}; patch[c] = n.value;
+            // Kỳ đã chốt, ô ngày sai, quyền, hồi tố (danh mục chồng lên kỳ đã chốt: chỉ Admin, cảnh báo + nhật ký) — repository kiểm tra
+            var pE = REPO.plan("update", key, r, patch, { what: "sửa dòng này" });
+            if (!pE.ok) { alert(pE.msg); inp.value = r[c] == null ? "" : r[c]; return; }
             var dc = isDay && key === "chamcong" ? VAL.dayCell(c, n.value, r["Kỳ"]) : null;
-            if (dc && dc.error) { alert("⛔ " + dc.error); inp.value = r[c] == null ? "" : r[c]; return; }
             if (dc && dc.warn) toast("⚠ " + dc.warn);
-            var test = Object.assign({}, r); test[c] = n.value;
-            var p1 = VAL.rowPeriod(key, r), p2 = VAL.rowPeriod(key, test);
-            if (p1 && kyChot(p1)) { alert("Dòng này thuộc " + kyLabel(p1) + " đã chốt lương — không sửa được."); inp.value = r[c] == null ? "" : r[c]; return; }
-            if (p2 && kyChot(p2)) { alert("Không thể chuyển dòng này sang " + kyLabel(p2) + " vì kỳ đó đã chốt lương."); inp.value = r[c] == null ? "" : r[c]; return; }
-            if (!theoKy) {
-              // Danh mục có hiệu lực (mã lương, phụ cấp, BH, thuế…) chồng lên kỳ đã chốt → cảnh báo + nhật ký (không chặn)
-              var impG = GRD.impactChange(db, key, r, test);
-              if (impG.kind === "retro" && !can("retro.edit")) { alert("⛔ Dòng này có hiệu lực trong kỳ đã chốt " + impG.periods.map(GRD.label).join(", ") + ". Chỉ Admin được sửa dữ liệu hồi tố."); inp.value = r[c] == null ? "" : r[c]; return; }
-              if (impG.kind === "retro") { toast("⚠ Hồi tố: dòng này có hiệu lực trong kỳ đã chốt " + impG.periods.map(GRD.label).join(", ") + " — bảng lương đã chốt không đổi"); auditChange("Sửa danh mục", key, r, test, identOf(test)); }
-            }
-            r[c] = n.value; if (inp.value !== n.value && !isDay) inp.value = n.value;
+            if (pE.retro) toast("⚠ Hồi tố: dòng này có hiệu lực trong kỳ đã chốt " + pE.impact.periods.map(GRD.label).join(", ") + " — bảng lương đã chốt không đổi");
+            if (!commit(pE, { audit: theoKy ? false : "retro", action: "Sửa danh mục" })) { inp.value = r[c] == null ? "" : r[c]; return; }
+            if (inp.value !== n.value && !isDay) inp.value = n.value;
             save(); if (c === "Mã NV" && nameTd) nameTd.textContent = tenNV(n.value) || (n.value ? "⚠ chưa có trong Nhân sự" : ""); if (isDay) updTot();
           });
           inp.addEventListener("paste", function (ev) {
@@ -461,11 +468,11 @@
             lines.forEach(function (ln, li) {
               var tgt = idx[n + li], cand = tgt == null ? newRow() : Object.assign({}, db[key][tgt]);
               ln.split("\t").forEach(function (v, k) { var col = def.cols[start + k]; if (col && col !== def.kyCol) { var nc = VAL.normCell(col, v); if (nc.error || (key === "chamcong" && /^\d\d$/.test(col) && VAL.dayCell(col, nc.value, cand["Kỳ"]).error)) { bad++; return; } cand[col] = nc.value; } });
-              var pp = VAL.rowPeriod(key, cand), p0 = tgt == null ? null : VAL.rowPeriod(key, db[key][tgt]);
-              if ((pp && kyChot(pp)) || (p0 && kyChot(p0))) { skip++; return; }
-              if (tgt == null) { db[key].push(cand); idx.push(db[key].length - 1); } else Object.assign(db[key][tgt], cand);
+              var pP = tgt == null ? REPO.plan("insert", key, null, cand, { what: "dán dữ liệu" }) : REPO.plan("update", key, db[key][tgt], cand, { what: "dán dữ liệu" });
+              if (!pP.ok || !REPO.apply(pP, { audit: theoKy ? false : "retro", action: "Dán dữ liệu" }).ok) { skip++; return; }
+              if (tgt == null) idx.push(db[key].length - 1);
             });
-            save(); draw(); toast("Đã dán " + (lines.length - skip) + " dòng" + (skip ? " · bỏ qua " + skip + " dòng thuộc kỳ đã chốt" : "") + (bad ? " · " + bad + " ô sai định dạng / ngày không hợp lệ — KHÔNG dán, kiểm tra lại" : ""));
+            save(); draw(); toast("Đã dán " + (lines.length - skip) + " dòng" + (skip ? " · bỏ qua " + skip + " dòng (thuộc kỳ đã chốt / không đủ quyền / không hợp lệ)" : "") + (bad ? " · " + bad + " ô sai định dạng / ngày không hợp lệ — KHÔNG dán, kiểm tra lại" : ""));
           });
           if (locked) inp.disabled = true;
           // Ngày không có trong tháng (VD 31/09): không cho nhập; nếu dữ liệu cũ có giá trị thì vẫn cho sửa để xóa
@@ -477,13 +484,11 @@
         if (def.total) { updTot(); tr.appendChild(tot); }
         tr.appendChild(h("td", { style: "text-align:center" }, [locked ? null : btn("✕", "red ghost", function () {
           if (!need(editPerm)) return;
-          var row0 = db[key][ri], pD = VAL.rowPeriod(key, row0);
-          if (pD && kyChot(pD)) { alert("Dòng này thuộc " + kyLabel(pD) + " đã chốt lương — không xóa được."); return; }
-          var impX = theoKy ? { kind: "none" } : GRD.impact(db, key, row0);
-          if (impX.kind === "retro" && !can("retro.edit")) { alert("⛔ Dòng này có hiệu lực trong kỳ đã chốt " + impX.periods.map(GRD.label).join(", ") + ". Chỉ Admin được xóa/sửa dữ liệu hồi tố."); return; }
-          if (!confirm("Xóa dòng này?" + (impX.kind === "retro" ? "\n\n" + retroText(impX) : ""))) return;
-          if (!theoKy) auditChange("Xóa dòng danh mục", key, row0, null, identOf(row0));
-          db[key].splice(ri, 1); save(); draw(); updateNav();
+          var pX = REPO.plan("remove", key, db[key][ri], null, { what: "xóa dòng này" });
+          if (!pX.ok) { alert(pX.msg); return; }
+          if (!confirm("Xóa dòng này?" + (pX.retro ? "\n\n" + retroText(pX.impact) : ""))) return;
+          if (!commit(pX, { audit: theoKy ? false : "always", action: "Xóa dòng danh mục" })) return;
+          save(); draw(); updateNav();
         }, "Xóa dòng")]));
         tb.appendChild(tr);
       });
@@ -550,10 +555,7 @@
   function missingReq(fields, data) { return fields.filter(function (f) { return f.req && !data[f.k]; }).map(function (f) { return f.label || f.k; }); }
 
   // ---------- Kiểm soát thay đổi ảnh hưởng kỳ lương đã chốt (core/period-guard.js) ----------
-  function retroText(imp) {
-    return "Dữ liệu này có hiệu lực trong kỳ lương ĐÃ CHỐT: " + imp.periods.map(GRD.label).join(", ") + ".\n" +
-      "• Bảng lương đã chốt KHÔNG thay đổi.\n• Muốn áp dụng cho kỳ đó: Kỳ lương đã chốt → Mở chốt (ghi lý do) → tính lại → chốt lại (phiên bản mới, có so sánh trước/sau).";
-  }
+  function retroText(imp) { return RP.retroText(imp); }
   /** Hỏi trước khi ghi 1 thay đổi. Trả true nếu được phép ghi. */
   function guardChange(table, before, after, what) {
     var imp = GRD.impactChange(db, table, before, after);
@@ -568,7 +570,6 @@
     audit(action, (ALL[table] ? ALL[table].ten : table) + (ident ? " · " + ident : "") + (ch.length ? " · " + ch.slice(0, 12).join("; ") : "") +
       (imp.kind === "retro" ? " · [HỒI TỐ kỳ đã chốt " + imp.periods.map(GRD.label).join(", ") + "]" : ""));
   }
-  function identOf(r) { return [r["Mã NV"], r["Số HĐLĐ"], r["Hiệu lực từ"] || r["Từ ngày"] || r["Ngày vào làm"], r["Mã lương"] || r["Mã phụ cấp"] || r["Mã phòng ban"] || r["Mã chức vụ"]].filter(Boolean).join(" / "); }
 
   function hrForm(key, row, base, onDone) {
     var cfg = HR[key], isNew = !row, data = Object.assign({}, base || {}, row || {});
@@ -583,26 +584,10 @@
         if (miss.length) { alert("Cần nhập: " + miss.join(", ")); return; }
         var bad = cfg.f.filter(function (f) { return f.t === "money" && d[f.k] && isNaN(VAL.parseMoney(d[f.k])); }).map(function (f) { return f.label || f.k; });
         if (bad.length) { alert("Số tiền không hợp lệ: " + bad.join(", ")); return; }
-        var dupKey = IMP.keyOf(key, Object.assign({}, base || {}, d));
-        if (dupKey && db[key].some(function (r) { return r !== row && IMP.keyOf(key, r) === dupKey; })) { alert("Đã có bản ghi trùng (" + IMP.KEYS[key].join(" + ") + "). Hãy sửa bản ghi đó thay vì thêm mới."); return; }
         if (!need("hr.edit", "sửa hồ sơ nhân sự")) return;
-        if (key === "chitiethd" && row) {
-          var fz = GRD.frozenAppendix(db, row);
-          if (fz.length) { alert("⛔ Phụ lục này đã dùng để tính lương kỳ ĐÃ CHỐT " + fz.map(GRD.label).join(", ") + " — không được sửa (quy tắc Q-15).\nMuốn thay đổi lương/chức vụ/phòng ban: bấm '＋ Thêm' để lập PHỤ LỤC MỚI có ngày hiệu lực mới."); return; }
-        }
-        if (key === "hopdong" && row && row["Số HĐLĐ"] !== d["Số HĐLĐ"]) {
-          var fzH = GRD.frozenOfContract(db, row["Mã NV"], row["Số HĐLĐ"]);
-          if (fzH.length) { alert("⛔ Không đổi được Số HĐLĐ: phụ lục của hợp đồng này đã dùng tính lương kỳ đã chốt " + fzH.map(GRD.label).join(", ") + " (Q-15)."); return; }
-        }
-        if (key === "hopdong") {
-          var dup = db.hopdong.some(function (r) { return r !== row && r["Mã NV"] === data["Mã NV"] && r["Số HĐLĐ"] === d["Số HĐLĐ"]; });
-          if (dup) { alert("Số HĐLĐ này đã có"); return; }
-          if (row && row["Số HĐLĐ"] !== d["Số HĐLĐ"]) HRM.HD_TABS.forEach(function (k) { (db[k] || []).forEach(function (r) { if (r["Mã NV"] === row["Mã NV"] && r["Số HĐLĐ"] === row["Số HĐLĐ"]) r["Số HĐLĐ"] = d["Số HĐLĐ"]; }); });
-        }
-        var after = Object.assign({}, base || {}, row || {}, d), beforeCopy = row ? Object.assign({}, row) : null;
-        if (!guardChange(key, beforeCopy, after, isNew ? "thêm " + cfg.ten : "sửa " + cfg.ten)) return;
-        if (isNew) db[key].push(Object.assign({ _id: HRM.uid() }, base || {}, d)); else Object.assign(row, d);
-        auditChange(isNew ? "Thêm hồ sơ" : "Sửa hồ sơ", key, beforeCopy, after, identOf(after));
+        // Trùng khóa, Q-15, kỳ chốt / hồi tố, đổi Số HĐLĐ kéo theo phụ lục: repository kiểm tra HẾT rồi mới ghi (A3-01)
+        var pF = REPO.plan(isNew ? "insert" : "update", key, row, isNew ? Object.assign({}, base || {}, d) : d, { what: (isNew ? "thêm " : "sửa ") + cfg.ten, checkDup: true });
+        if (!commit(pF, { confirm: true, action: isNew ? "Thêm hồ sơ" : "Sửa hồ sơ" })) return;
         save(); close(); toast("Đã lưu"); (onDone || render)();
       })];
     });
@@ -647,14 +632,10 @@
       acts.appendChild(btn("✕", "red ghost", function (ev) {
         ev.stopPropagation();
         if (!need("hr.edit", "xóa hồ sơ nhân sự")) return;
-        var fzD = key === "chitiethd" ? GRD.frozenAppendix(db, r) : key === "hopdong" ? GRD.frozenOfContract(db, r["Mã NV"], r["Số HĐLĐ"]) : [];
-        if (fzD.length) { alert("⛔ Không xóa được: " + (key === "hopdong" ? "phụ lục của hợp đồng này" : "phụ lục này") + " đã dùng tính lương kỳ ĐÃ CHỐT " + fzD.map(GRD.label).join(", ") + " (quy tắc Q-15)."); return; }
-        var impD = GRD.impact(db, key, r);
-        if (impD.kind === "retro" && !can("retro.edit")) { alert("⛔ Bản ghi này có hiệu lực trong kỳ lương đã chốt " + impD.periods.map(GRD.label).join(", ") + ". Chỉ Admin được xóa dữ liệu hồi tố."); return; }
-        if (!confirm("Xóa dòng này?" + (key === "hopdong" ? "\nToàn bộ phụ lục lương, nghỉ phép… của hợp đồng này cũng bị xóa." : "") + (impD.kind === "retro" ? "\n\n" + retroText(impD) : ""))) return;
-        auditChange("Xóa hồ sơ", key, r, null, identOf(r));
-        db[key].splice(db[key].indexOf(r), 1);
-        if (key === "hopdong") HRM.HD_TABS.forEach(function (k) { db[k] = (db[k] || []).filter(function (y) { return !(y["Mã NV"] === r["Mã NV"] && y["Số HĐLĐ"] === r["Số HĐLĐ"]); }); });
+        var pD = REPO.plan("remove", key, r, null, { what: "xóa " + cfg.ten });
+        if (!pD.ok) { alert(pD.msg); return; }
+        if (!confirm("Xóa dòng này?" + (key === "hopdong" ? "\nToàn bộ phụ lục lương, nghỉ phép… của hợp đồng này cũng bị xóa." : "") + (pD.retro ? "\n\n" + retroText(pD.impact) : ""))) return;
+        if (!commit(pD, { action: "Xóa hồ sơ" })) return;
         save(); render();
       }, "Xóa"));
       x.appendChild(acts); tb.appendChild(x);
@@ -1742,7 +1723,7 @@
       $("#nav").innerHTML = ""; var t0 = $("#top"); t0.innerHTML = ""; t0.appendChild(h("h2", { text: !(db.nguoidung || []).length ? "Thiết lập ban đầu" : "Đăng nhập" }));
       var m0 = $("#main"); m0.innerHTML = "";
       m0.appendChild(!(db.nguoidung || []).length ? setupAdminScreen() : st.authView === "recover" ? recoverAdminScreen() : loginScreen());
-      $("#sidefoot").textContent = "v2.0.0-alpha.5"; return;
+      $("#sidefoot").textContent = "v2.0.0-alpha.6"; return;
     }
     if (!tabAllowed(st.tab)) st.tab = "home";
     var nav = $("#nav"); nav.innerHTML = "";
@@ -1756,7 +1737,7 @@
       if (n[0] === "nhansu") b.appendChild(h("span", { class: "n", text: db.nhanvien.filter(function (r) { return r["Trạng thái"] !== "Đã nghỉ việc"; }).length }));
       nav.appendChild(b);
     });
-    $("#sidefoot").textContent = "v2.0.0-alpha.5 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
+    $("#sidefoot").textContent = "v2.0.0-alpha.6 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
     var bb = $(".brand small"); if (bb) bb.textContent = congTy()["Tên công ty"] || "Chạy offline";
     var top = $("#top"); top.innerHTML = "";
     var title = TITLES[st.tab] || (S[st.tab] && S[st.tab].ten) || "";

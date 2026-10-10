@@ -159,3 +159,10 @@ Rollback: cài lại alpha.3 — không đổi cấu trúc dữ liệu, không �
 
 Bằng chứng: `HR_IMPL=tests/regression/baseline_2.0.0-alpha.4/hr.js node tests/perf/bench.js` (bản cũ) so với `node tests/perf/bench.js` — `PERFORMANCE_REPORT.md` §3. Rollback: cài lại alpha.4.
 
+## 2.0.0-alpha.6 — PR3 repository (nhánh `claude/v2-repository`)
+| Lỗi | Thay đổi | File | Test |
+|---|---|---|---|
+| A3-01 (High) đổi Số HĐLĐ: bảng con bị đổi **trước** kiểm tra hồi tố → bị chặn / bấm Hủy vẫn làm phụ lục mồ côi | `core/repository.js`: `plan()` chỉ kiểm tra, `apply()` mới sửa (bảng con đổi sau cùng) | `core/repository.js` (mới), `app.js` `hrForm` | U-REPO-02, E2E A3-01 (alpha.5: phụ lục 1 → 0; nay 1 → 1) |
+
+Rollback: cài lại alpha.5 (không đổi cấu trúc dữ liệu, không đổi engine).
+

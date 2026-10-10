@@ -50,7 +50,8 @@
 - [x] Test kịch bản tính lương I-15…I-20 (chờ Kế toán xác nhận Q-22, Q-23)
 - [ ] Chờ chủ sở hữu: Q-18…Q-23; mở mạng `cdn.sheetjs.com` (SEC-03)
 - [x] **PR2 hiệu năng** (nhánh `claude/v2-perf`, alpha.5): chỉ mục Mã NV, 5.000 NV dựng DS lương 22 ms — `PERFORMANCE_REPORT.md`
-- Tiếp theo: PR3 repository → PR4 SQLite (lưu ~250 ms ở 5.000 NV) → PR5 UI/HRM
+- [x] **PR3 repository** (nhánh `claude/v2-repository`, alpha.6): `core/repository.js`, sửa A3-01; ngoại lệ còn lại khóa bằng U-REPO-08
+- Tiếp theo: PR4 SQLite (lưu ~250 ms ở 5.000 NV) → PR5 UI/HRM
 
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)
 0. (Đã khảo sát) SQLite qua `node:sqlite` có sẵn trong Electron 43 / Node 24.21 — không cần module native.
