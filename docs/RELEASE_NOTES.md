@@ -1,5 +1,16 @@
 # RELEASE_NOTES — 2.0.0-alpha.2 (đăng nhập & phân quyền)
 
+# RELEASE_NOTES — 2.0.0-alpha.4 (kiểm tra ô chấm công)
+
+**Ngày:** 10/10/2026 · bản thử nghiệm.
+
+- Ô chấm công **số âm, chữ lạ, hoặc ngày không có trong tháng** (VD 31/09) không còn nhập được (Excel, gõ tay, dán).
+- **Sau khi cài:** vào *Công ty & Sao lưu → Kiểm tra dữ liệu*. Nếu có dòng **High** "Ngày 31 không tồn tại…" hoặc "không đọc được", hãy mở *Chấm công* kỳ đó và xóa / sửa ô. Bảng lương **đã chốt không thay đổi**. Kỳ chưa chốt hiện **vẫn cộng** ô ngày không tồn tại cho tới khi có quyết định Q-21.
+- Xem trước nhập Excel có thêm cột **Cảnh báo** (quá 3 công/ngày, nhãn công tác chưa có mã phụ cấp).
+- Không đổi công thức lương, không đổi cấu trúc dữ liệu — quay lại alpha.3 được.
+
+---
+
 **Ngày:** 10/10/2026 · bản thử nghiệm.
 
 **Khi cài:**

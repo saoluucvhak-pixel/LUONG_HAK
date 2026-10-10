@@ -89,6 +89,37 @@
     return { value: String(v).trim() };
   }
 
+  // ---------- Ô ngày chấm công ----------
+  // Hợp lệ: trống | số công ≥ 0 (1, 0.5, 1,5) | số công + nhãn (1QC) | chỉ nhãn (QC).
+  // Nhãn: bắt đầu bằng chữ cái, sau đó chữ/số (VD QC, CT2). Không chấp nhận số âm, "1.5.2", ký tự lạ.
+  var DAY_RE = /^(\d+(?:[.,]\d+)?)?\s*([A-Za-z\u00C0-\u1EF9][A-Za-z0-9\u00C0-\u1EF9]*)?$/;
+  var MAX_CONG_NGAY = 3;
+  function daysInKy(ky) { var k = normKy(ky); if (!k) return 31; var y = +k.slice(0, 4), m = +k.slice(5, 7); return new Date(y, m, 0).getDate(); }
+  /**
+   * Kiểm tra 1 ô ngày chấm công.
+   * @param day "01".."31"  @param v giá trị ô  @param ky kỳ của dòng ("2026-09") — để biết ngày có tồn tại không
+   * @returns { error: mô tả lỗi | null, warn: cảnh báo | null, soCong, nhan }
+   */
+  function dayCell(day, v, ky) {
+    var res = { error: null, warn: null, soCong: 0, nhan: "" };
+    if (v === "" || v == null) return res;
+    var d = +day;
+    if (!(d >= 1 && d <= 31)) { res.error = "Cột ngày " + day + " không hợp lệ"; return res; }
+    if (ky && d > daysInKy(ky)) { res.error = "Ngày " + day + " không tồn tại trong tháng " + normKy(ky).slice(5) + "/" + normKy(ky).slice(0, 4) + " (\"" + v + "\")"; return res; }
+    if (typeof v === "number") {
+      if (!isFinite(v) || v < 0) { res.error = "Ngày " + day + ": số công âm hoặc không hợp lệ (" + v + ")"; return res; }
+      res.soCong = v;
+    } else {
+      var s = String(v).trim(), m = s.match(DAY_RE);
+      if (!s) return res;
+      if (!m || (m[1] == null && m[2] == null)) { res.error = "Ngày " + day + ": \"" + s + "\" không đọc được (cần dạng 1, 0.5, 1QC hoặc QC)" + (/^-/.test(s) ? " — số công không được âm" : ""); return res; }
+      res.soCong = m[1] == null ? 0 : parseFloat(m[1].replace(",", "."));
+      res.nhan = m[2] || "";
+    }
+    if (res.soCong > MAX_CONG_NGAY) res.warn = "Ngày " + day + ": " + res.soCong + " công — vượt " + MAX_CONG_NGAY + " công/ngày, kiểm tra lại";
+    return res;
+  }
+
   // ---------- Kỳ của 1 dòng phát sinh ----------
   var PERIOD_FIELD = { chamcong: "Kỳ", sanluong: "Ngày cân", bandam: "Ngày cân", psluong: "Ngày hạch toán", ungluong: "Ngày hạch toán", tiencom: "Ngày" };
   function rowPeriod(table, r) {
@@ -98,6 +129,7 @@
   }
 
   var api = { parseMoney: parseMoney, normMoney: normMoney, normDate: normDate, normKy: normKy, normId: normId, normCell: normCell,
+    dayCell: dayCell, daysInKy: daysInKy, MAX_CONG_NGAY: MAX_CONG_NGAY,
     isMoneyCol: isMoneyCol, isDateCol: isDateCol, isIdCol: isIdCol, rowPeriod: rowPeriod, PERIOD_FIELD: PERIOD_FIELD };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.validate = api; }

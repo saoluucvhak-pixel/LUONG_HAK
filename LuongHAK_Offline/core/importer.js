@@ -111,9 +111,10 @@
     var emp = {}; (db.nhanvien || []).forEach(function (n) { emp[n["Mã NV"]] = 1; });
     Object.keys(opts.extraEmployees || {}).forEach(function (k) { emp[k] = 1; });
     var needRef = MONTHLY[table] || HR_SUB[table];
+    var pcCodes = {}; (db.dm_phucap || []).forEach(function (p) { if (p && p["Mã phụ cấp"]) pcCodes[String(p["Mã phụ cấp"]).trim()] = 1; });
 
     (rawRows || []).forEach(function (src, idx) {
-      var r = {}, errs = [], has = false;
+      var r = {}, errs = [], warns = [], has = false;
       Object.keys(src).forEach(function (h0) {
         var c = String(h0).trim();
         if (/^\d$/.test(c) && cols.indexOf("0" + c) >= 0) c = "0" + c;
@@ -126,9 +127,20 @@
       if (table === "chamcong") {
         if (!r["Kỳ"] && opts.defaultKy) r["Kỳ"] = opts.defaultKy;
         r["Hình thức công"] = keyPart(table, "Hình thức công", r["Hình thức công"]);
+        // Ô ngày: chặn số âm / chữ lạ / ngày không có trong tháng; cảnh báo số công bất thường, nhãn chưa có mã phụ cấp
+        Object.keys(r).forEach(function (c) {
+          if (!/^\d\d$/.test(c) || blank(r[c])) return;
+          var dc = V.dayCell(c, r[c], r["Kỳ"]);
+          if (dc.error) errs.push(dc.error);
+          else {
+            if (dc.warn) warns.push(dc.warn);
+            if (dc.nhan && !pcCodes[dc.nhan]) warns.push("Ngày " + c + ": nhãn " + dc.nhan + " chưa có mã phụ cấp — không được tính phụ cấp công tác");
+          }
+        });
       }
       if (table === "nhanvien" && !r["Trạng thái"]) r["Trạng thái"] = "Đang làm việc";
       var item = { line: idx + 2, row: r, action: "add", reason: "" };
+      if (warns.length) item.warn = warns.join("; ");
       (REQUIRED[table] || []).forEach(function (c) { if (!r[c]) errs.push("Thiếu " + c); });
       if (errs.length) { item.action = "invalid"; item.reason = errs.join("; "); items.push(item); return; }
       if (needRef && r["Mã NV"] && !emp[r["Mã NV"]]) { item.action = "refError"; item.reason = "Mã NV " + r["Mã NV"] + " chưa có trong Nhân sự"; items.push(item); return; }

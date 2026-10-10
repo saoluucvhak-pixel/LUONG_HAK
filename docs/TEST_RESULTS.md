@@ -1,5 +1,15 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.4 — Audit V2 (10/10/2026, nhánh `claude/v2-audit2-fixes`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint (`eslint@9.39.5 . --max-warnings 0`) | ✅ 0/0 |
+| `npm test` | ✅ **101/101** (+5 U-CC-13…17, +6 I-15…20) |
+| E2E Electron 43.7.9 (xvfb, Linux) | ✅ **42/42** (+2: ô `-1` bị từ chối & cột 31/09 khóa; dán Ctrl+V không ghi ô sai) |
+| Bằng chứng lỗi: test mới trên mã alpha.3 | `daycell.test.js` **4/5 thất bại** (U-CC-17 là test mô tả hành vi, đạt cả 2 bản); E2E với `app.js` alpha.3: **2/2 kiểm tra mới thất bại** (ô 06 nhận `-1`, ô 13 dán nhận `-1`) |
+| Hồi quy công thức (v1.3.0, 80 NV × 3 kỳ) | ✅ trùng 100% — engine không đổi |
+| Windows thực tế | ⏳ **chưa** — CI chỉ build bộ cài trên `windows-latest` |
+
 ## 2.0.0-alpha.3 — Hướng dẫn & Quy chế (10/10/2026, nhánh `claude/v2-guide`)
 | Nhóm | Kết quả |
 |---|---|
