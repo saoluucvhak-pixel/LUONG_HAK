@@ -13,20 +13,44 @@ const DL = path.join(DATA, "downloads"); fs.mkdirSync(DL);
 const results = [];
 function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra: extra || "" }); console.log((cond ? "PASS " : "FAIL ") + name + (extra ? " — " + extra : "")); }
 
-async function launch(dataDir) {
+const ADMIN = { u: "admin", n: "Quản trị E2E", p: "Admin2026e2e" };
+let dialogs = [];
+// Đăng nhập (hoặc tạo Admin đầu tiên nếu dữ liệu chưa có tài khoản). Màn hình khôi phục (file hỏng) không cần đăng nhập.
+async function auth(w, who) {
+  who = who || ADMIN;
+  const t = await w.locator("#top h2").innerText();
+  if (/Thiết lập/.test(t)) {
+    for (const [k, v] of [["u", who.u], ["n", who.n], ["p", who.p], ["p2", who.p]]) await w.fill("#main input[data-f=" + k + "]", v);
+    await w.click("#main button.big"); await w.waitForSelector("[data-recovery]");
+    const code = await w.locator("[data-recovery]").innerText();
+    await w.click(".dlg footer button.pri"); await w.waitForSelector("#nav button[data-k=home]");
+    return { setup: true, code };
+  }
+  if (/Đăng nhập/.test(t)) {
+    await w.fill("#main input[data-f=u]", who.u); await w.fill("#main input[data-f=p]", who.p);
+    await w.click("#main button.big"); await w.waitForSelector("#nav button[data-k=home], .dlg", { timeout: 8000 });
+    return { login: true };
+  }
+  return {};
+}
+async function launch(dataDir, opt) {
+  opt = opt || {};
   const app = await _electron.launch({ executablePath: ELECTRON, args: ["--no-sandbox", APP], env: Object.assign({}, process.env, { HAK_USER_DATA: dataDir || DATA, HAK_DOWNLOAD_DIR: DL }) });
   const w = await app.firstWindow(); const errs = [];
   w.on("pageerror", (e) => errs.push(e.message));
   w.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
-  w.on("dialog", (d) => d.accept(d.type() === "prompt" ? "e2e" : undefined));
+  w.on("dialog", (d) => { dialogs.push(d.message()); d.accept(d.type() === "prompt" ? "e2e" : undefined); });
   await w.waitForSelector("#main > *");
-  return { app, w, errs };
+  const a = opt.noAuth ? {} : await auth(w, opt.who);
+  return { app, w, errs, a };
 }
 
 (async () => {
   const t0 = Date.now();
-  let { app, w, errs } = await launch();
+  let { app, w, errs, a } = await launch();
   ok("Mở ứng dụng", true, (Date.now() - t0) + " ms");
+  ok("Dữ liệu mới: bắt buộc tạo tài khoản Admin + cấp mã khôi phục", a.setup && /^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/.test(a.code), a.code);
+  const recoveryCode = a.code;
   ok("Cầu nối lưu trữ (preload) hoạt động", await w.evaluate(() => !!window.hakStore && typeof window.hakStore.save === "function"));
   const ui = await w.evaluate(async () => { await document.fonts.ready; return { font: document.fonts.check('600 16px "Be Vietnam Pro"') && [...document.fonts].some((f) => f.family.replace(/"/g, "") === "Be Vietnam Pro" && f.status === "loaded"), icons: document.querySelectorAll("#nav svg.icn").length, emoji: [...document.querySelectorAll("#nav .ic")].filter((e) => e.textContent.trim()).length }; });
   ok("Giao diện: font Be Vietnam Pro đóng gói nạp được, menu dùng icon SVG", ui.font && ui.icons >= 14 && ui.emoji === 0, JSON.stringify(ui));
@@ -92,6 +116,73 @@ async function launch(dataDir) {
   await w.click("#nav button[data-k=kyluong]");
   const ky = await w.locator("main tbody tr").first().innerText();
   ok("Mở lại app: kỳ đã chốt còn nguyên, checksum Nguyên vẹn", /Tháng 9\/2026/.test(ky) && /Nguyên vẹn/.test(ky), ky.replace(/\t/g, " | "));
+  await app.close();
+
+  // ---- Phân quyền (Q-14 / Q-16) ----
+  ({ app, w, errs } = await launch());
+  await w.click("#nav button[data-k=backup]"); await w.click('button:has-text("Thêm người dùng")'); await w.waitForSelector(".dlg");
+  const ins = w.locator(".dlg .fgrid input");
+  await ins.nth(0).fill("ketoan1"); await ins.nth(1).fill("Kế toán Một"); await ins.nth(2).fill("Tam12345");
+  await w.locator(".dlg .fgrid select").nth(0).selectOption("ketoanluong");
+  await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
+  await w.click('#top button:has-text("Đăng xuất")'); await w.waitForSelector("#main input[data-f=u]");
+  // sai mật khẩu 5 lần → phải chờ
+  for (let i = 0; i < 5; i++) { await w.fill("#main input[data-f=u]", "ketoan1"); await w.fill("#main input[data-f=p]", "sai" + i + "matkhau"); await w.click("#main button.big"); await w.waitForTimeout(450); }
+  await w.fill("#main input[data-f=p]", "Tam12345"); await w.click("#main button.big"); await w.waitForTimeout(450);
+  ok("Sai mật khẩu 5 lần → khóa tạm 30 giây (kể cả khi sau đó nhập đúng)", /chờ \d+ giây/.test(await w.locator("#main .warn").innerText()) && !(await w.locator("#nav button[data-k=home]").count()));
+  await app.close();
+  ({ app, w, errs } = await launch(null, { who: { u: "ketoan1", p: "Tam12345" } }));
+  const forced = await w.locator(".dlg").count();
+  const pw = w.locator(".dlg input[type=password]");
+  await pw.nth(0).fill("Tam12345"); await pw.nth(1).fill("Moi12345kt"); await pw.nth(2).fill("Moi12345kt"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(500);
+  ok("Mật khẩu tạm do Admin cấp → bắt buộc đổi khi đăng nhập lần đầu", forced === 1 && !(await w.locator(".dlg").count()));
+  const navK = await w.locator("#nav button[data-k]").evaluateAll((b) => b.map((x) => x.getAttribute("data-k")));
+  ok("Kế toán lương: thấy Tính lương/Chấm công, KHÔNG thấy Công ty & Sao lưu", navK.includes("luong") && navK.includes("chamcong") && !navK.includes("backup"), navK.join(","));
+  dialogs = [];
+  await w.click("#nav button[data-k=kyluong]"); await w.locator('button:has-text("Mở chốt")').first().click(); await w.waitForTimeout(300);
+  ok("Kế toán lương KHÔNG được mở chốt (kiểm tra ở nghiệp vụ)", dialogs.some((d) => /không có quyền mở chốt/i.test(d)) && !(await w.locator(".dlg").count()), dialogs.join(" | "));
+  dialogs = [];
+  await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Mã lương")');
+  const cell = w.locator("#main tbody tr").first().locator("input").nth(4);
+  const before = await cell.inputValue();
+  await cell.fill("Sửa hồi tố E2E"); await cell.press("Tab"); await w.waitForTimeout(300);
+  ok("Q-14: Kế toán lương sửa danh mục có hiệu lực trong kỳ đã chốt → bị chặn, chỉ Admin", dialogs.some((d) => /Chỉ Admin/.test(d)) && (await cell.inputValue()) === before, dialogs.join(" | "));
+  await w.click('#top button:has-text("Đăng xuất")'); await w.waitForSelector("#main input[data-f=u]");
+  await auth(w, ADMIN); dialogs = [];
+  await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Mã lương")');
+  const cell2 = w.locator("#main tbody tr").first().locator("input").nth(4);
+  await cell2.fill("Sửa hồi tố E2E"); await cell2.press("Tab"); await w.waitForTimeout(700);
+  ok("Admin sửa được dữ liệu hồi tố (có cảnh báo)", (await cell2.inputValue()) === "Sửa hồi tố E2E" && !dialogs.some((d) => /Chỉ Admin/.test(d)));
+  // Q-15: phụ lục đã dùng tính lương kỳ đã chốt → không ai sửa được (kể cả Admin); thêm phụ lục mới thì được
+  dialogs = [];
+  await w.click("#nav button[data-k=nhansu]"); await w.locator("#main table tbody tr").first().click();
+  await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
+  const plCard = w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') });
+  const nPL = await plCard.locator("tbody tr").count();
+  await plCard.locator("tbody tr").first().click(); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
+  const blocked15 = dialogs.some((d) => /Q-15/.test(d) && /PHỤ LỤC MỚI/.test(d));
+  if (await w.locator(".dlg").count()) await w.click(".dlg header button");
+  await plCard.locator('button:has-text("Thêm")').click(); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(400);
+  const nPL2 = await w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') }).locator("tbody tr").count();
+  ok("Q-15: Admin KHÔNG sửa được phụ lục đã dùng cho kỳ đã chốt; thêm phụ lục mới thì được", blocked15 && nPL2 === nPL + 1, dialogs.join(" | ").slice(0, 160) + " · phụ lục " + nPL + "→" + nPL2);
+  ok("Không lỗi JavaScript khi phân quyền", errs.length === 0, errs.join(" | "));
+  await app.close();
+  const sv2 = JSON.parse(fs.readFileSync(path.join(DATA, "data.json"), "utf8"));
+  const k1 = sv2.nguoidung.find((u) => u.tenDangNhap === "ketoan1"), hoito = sv2.auditlog.filter((x) => /HỒI TỐ/.test(x.chiTiet));
+  ok("Mật khẩu lưu dạng băm PBKDF2 (không lưu mật khẩu rõ), có muối riêng", sv2.nguoidung.length === 2 && k1.hash.length === 64 && k1.salt.length === 32 && k1.iter >= 210000 && !JSON.stringify(sv2.nguoidung).includes("Moi12345kt") && k1.salt !== sv2.nguoidung[0].salt);
+  ok("Nhật ký ghi tài khoản đăng nhập: đăng nhập, thêm người dùng, sửa HỒI TỐ bởi Admin", sv2.auditlog.some((x) => x.thaoTac === "Thêm người dùng" && /\[admin\]/.test(x.nguoi)) && sv2.auditlog.some((x) => x.thaoTac === "Đăng nhập" && /\[ketoan1\]/.test(x.nguoi)) && hoito.length >= 1 && hoito.every((x) => /\[admin\]/.test(x.nguoi)), hoito.map((x) => x.nguoi).join(","));
+
+  // Quên mật khẩu Admin → mã khôi phục (mã sai bị từ chối; dùng xong cấp mã mới)
+  ({ app, w, errs } = await launch(null, { noAuth: true }));
+  await w.click('button:has-text("Quên mật khẩu Admin")');
+  const fillRec = async (c) => { for (const [k, v] of [["c", c], ["u", "admin"], ["p", "MoiAdmin2026"], ["p2", "MoiAdmin2026"]]) await w.fill("#main input[data-f=" + k + "]", v); await w.click("#main button.big"); await w.waitForTimeout(500); };
+  await fillRec("0000-0000-0000-0000");
+  const wrong = /không đúng/.test(await w.locator("#main .warn").innerText());
+  await fillRec(recoveryCode); await w.waitForSelector("[data-recovery]");
+  const code2 = await w.locator("[data-recovery]").innerText(); await w.click(".dlg footer button.pri"); await w.waitForSelector("#nav button[data-k=home]");
+  await app.close(); ADMIN.p = "MoiAdmin2026";
+  ({ app, w, errs } = await launch());
+  ok("Quên mật khẩu Admin: mã sai bị từ chối, mã đúng đặt lại được, cấp mã khôi phục mới", wrong && code2 !== recoveryCode && (await w.locator("#nav button[data-k=home]").count()) === 1);
   await app.close();
 
   // làm hỏng file dữ liệu → màn hình khôi phục, không ghi đè

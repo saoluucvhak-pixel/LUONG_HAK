@@ -57,6 +57,38 @@
 - R-34 (2.0) Lỗi dữ liệu dòng chỉ được **báo cáo**, không tự xóa. Bảng không nhận diện được giữ nguyên.
 - R-35 (2.0) Khôi phục phải liệt kê các kỳ đã chốt sẽ mất hoặc đổi. File hỏng chỉ được cất **sau khi** người dùng xác nhận khôi phục.
 
+### Đăng nhập & phân quyền (2.0-alpha.2 — Q-14, Q-16 do chủ sở hữu xác nhận 10/10/2026)
+- R-40 Phải **đăng nhập** mới thấy và dùng dữ liệu.
+  - Dữ liệu chưa có tài khoản (cài mới hoặc nâng cấp từ bản cũ) → bắt buộc tạo **Admin** đầu tiên, kèm **mã khôi phục** (hiện 1 lần).
+- R-41 Mật khẩu ≥ 8 ký tự, có chữ và số.
+  - Lưu dạng băm PBKDF2-SHA256, 210.000 vòng, muối riêng cho từng tài khoản.
+  - Sai 5 lần liên tiếp → chờ 30 giây.
+  - Không thao tác 30 phút → tự đăng xuất.
+- R-42 Admin tạo tài khoản cho người khác với **mật khẩu tạm**; người dùng **bắt buộc đổi** khi đăng nhập lần đầu. Không được khóa hoặc hạ quyền **Admin đang hoạt động cuối cùng**.
+- R-43 Quên mật khẩu Admin → dùng mã khôi phục để đặt lại. Mỗi lần dùng, app cấp **mã mới**; Admin cũng có thể chủ động cấp lại mã.
+- R-44 Quyền được kiểm tra ở **tầng nghiệp vụ** (mọi thao tác ghi, xuất, nhập, tính, chốt, khôi phục), không chỉ ẩn nút. Mở thẳng một màn hình không có quyền → app quay về Trang chủ.
+- R-45 Vai trò mặc định:
+
+| Vai trò | Quyền |
+|---|---|
+| **Quản trị (Admin)** | Tất cả. Là vai trò **duy nhất** được: sửa dữ liệu hồi tố vào kỳ đã chốt (Q-14), mở chốt, khôi phục dữ liệu / sao lưu ra file, quản trị người dùng và công ty, xóa toàn bộ dữ liệu |
+| Nhân sự | Xem/sửa hồ sơ nhân sự (gồm hợp đồng, phụ lục), xem chấm công, báo cáo nhân sự, nhập/xuất Excel. **Không xem bảng lương** |
+| Kế toán lương | Xem hồ sơ; nhập/sửa chấm công, sản lượng, thưởng, tạm ứng; sửa danh mục; tính lương, **chốt** kỳ; xem bảng lương và báo cáo; nhập/xuất Excel. **Không mở chốt** |
+| Kế toán thanh toán | Xem bảng lương / kỳ đã chốt, xuất Excel (danh sách chuyển khoản, phiếu chi) |
+| Trưởng bộ phận | Xem hồ sơ; nhập/sửa chấm công, sản lượng; báo cáo nhân sự. Không xem bảng lương *(chưa giới hạn theo phòng ban — TODO)* |
+| Người phê duyệt | Xem hồ sơ, chấm công, bảng lương, báo cáo; xuất Excel *(quy trình phê duyệt chưa có — giai đoạn sau)* |
+| Người xem báo cáo | Xem báo cáo nhân sự và báo cáo/bảng lương |
+
+- R-46 Nhật ký ghi **tài khoản đăng nhập** (họ tên + tên đăng nhập + tài khoản Windows) cho mọi thao tác, gồm đăng nhập / đăng xuất / tự khóa, thêm/sửa người dùng, khôi phục quyền Admin.
+- R-47 Xóa nhân viên đã có trong bảng lương đã chốt → chỉ Admin; có sao lưu trước và ghi nhật ký.
+- R-48 *Xóa toàn bộ dữ liệu* giữ lại tài khoản, mã khôi phục và nhật ký.
+- R-49 (Q-15) Phụ lục HĐ **đã dùng để tính lương một kỳ đã chốt** bị khóa với **mọi người, kể cả Admin**:
+  - Không sửa, không xóa phụ lục đó. Không đổi Số HĐLĐ hoặc xóa hợp đồng chứa nó. Nhập Excel không cập nhật được nó.
+  - Muốn thay đổi lương, chức vụ, phòng ban: **thêm phụ lục mới** có ngày hiệu lực mới.
+  - Phụ lục mới có hiệu lực lùi vào kỳ đã chốt (hồi tố) → chỉ Admin (R-26, Q-14).
+  - Mở chốt một kỳ thì phụ lục chỉ còn bị khóa bởi các kỳ khác còn chốt.
+- R-50 (Q-13) Nhập Excel có dòng trùng với dữ liệu đã có → màn hình xem trước báo số dòng trùng, người dùng chọn **Bổ sung** (mặc định) hoặc **Ghi đè**.
+
 ## 2. Câu hỏi mở — cần chủ sở hữu / kế toán xác nhận
 Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 
@@ -74,7 +106,7 @@ Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 | Q-10 | Khấu trừ vãng lai 10%: áp dụng mọi khoản hay chỉ khi mỗi lần chi đạt ngưỡng theo quy định hiện hành? | Mọi khoản |
 | Q-11 | Bản Google Apps Script (GAS-01): đổi quyền truy cập web app sang chỉ người trong tổ chức / danh sách email? | Đang mở cho mọi người có link |
 | Q-12 | Chấm công: 2 dòng cùng NV + cùng hình thức + **cùng ngày** (VD 0,5 + 0,5): là 2 buổi hợp lệ (cộng) hay nhập trùng (lấy 1)? | ✅ **Đã trả lời (10/10/2026): nhập trùng.** Cùng số công → tính 1 lần; khác số công → chặn để người dùng sửa |
-| Q-13 | Nhập Excel cập nhật dòng đã có: mặc định **bổ sung** (ô trống giữ dữ liệu) có phù hợp quy trình? Có cần quyền riêng cho chế độ *ghi đè*? | Mặc định bổ sung; ai cũng chọn được ghi đè |
+| Q-13 | Nhập Excel cập nhật dòng đã có: mặc định **bổ sung** (ô trống giữ dữ liệu) có phù hợp quy trình? Có cần quyền riêng cho chế độ *ghi đè*? | ✅ **Đã trả lời (10/10/2026): cho người dùng lựa chọn khi trùng — Bổ sung hoặc Ghi đè.** Màn hình xem trước báo số dòng trùng và hiện 2 lựa chọn; mặc định Bổ sung; ai có quyền nhập Excel đều chọn được |
 | Q-14 | Thay đổi **hồi tố** chạm kỳ đã chốt: chỉ cảnh báo (hiện tại) hay **chặn** và bắt buộc mở chốt? Ai được phép? | ✅ **Đã trả lời: chỉ Admin được phép** — triển khai cùng đăng nhập/phân quyền (PR riêng) |
-| Q-15 | Khi đã chốt, có cấm **sửa trực tiếp phụ lục cũ** và bắt buộc lập phụ lục mới không? | Cho sửa, có cảnh báo + nhật ký trước/sau |
+| Q-15 | Khi đã chốt, có cấm **sửa trực tiếp phụ lục cũ** và bắt buộc lập phụ lục mới không? | ✅ **Đã trả lời: cấm sửa, phải thêm phụ lục mới.** Phụ lục đã dùng tính lương kỳ đã chốt → không ai sửa/xóa được (kể cả Admin), không đổi được Số HĐLĐ, nhập Excel không cập nhật được — R-49 |
 | Q-16 | Định dạng "người thực hiện" cho tới khi có đăng nhập: tên tự khai + tài khoản Windows có đủ cho kiểm toán nội bộ? | ✅ **Đã trả lời: cần đăng nhập + phân quyền** — triển khai PR riêng |

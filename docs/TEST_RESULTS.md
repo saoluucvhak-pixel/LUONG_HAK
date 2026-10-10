@@ -1,5 +1,15 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.2 — Đăng nhập & phân quyền (10/10/2026, nhánh `claude/v2-auth-rbac`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint (`eslint@9.39.5`) | ✅ 0/0 |
+| `npm test` | ✅ **87/87** (+8 U-PERM, +1 U-GRD-05 Q-15) |
+| E2E Electron 43.7.9 | ✅ **39/39** (+12 phân quyền / đăng nhập / Q-15; mọi kịch bản cũ chạy qua đăng nhập) |
+| Bản chạy trình duyệt (WebCrypto) | ✅ Tạo Admin, đăng xuất, đăng nhập lại (tên đăng nhập viết HOA), mã khôi phục (mã sai bị từ chối, mã đúng đặt lại + cấp mã mới), *Xóa toàn bộ* giữ tài khoản. Không lỗi JS |
+| Thời gian | Mở app 451 ms · tạo Admin (2 lần PBKDF2) 131 ms · vào app 69 ms |
+| Hồi quy công thức (v1.3.0) | ✅ trùng 100% |
+
 ## 2.0.0-alpha.1 — giai đoạn ưu tiên 1 (10/10/2026, nhánh `claude/v2-phase1-data-fixes`)
 | Nhóm | Kết quả |
 |---|---|

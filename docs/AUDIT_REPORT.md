@@ -160,6 +160,15 @@ Mỗi phát hiện được phân loại:
 - Toàn bộ dữ liệu là 1 file JSON, mỗi lần lưu ghi lại cả file.
 - Chưa có tầng phân quyền ở nghiệp vụ.
 
+### 6.3b Bổ sung khi làm đăng nhập/phân quyền (2.0-alpha.2)
+| ID | Mức | Loại | Vấn đề | Xử lý |
+|---|---|---|---|---|
+| BUG-040 | High | Mã nguồn | Xóa nhân viên (nút 🗑 trong hồ sơ) không sao lưu, không ghi nhật ký, không kiểm soát khi nhân viên đã có trong bảng lương đã chốt | Cần quyền `hr.edit`; đã có trong bảng chốt → chỉ Admin; sao lưu `truoc-xoa-nhan-vien` + nhật ký |
+| BUG-041 | Medium | Mã nguồn | *Xóa toàn bộ dữ liệu* xóa luôn nhật ký thao tác | Giữ nhật ký, tài khoản, mã khôi phục |
+| RISK-05 | Medium | Rủi ro | Màn hình khôi phục (khi file hỏng) không đăng nhập được vì không đọc được bảng tài khoản → ai mở app cũng khôi phục được bản sao lưu. Sau khôi phục vẫn bắt buộc đăng nhập; thao tác được ghi nhật ký | Giai đoạn bảo mật: tách file tài khoản riêng / mã hóa |
+| RISK-06 | Medium | Rủi ro | Mở dữ liệu bằng **bản cũ ≤ 2.0-alpha.1** (không có đăng nhập) sẽ bỏ qua phân quyền. Dữ liệu vẫn giữ nguyên, bảng tài khoản không bị xóa | Gỡ bản cũ khỏi các máy; giai đoạn sau đổi `schemaVersion` để bản cũ không mở được |
+| RISK-07 | Medium | Rủi ro | File `data.json` **chưa mã hóa**: ai có quyền đọc thư mục `%APPDATA%` đọc được dữ liệu lương. Đăng nhập chỉ chặn trong app | Giai đoạn bảo mật: mã hóa file bằng khóa sinh từ mật khẩu |
+
 ### 6.4 Danh sách ưu tiên đã thực hiện
 1. Mất dữ liệu: BUG-022, 026, 027, 028, 029, 030, 031, 032, 033.
 2. Sai lương: BUG-021, 023, 024.

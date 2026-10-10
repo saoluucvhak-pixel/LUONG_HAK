@@ -76,6 +76,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-GRD-02 | Phụ lục hồi tố: đúng các kỳ đã chốt còn hiệu lực (tới trước phụ lục kế tiếp); dời ngày hiệu lực vào kỳ chốt → retro; NV không có trong bảng chốt → none |
 | U-GRD-03 | Danh mục có hiệu lực, nhân viên trong bảng chốt → retro; bảng không ảnh hưởng lương → none |
 | U-GRD-04 | Tham chiếu Mã NV (chặn đổi mã); nhật ký trước/sau; người chốt |
+| U-GRD-05 | (Q-15) Phụ lục đã dùng cho kỳ chốt → khóa; phụ lục chưa dùng → sửa được; mở chốt 1 kỳ → chỉ còn khóa bởi kỳ khác |
 | U-CLS-03 | Checksum phát hiện sửa kết quả **và** dữ liệu đầu vào đã chốt; mở chốt ghi người + lý do + thời điểm |
 | U-SCH-01 | Fatal: gốc không phải object, bảng không phải danh sách, schemaVersion mới hơn / sai kiểu |
 | U-SCH-02 | Lỗi dữ liệu (10 loại) được báo đủ, **không sửa** dữ liệu; bảng lạ giữ nguyên |
@@ -92,6 +93,18 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-14 | Đọc lại sau ghi không khớp → không báo thành công |
 | U-STO-15 | Cất file hỏng 3 lần cùng thời điểm → 3 tên, không mất file hỏng nào |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
+
+## Unit — 2.0-α2 phân quyền (`tests/unit/permissions.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-PERM-01 | Admin có mọi quyền; chỉ Admin có `retro.edit` / `backup.restore` / `system.admin` / `payroll.reopen` |
+| U-PERM-02 | Ma trận vai trò: Nhân sự không xem lương; Kế toán lương chốt được; Trưởng bộ phận nhập công nhưng không xem lương… |
+| U-PERM-03 | Chưa đăng nhập / tài khoản khóa / vai trò lạ → không quyền; `need()` báo lỗi rõ |
+| U-PERM-04 | Quy tắc mật khẩu; tên đăng nhập không phân biệt hoa/thường |
+| U-PERM-05 | Sai 5 lần → khóa 30 giây; hết hạn thì mở |
+| U-PERM-06 | Không khóa / hạ quyền Admin hoạt động cuối cùng |
+| U-PERM-07 | Mọi quyền dùng trong `app.js` có trong danh mục; các hàm nghiệp vụ chính đều gọi `need()` |
+| U-PERM-08 | PBKDF2 ở tiến trình chính = WebCrypto (cùng kết quả), ≥ 210.000 vòng |
 
 ## Integration — 2.0 (`tests/integration/flows-v2.test.js`)
 | ID | Luồng |
@@ -122,7 +135,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | R-02 | Thưởng "500.000": v1.3.0 = 500đ, v1.4.0 = 500.000đ; người khác không đổi | **Sửa lỗi có chủ đích (BUG-002)** |
 
 ## E2E (`tests/e2e/run-e2e.js`) — Electron thật, thư mục dữ liệu tạm
-E-01 mở app · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
+E-01 mở app · (2.0-α2) tạo Admin + mã khôi phục · sai mật khẩu 5 lần → khóa · mật khẩu tạm bắt buộc đổi · menu theo vai trò · Kế toán lương không mở chốt · Q-14 chặn sửa hồi tố (Admin được) · mật khẩu đã băm + muối · nhật ký theo tài khoản · quên mật khẩu Admin bằng mã khôi phục · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
 
 ## Hiệu năng (`tests/perf/bench.js`) — baseline, chưa đặt ngưỡng
 100 / 500 / 1.000 / 5.000 NV × 3 kỳ: dung lượng, ghi/đọc JSON, dựng danh sách lương, tính lương 1 kỳ, kiểm tra toàn vẹn, lập kế hoạch nhập lại chấm công, bộ nhớ.

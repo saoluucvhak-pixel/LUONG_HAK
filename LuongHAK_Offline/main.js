@@ -23,6 +23,14 @@ function registerIpc() {
   ipcMain.on("store-read", (e, name) => { try { e.returnValue = storage.readBackup(name); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
   ipcMain.on("store-quarantine", (e) => { try { e.returnValue = storage.quarantineCorrupt(); } catch (err) { e.returnValue = null; } });
   ipcMain.on("open-data-folder", () => { shell.openPath(path.dirname(storage.dataFile)); });
+  // Băm mật khẩu ở tiến trình chính (PBKDF2-SHA256) — giao diện không tự xử lý thuật toán; so sánh chống đo thời gian
+  const crypto = require("crypto"), { Buffer } = require("buffer");
+  const kdf = (pw, salt, iter) => crypto.pbkdf2Sync(String(pw), Buffer.from(String(salt), "hex"), Math.min(Math.max(+iter || 210000, 100000), 2000000), 32, "sha256");
+  ipcMain.on("auth-salt", (e) => { e.returnValue = crypto.randomBytes(16).toString("hex"); });
+  ipcMain.on("auth-hash", (e, pw, salt, iter) => { try { e.returnValue = kdf(pw, salt, iter).toString("hex"); } catch (err) { e.returnValue = null; } });
+  ipcMain.on("auth-verify", (e, pw, salt, iter, hash) => {
+    try { const a = kdf(pw, salt, iter), b = Buffer.from(String(hash), "hex"); e.returnValue = b.length === a.length && crypto.timingSafeEqual(a, b); } catch (err) { e.returnValue = false; }
+  });
   // Người thực hiện mặc định cho nhật ký thao tác: tài khoản Windows + tên máy (chưa có đăng nhập riêng — Phase phân quyền)
   ipcMain.on("app-user", (e) => { let u = ""; try { u = os.userInfo().username; } catch (err) { u = process.env.USERNAME || process.env.USER || ""; } e.returnValue = { user: u, host: os.hostname() }; });
 }
