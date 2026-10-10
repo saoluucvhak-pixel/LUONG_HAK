@@ -1,3 +1,17 @@
+# RELEASE_NOTES — 2.0.0-alpha.2 (đăng nhập & phân quyền)
+
+**Ngày:** 10/10/2026 · bản thử nghiệm.
+
+**Khi cài:**
+1. Lần đầu mở app sẽ yêu cầu **tạo Admin**. **Ghi lại mã khôi phục** app hiện ra.
+2. Admin tạo tài khoản cho từng người ở *Công ty & Sao lưu → Người dùng & phân quyền*.
+
+**Lưu ý quan trọng:**
+- **Gỡ các bản cũ** (1.x, 2.0.0-alpha.1) khỏi mọi máy. Bản cũ không có đăng nhập nên mở được dữ liệu mà không cần mật khẩu (RISK-06).
+- File dữ liệu **chưa mã hóa** (RISK-07): hãy giới hạn quyền truy cập máy và thư mục `%APPDATA%\Tinh Luong HAK`.
+
+---
+
 # RELEASE_NOTES — Nhân sự - Tiền lương HAK 2.0.0-alpha.1
 
 **Ngày:** 10/10/2026 · **Loại:** bản thử nghiệm (alpha) của lộ trình 2.0 — giai đoạn ưu tiên 1, sửa lỗi dữ liệu. Nên cài thử trên 1 máy và giữ bản 1.4.0 dự phòng trước khi dùng cho cả công ty.

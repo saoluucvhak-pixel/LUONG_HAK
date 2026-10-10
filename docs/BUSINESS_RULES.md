@@ -57,6 +57,32 @@
 - R-34 (2.0) Lỗi dữ liệu dòng chỉ được **báo cáo**, không tự xóa. Bảng không nhận diện được giữ nguyên.
 - R-35 (2.0) Khôi phục phải liệt kê các kỳ đã chốt sẽ mất hoặc đổi. File hỏng chỉ được cất **sau khi** người dùng xác nhận khôi phục.
 
+### Đăng nhập & phân quyền (2.0-alpha.2 — Q-14, Q-16 do chủ sở hữu xác nhận 10/10/2026)
+- R-40 Phải **đăng nhập** mới thấy và dùng dữ liệu.
+  - Dữ liệu chưa có tài khoản (cài mới hoặc nâng cấp từ bản cũ) → bắt buộc tạo **Admin** đầu tiên, kèm **mã khôi phục** (hiện 1 lần).
+- R-41 Mật khẩu ≥ 8 ký tự, có chữ và số.
+  - Lưu dạng băm PBKDF2-SHA256, 210.000 vòng, muối riêng cho từng tài khoản.
+  - Sai 5 lần liên tiếp → chờ 30 giây.
+  - Không thao tác 30 phút → tự đăng xuất.
+- R-42 Admin tạo tài khoản cho người khác với **mật khẩu tạm**; người dùng **bắt buộc đổi** khi đăng nhập lần đầu. Không được khóa hoặc hạ quyền **Admin đang hoạt động cuối cùng**.
+- R-43 Quên mật khẩu Admin → dùng mã khôi phục để đặt lại. Mỗi lần dùng, app cấp **mã mới**; Admin cũng có thể chủ động cấp lại mã.
+- R-44 Quyền được kiểm tra ở **tầng nghiệp vụ** (mọi thao tác ghi, xuất, nhập, tính, chốt, khôi phục), không chỉ ẩn nút. Mở thẳng một màn hình không có quyền → app quay về Trang chủ.
+- R-45 Vai trò mặc định:
+
+| Vai trò | Quyền |
+|---|---|
+| **Quản trị (Admin)** | Tất cả. Là vai trò **duy nhất** được: sửa dữ liệu hồi tố vào kỳ đã chốt (Q-14), mở chốt, khôi phục dữ liệu / sao lưu ra file, quản trị người dùng và công ty, xóa toàn bộ dữ liệu |
+| Nhân sự | Xem/sửa hồ sơ nhân sự (gồm hợp đồng, phụ lục), xem chấm công, báo cáo nhân sự, nhập/xuất Excel. **Không xem bảng lương** |
+| Kế toán lương | Xem hồ sơ; nhập/sửa chấm công, sản lượng, thưởng, tạm ứng; sửa danh mục; tính lương, **chốt** kỳ; xem bảng lương và báo cáo; nhập/xuất Excel. **Không mở chốt** |
+| Kế toán thanh toán | Xem bảng lương / kỳ đã chốt, xuất Excel (danh sách chuyển khoản, phiếu chi) |
+| Trưởng bộ phận | Xem hồ sơ; nhập/sửa chấm công, sản lượng; báo cáo nhân sự. Không xem bảng lương *(chưa giới hạn theo phòng ban — TODO)* |
+| Người phê duyệt | Xem hồ sơ, chấm công, bảng lương, báo cáo; xuất Excel *(quy trình phê duyệt chưa có — giai đoạn sau)* |
+| Người xem báo cáo | Xem báo cáo nhân sự và báo cáo/bảng lương |
+
+- R-46 Nhật ký ghi **tài khoản đăng nhập** (họ tên + tên đăng nhập + tài khoản Windows) cho mọi thao tác, gồm đăng nhập / đăng xuất / tự khóa, thêm/sửa người dùng, khôi phục quyền Admin.
+- R-47 Xóa nhân viên đã có trong bảng lương đã chốt → chỉ Admin; có sao lưu trước và ghi nhật ký.
+- R-48 *Xóa toàn bộ dữ liệu* giữ lại tài khoản, mã khôi phục và nhật ký.
+
 ## 2. Câu hỏi mở — cần chủ sở hữu / kế toán xác nhận
 Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 

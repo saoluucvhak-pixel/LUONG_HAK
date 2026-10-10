@@ -17,7 +17,7 @@ Thứ tự ưu tiên: **1. Tính đúng · 2. Bảo toàn dữ liệu · 3. Ki�
 | Chốt & điều chỉnh | Snapshot, phiên bản, phê duyệt, điều chỉnh có vết | Snapshot + phiên bản + lịch sử + checksum (chưa có phê duyệt) |
 | Tạm ứng & thanh toán | Đề nghị/duyệt/khấu trừ 1 lần, thanh toán nhiều đợt, chống lặp | Tạm ứng theo kỳ; DS chuyển khoản; phiếu chi |
 | Báo cáo | Dashboard, 18 báo cáo, tùy chỉnh | 16 báo cáo lương + nhân sự, xuất Excel |
-| Phân quyền & bảo mật | Vai trò, phạm vi, mã hóa | Chưa (Phase 6) |
+| Phân quyền & bảo mật | Vai trò, phạm vi, mã hóa | 2.0-α2: đăng nhập, 7 vai trò, kiểm tra quyền ở nghiệp vụ, chỉ Admin sửa hồi tố; chưa có phạm vi theo phòng ban, chưa mã hóa |
 | Dữ liệu | SQLite, migration, backup manager | JSON + migration + backup manager |
 
 ## 3. Ràng buộc
@@ -31,7 +31,7 @@ Thứ tự ưu tiên: **1. Tính đúng · 2. Bảo toàn dữ liệu · 3. Ki�
 |---|---|
 | Không còn lỗi Critical chưa xử lý | ⚠ còn GAS-01 (bản Google, chờ chủ sở hữu quyết định); bản offline: 0 |
 | Lỗi High ảnh hưởng dữ liệu/tiền lương đã xử lý | ✅ (SEC-03 đã giảm thiểu, chờ vá thư viện) |
-| Kiểm thử nghiệp vụ bắt buộc đạt | ✅ 78/78 + E2E 27/27 (2.0.0-alpha.1) |
+| Kiểm thử nghiệp vụ bắt buộc đạt | ✅ 86/86 + E2E 38/38 (2.0.0-alpha.2) |
 | Công thức đã đối chiếu | ✅ hồi quy 100% với v1.3.0; ⏳ chờ xác nhận Q-01…Q-10 |
 | Không có dữ liệu trùng ngoài quy tắc | ✅ importer + form chặn trùng; *Kiểm tra dữ liệu* phát hiện trùng cũ |
 | Dữ liệu chốt lương truy vết được | ✅ snapshot đầu vào + phiên bản + lý do + checksum + nhật ký |
