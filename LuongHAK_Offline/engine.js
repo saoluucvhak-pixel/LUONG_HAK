@@ -63,11 +63,11 @@
     if (!tn || tn <= 0) return 0;
     var thue = 0;
     bieu.forEach(function (b) {
-      var min = num(b["Thu nhập tháng (Min)"]);
-      var maxRaw = b["Thu nhập tháng (Max)"];
-      var tyLe = pct(b["Tỷ lệ đóng thuế"]);
+      var min = num(b["Thu nhập từ"] != null && b["Thu nhập từ"] !== "" ? b["Thu nhập từ"] : b["Thu nhập tháng (Min)"]);
+      var maxRaw = b["Thu nhập đến"] != null && b["Thu nhập đến"] !== "" ? b["Thu nhập đến"] : b["Thu nhập tháng (Max)"];
+      var tyLe = pct(b["Tỷ lệ"] != null && b["Tỷ lệ"] !== "" ? b["Tỷ lệ"] : b["Tỷ lệ đóng thuế"]);
       if (tn <= min) return;
-      var tran = (maxRaw === "" || maxRaw == null) ? tn : Math.min(tn, num(maxRaw));
+      var tran = (maxRaw === "" || maxRaw == null || num(maxRaw) === 0) ? tn : Math.min(tn, num(maxRaw));
       if (tran - min > 0) thue += (tran - min) * tyLe;
     });
     return Math.round(thue);
@@ -153,15 +153,18 @@
   /** Tính bảng lương 1 tháng. db = toàn bộ dữ liệu. */
   function tinhBangLuong(db, nam, thang, buTheoNgay) {
     nam = +nam; thang = +thang;
-    ["nhansu","chamcong","sanluong","bandam","psluong","ungluong","tiencom","dm_luong","dm_phucap","dm_tangca","dm_hotro","dm_baohiem","dm_tncn","dm_giamtru","dm_phongban","dm_chucvu"].forEach(function (k) { if (!db[k]) db[k] = []; });
+    ["nhansu","chamcong","sanluong","bandam","psluong","ungluong","tiencom","dm_luong","dm_phucap","dm_tangca","dm_hotro","dm_baohiem","dm_tncn","dm_bacthue","dm_giamtru","dm_phongban","dm_chucvu"].forEach(function (k) { if (!db[k]) db[k] = []; });
     var dmLuong = hieuLuc(db.dm_luong, "Mã lương", nam, thang);
     var dmPC = hieuLuc(db.dm_phucap, "Mã phụ cấp", nam, thang);
     var dmTC = hieuLuc(db.dm_tangca, "Mã tăng ca", nam, thang);
     var dmHT = hieuLuc(db.dm_hotro, "Mã hỗ trợ", nam, thang);
     var dmBH = hieuLuc(db.dm_baohiem, "Mã bảo hiểm", nam, thang);
     var dmGT = hieuLuc(db.dm_giamtru, "Mã giảm trừ", nam, thang);
-    var bieu = Object.keys(hieuLuc(db.dm_tncn, "Bậc", nam, thang)).map(function (k) { return hieuLuc(db.dm_tncn, "Bậc", nam, thang)[k]; })
-      .sort(function (a, b) { return num(a["Thu nhập tháng (Min)"]) - num(b["Thu nhập tháng (Min)"]); });
+    var bacSrc = (db.dm_bacthue && db.dm_bacthue.length) ? db.dm_bacthue : db.dm_tncn.filter(function (r) { return r["Bậc"] !== "" && r["Bậc"] != null; });
+    var bacMap = hieuLuc(bacSrc, "Bậc", nam, thang);
+    var bieu = Object.keys(bacMap).map(function (k) { return bacMap[k]; })
+      .sort(function (a, b) { return num(a["Thu nhập từ"] || a["Thu nhập tháng (Min)"]) - num(b["Thu nhập từ"] || b["Thu nhập tháng (Min)"]); });
+    var dmPTThue = hieuLuc(db.dm_tncn.filter(function (r) { return r["Mã thuế TNCN"]; }), "Mã thuế TNCN", nam, thang);
     var pb = byKey(db.dm_phongban, "Mã phòng ban"), cv = byKey(db.dm_chucvu, "Mã chức vụ");
 
     var cc = tongHopChamCong(db.chamcong, nam, thang);
@@ -278,13 +281,23 @@
       var gtBT = dmGT[ns["Mã GT_TNCN_BT"]], gtPT = dmGT[ns["Mã GT_TNCN_PT"]];
       var tienGTBT = gtBT ? num(gtBT["Số tiền"]) : 0, tongGTPT = npt * (gtPT ? num(gtPT["Số tiền"]) : 0);
       var chiuThue = 0, tinhThue = 0, thue = 0;
-      if (maT === "TNCN1") { chiuThue = tongTN; tinhThue = tongTN; thue = Math.round(tongTN * 0.10); }
-      else if (maT === "TNCN0" || !maT) { chiuThue = tongTN - bhNLD; }
+      // Phương thức thuế: mã cũ TNCN0/1/2, hoặc mã trong danh mục Thuế TNCN (Nội dung "Khấu trừ vãng lai" / "Lũy tiến")
+      var pt = dmPTThue[maT], kieu, tyLeVL = 0.10;
+      if (maT === "TNCN1") kieu = "VL";
+      else if (maT === "TNCN2") kieu = "LT";
+      else if (!maT || maT === "TNCN0") kieu = "MIEN";
+      else if (pt) {
+        var nd = String(pt["Nội dung"] || "");
+        kieu = /vãng lai/i.test(nd) ? "VL" : (/l[ũu]y ti[ếe]n|luỹ tiến/i.test(nd) ? "LT" : "MIEN");
+        if (kieu === "VL" && pct(pt["Mức thuế"]) > 0) tyLeVL = pct(pt["Mức thuế"]);
+      } else { kieu = "LT"; out.canhbao.push(ma + ": mã thuế TNCN '" + maT + "' chưa có trong danh mục — tạm tính lũy tiến"); }
+      if (kieu === "VL") { chiuThue = tongTN; tinhThue = tongTN; thue = Math.round(tongTN * tyLeVL); }
+      else if (kieu === "MIEN") { chiuThue = tongTN - bhNLD; }
       else { chiuThue = tongTN - bhNLD - tienCom; tinhThue = Math.max(0, chiuThue - tienGTBT - tongGTPT); thue = tinhThueLuyTien(tinhThue, bieu); }
       if (thue > 0) out.tncn.push({
         "Mã NV": ma, "Họ và tên": ns["Họ và tên"], "Thu nhập chịu thuế": chiuThue,
-        "Giảm trừ bản thân": maT === "TNCN1" ? 0 : tienGTBT, "Số người phụ thuộc": npt,
-        "Giảm trừ người phụ thuộc": maT === "TNCN1" ? 0 : tongGTPT, "Thu nhập tính thuế": tinhThue, "Thuế TNCN phải nộp": thue
+        "Giảm trừ bản thân": kieu === "VL" ? 0 : tienGTBT, "Số người phụ thuộc": npt,
+        "Giảm trừ người phụ thuộc": kieu === "VL" ? 0 : tongGTPT, "Thu nhập tính thuế": tinhThue, "Thuế TNCN phải nộp": thue
       });
 
       var truKhac = p["Trừ khác"], tamUng = u["Tạm ứng"];

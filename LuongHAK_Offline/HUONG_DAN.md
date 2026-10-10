@@ -1,18 +1,29 @@
-# Tính lương HAK — bản chạy OFFLINE trên Windows
+# Nhân sự – Tiền lương HAK (bản offline cho Windows)
 
-Không cần internet, không cần cài đặt, không cần Google Sheet.
+Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK-Setup-x.y.z.exe`.
 
-## Cách dùng
-1. Copy cả thư mục `LuongHAK_Offline` về máy Windows (ví dụ `C:\LuongHAK`).
-2. Bấm đúp **`Chay_LuongHAK.bat`** (mở bằng Microsoft Edge/Chrome có sẵn trên Windows). Hoặc mở thẳng `index.html`.
-3. Làm theo thứ tự: **Sao lưu → Nạp danh mục mẫu** (lần đầu) → **Danh mục** → **Nhân sự** → **Chấm công / Sản lượng / Thưởng-Trừ / Tạm ứng / Suất cơm** → **Tính lương**.
-4. **Nhập từ Excel:** ở Trang chủ hoặc mục Sao lưu bấm **📄 Tải toàn bộ file mẫu** (1 file nhiều sheet), điền dữ liệu rồi bấm **⬆ Nhập từ file Excel tổng**. Hoặc ở từng mục (Nhân sự, Chấm công...) bấm **📄 Tải file mẫu** → điền → **⬆ Nhập Excel**. Dòng 1 là tên cột, không đổi.
-5. Xuất Excel (.xlsx) bảng lương, BHXH, thuế TNCN; in phiếu lương từng người.
+## Bắt đầu
+1. **Công ty & Sao lưu** → nhập Hồ sơ công ty → bấm **Nạp danh mục chuẩn HAK** (phòng ban, chức vụ, mã lương, phụ cấp, tăng ca, hỗ trợ, bảo hiểm, thuế TNCN, biểu thuế 5 bậc 2026, giảm trừ 15,5tr/6,2tr — lấy từ hệ thống QL_NHANSU).
+2. **Nhân sự** → **＋ Thêm nhân viên**: 1 form gồm thông tin cơ bản, cá nhân, hợp đồng, lương/BH/thuế, tài khoản.
+   Hoặc **📄 Tải file mẫu** (mỗi loại hồ sơ 1 sheet) → điền → **⬆ Nhập Excel**.
+3. Mở hồ sơ từng người để bổ sung: Nhân thân / người phụ thuộc, học vấn, quá trình công tác, sức khỏe…
+   Trong tab **Hợp đồng lao động**: Lương & phụ lục HĐ, quyền lợi phép, nghỉ phép, nghỉ ốm, khám sức khỏe, khen thưởng, kỷ luật, tài liệu.
+4. Hằng tháng: nhập **Chấm công**, **Sản lượng**, **Bơm dăm**, **Thưởng/Trừ**, **Tạm ứng** → **Tính lương** → xuất Excel (bảng lương, BHXH, thuế, danh sách chuyển khoản) / in phiếu lương.
 
-## Công thức
-Chuyển nguyên từ các file `.gs` của bản Google Apps Script (`Tinhluong.gs`, `Tinhcong.gs`, `Danhmuc.gs`): lương thời gian (CĐ/CN1/CN2/SP/TG), lương sản lượng + bù theo tháng/ngày, bơm dăm, tăng ca TC1–TC6 & CN1/CN2, phụ cấp, hỗ trợ, tiền cơm, phụ cấp theo nhãn chấm công (vd `1QC`), BHXH + truy thu, TNCN0/1/2, làm tròn thực lĩnh 1.000đ. Cách đặt mã giống bản cũ nên dữ liệu danh mục copy sang dùng được.
+## Lương lấy từ hồ sơ như thế nào
+- Chỉ tính cho nhân viên có **hợp đồng còn hiệu lực trong kỳ** (Ngày vào làm ≤ cuối tháng, chưa chấm dứt trước đầu tháng).
+- Lấy dòng **Lương & phụ lục HĐ** mới nhất có "Hiệu lực từ" ≤ cuối tháng → tăng lương chỉ cần thêm 1 phụ lục mới.
+- Số người phụ thuộc = số nhân thân có "Đăng ký phụ thuộc = Có" còn hiệu lực trong kỳ.
+- Thuế: mã "Khấu trừ vãng lai" (VL01) = 10% tổng thu nhập; "Lũy tiến" (LT01) = biểu thuế lũy tiến; "Miễn thuế" (MT00).
+- Cho nghỉ việc: nút **Cho nghỉ việc** trong hồ sơ → ghi ngày chấm dứt HĐ, từ tháng sau không tính lương.
 
-## Lưu ý quan trọng
-- Dữ liệu lưu trong trình duyệt của máy đang dùng → **bấm "Sao lưu ra file" cuối mỗi kỳ**. Đổi thư mục/xóa dữ liệu duyệt web có thể mất dữ liệu nếu chưa sao lưu.
-- Danh mục mẫu (tỷ lệ BH, biểu thuế, giảm trừ) chỉ là gợi ý — kế toán cần kiểm tra theo quy định hiện hành.
-- Không đụng tới các file `.gs`/`index.html` ở thư mục ngoài: đó là bản Google cũ.
+## Báo cáo nhân sự
+HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/ốm theo năm · Vi phạm chưa xử lý · Sinh nhật trong tháng · Sổ quản lý lao động · Lịch sử hồ sơ từng người. Tất cả xuất được Excel.
+
+## Dữ liệu & sao lưu
+- Bản cài tự lưu vào `%APPDATA%\Tinh Luong HAK\data.json` và tự giữ 1 bản sao mỗi ngày (60 ngày) trong thư mục `backups`.
+- Vẫn nên **Sao lưu ra file** định kỳ và cất sang USB/Drive. Đổi máy: cài app → **Khôi phục từ file**.
+- Nâng cấp từ bản 1.0: dữ liệu cũ (bảng Nhân sự phẳng) tự chuyển sang hồ sơ mới, mỗi người có 1 hợp đồng "HD-<mã>" và 1 phụ lục lương.
+
+## Lưu ý
+Danh mục chuẩn chỉ là số liệu khởi đầu — kế toán kiểm tra lại đơn giá, tỷ lệ BH, biểu thuế theo quy định hiện hành.
