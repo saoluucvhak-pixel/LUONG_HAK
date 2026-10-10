@@ -97,80 +97,61 @@
   function d10(s) { return String(s || "").slice(0, 10); }
   function kyBounds(nam, thang) { return { dau: iso(new Date(nam, thang - 1, 1)), cuoi: iso(new Date(nam, thang, 0)) }; }
   function split(v) { return String(v || "").split(/[,;]/).map(function (x) { return x.trim(); }).filter(Boolean); }
-  // Chỉ mục theo Mã NV (PERF-01): dựng 1 lần cho mỗi lượt tính → O(N) thay vì quét cả bảng cho từng nhân viên.
-  // Giữ đúng THỨ TỰ dòng như bảng gốc để latestBy() chọn cùng 1 dòng khi trùng ngày (kết quả giống hệt bản quét).
-  function buildIndex(db) {
-    var by = {}, cache = {}; // Map: so khớp đúng kiểu như ===, an toàn với mã lạ (VD "__proto__")
-    return {
-      rows: function (k, ma) {
-        var m = by[k];
-        if (!m) { m = by[k] = new Map(); (db[k] || []).forEach(function (r) { var key = r["Mã NV"], a = m.get(key); if (a) a.push(r); else m.set(key, [r]); }); }
-        return m.get(ma) || [];
-      },
-      ref: function (ref, code) {
-        var c = REFS[ref], m = cache[ref];
-        if (!m) { m = cache[ref] = new Map(); (db[ref] || []).forEach(function (r) { m.set(r[c[0]], r); }); } // dòng sau ghi đè dòng trước = như bản quét
-        return m.has(code) ? m.get(code) : null;
-      }
-    };
-  }
-  function rowsOf(db, k, ma, ix) { return ix ? ix.rows(k, ma) : (db[k] || []).filter(function (r) { return r["Mã NV"] === ma; }); }
+  function rowsOf(db, k, ma) { return (db[k] || []).filter(function (r) { return r["Mã NV"] === ma; }); }
   function latestBy(rows, field, onOrBefore) {
     var best = null;
     rows.forEach(function (r) { var v = d10(r[field]); if (onOrBefore && v && v > onOrBefore) return; if (!best || v >= d10(best[field])) best = r; });
     return best;
   }
-  function refName(db, ref, code, ix) {
+  function refName(db, ref, code) {
     var c = REFS[ref]; if (!c || !code) return code || "";
-    var hit = null;
-    if (ix) hit = ix.ref(ref, code); else (db[ref] || []).forEach(function (r) { if (r[c[0]] === code) hit = r; });
+    var hit = null; (db[ref] || []).forEach(function (r) { if (r[c[0]] === code) hit = r; });
     return hit ? (hit[c[1]] || code) : code;
   }
 
   // Hợp đồng có hiệu lực trong khoảng [dau, cuoi]
-  function activeHD(db, ma, dau, cuoi, ix) {
-    var list = rowsOf(db, "hopdong", ma, ix).filter(function (h) {
+  function activeHD(db, ma, dau, cuoi) {
+    var list = rowsOf(db, "hopdong", ma).filter(function (h) {
       var vao = d10(h["Ngày vào làm"]), cd = d10(h["Ngày chấm dứt"]);
       return (!vao || vao <= cuoi) && (!cd || cd >= dau);
     });
     return latestBy(list, "Ngày vào làm");
   }
-  function chiTietHD(db, ma, soHD, asOf, ix) {
-    return latestBy(rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return r["Số HĐLĐ"] === soHD; }), "Hiệu lực từ", asOf);
+  function chiTietHD(db, ma, soHD, asOf) {
+    return latestBy((db.chitiethd || []).filter(function (r) { return r["Mã NV"] === ma && r["Số HĐLĐ"] === soHD; }), "Hiệu lực từ", asOf);
   }
-  function soNguoiPhuThuoc(db, ma, dau, cuoi, ix) {
-    return rowsOf(db, "nhanthan", ma, ix).filter(function (r) {
+  function soNguoiPhuThuoc(db, ma, dau, cuoi) {
+    return rowsOf(db, "nhanthan", ma).filter(function (r) {
       if (r["Đăng ký phụ thuộc"] !== "Có") return false;
       var tu = d10(r["Hiệu lực từ"]), den = d10(r["Hiệu lực đến"]);
       return (!tu || tu <= cuoi) && (!den || den >= dau);
     }).length;
   }
   /** Thông tin hiện hành của 1 nhân viên tại ngày asOf (mặc định hôm nay). */
-  /** @param ix chỉ mục từ buildIndex(db) (không bắt buộc) — dùng khi gọi cho nhiều nhân viên liên tiếp */
-  function hienHanh(db, ma, asOf, ix) {
+  function hienHanh(db, ma, asOf) {
     asOf = asOf || today();
-    var hd = activeHD(db, ma, asOf, asOf, ix) || latestBy(rowsOf(db, "hopdong", ma, ix), "Ngày vào làm");
-    var ct = hd ? chiTietHD(db, ma, hd["Số HĐLĐ"], asOf, ix) || chiTietHD(db, ma, hd["Số HĐLĐ"], null, ix) : null;
-    var cn = latestBy(rowsOf(db, "canhan", ma, ix), "Hiệu lực từ", asOf) || latestBy(rowsOf(db, "canhan", ma, ix), "Hiệu lực từ");
-    var tk = latestBy(rowsOf(db, "thanhtoan", ma, ix), "Hiệu lực từ", asOf) || latestBy(rowsOf(db, "thanhtoan", ma, ix), "Hiệu lực từ");
-    var mv = latestBy(rowsOf(db, "congtac", ma, ix), "Từ ngày", asOf);
+    var hd = activeHD(db, ma, asOf, asOf) || latestBy(rowsOf(db, "hopdong", ma), "Ngày vào làm");
+    var ct = hd ? chiTietHD(db, ma, hd["Số HĐLĐ"], asOf) || chiTietHD(db, ma, hd["Số HĐLĐ"]) : null;
+    var cn = latestBy(rowsOf(db, "canhan", ma), "Hiệu lực từ", asOf) || latestBy(rowsOf(db, "canhan", ma), "Hiệu lực từ");
+    var tk = latestBy(rowsOf(db, "thanhtoan", ma), "Hiệu lực từ", asOf) || latestBy(rowsOf(db, "thanhtoan", ma), "Hiệu lực từ");
+    var mv = latestBy(rowsOf(db, "congtac", ma), "Từ ngày", asOf);
     var pb = ct ? ct["Phòng ban"] : (mv ? mv["Phòng ban"] : "");
     var cv = ct && ct["Chức vụ"] ? ct["Chức vụ"] : (mv ? mv["Chức vụ"] : "");
-    return { hd: hd, ct: ct, cn: cn, tk: tk, pb: pb, cv: cv, tenPB: refName(db, "dm_phongban", pb, ix), tenCV: refName(db, "dm_chucvu", cv, ix) };
+    return { hd: hd, ct: ct, cn: cn, tk: tk, pb: pb, cv: cv, tenPB: refName(db, "dm_phongban", pb), tenCV: refName(db, "dm_chucvu", cv) };
   }
 
   /** Dựng danh sách nhân sự tính lương của kỳ (dạng cột mà engine.js dùng) từ hồ sơ + hợp đồng. */
   function staffForPayroll(db, nam, thang) {
-    var b = kyBounds(nam, thang), out = [], warn = [], ix = buildIndex(db);
+    var b = kyBounds(nam, thang), out = [], warn = [];
     var gtCodes = (db.dm_giamtru || []).map(function (r) { return r["Mã giảm trừ"]; });
     var gtBT = gtCodes.filter(function (c) { return /^GTBT|^BT$/i.test(c); })[0] || "";
     var gtPT = gtCodes.filter(function (c) { return /^GTNPT|^PT$/i.test(c); })[0] || "";
     var hotroInfo = {}; (db.dm_hotro || []).forEach(function (r) { hotroInfo[r["Mã hỗ trợ"]] = r; });
     (db.nhanvien || []).forEach(function (nv) {
       var ma = nv["Mã NV"]; if (!ma) return;
-      var hd = activeHD(db, ma, b.dau, b.cuoi, ix);
+      var hd = activeHD(db, ma, b.dau, b.cuoi);
       if (!hd) { if (nv["Trạng thái"] !== "Đã nghỉ việc") warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): chưa có hợp đồng hiệu lực trong kỳ — không tính lương"); return; }
-      var ct = chiTietHD(db, ma, hd["Số HĐLĐ"], b.cuoi, ix);
+      var ct = chiTietHD(db, ma, hd["Số HĐLĐ"], b.cuoi);
       if (!ct) { warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): hợp đồng " + hd["Số HĐLĐ"] + " chưa có dòng 'Lương & phụ lục HĐ' hiệu lực — không tính lương"); return; }
       var ml = split(ct["Mã lương"]), ht = split(ct["Hỗ trợ"]), tc = split(ct["Tăng ca"]);
       var ht1 = "", ht2 = "";
@@ -180,10 +161,10 @@
       });
       if (ml.length > 2) warn.push(ma + ": có " + ml.length + " mã lương, app chỉ dùng 2 mã đầu (" + ml.slice(0, 2).join(", ") + ")");
       if (tc.length > 1) warn.push(ma + ": có nhiều mã tăng ca, app dùng mã đầu " + tc[0]);
-      var tk = latestBy(rowsOf(db, "thanhtoan", ma, ix), "Hiệu lực từ", b.cuoi);
+      var tk = latestBy(rowsOf(db, "thanhtoan", ma), "Hiệu lực từ", b.cuoi);
       if (nv["Trạng thái"] === "Đã nghỉ việc" && !hd["Ngày chấm dứt"]) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trạng thái 'Đã nghỉ việc' nhưng hợp đồng " + hd["Số HĐLĐ"] + " chưa có Ngày chấm dứt — vẫn đang được tính lương");
       if (ct["HTTT"] === "Chuyển khoản" && !(tk && tk["Số tài khoản"])) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trả lương chuyển khoản nhưng chưa có số tài khoản");
-      var cn = latestBy(rowsOf(db, "canhan", ma, ix), "Hiệu lực từ", b.cuoi);
+      var cn = latestBy(rowsOf(db, "canhan", ma), "Hiệu lực từ", b.cuoi);
       out.push({
         "Mã nhân viên": ma, "Họ và tên": nv["Họ và tên"], "Mã PB": ct["Phòng ban"] || "", "Mã CV": ct["Chức vụ"] || "",
         "Ngày vào làm": hd["Ngày vào làm"] || "", "Ngày nghỉ/thay đổi": hd["Ngày chấm dứt"] || "",
@@ -191,7 +172,7 @@
         "Mã tiền lương 1": ml[0] || "", "Mã tiền lương 2": ml[1] || "", "Mã tăng ca": tc[0] || "",
         "Mã phụ cấp": ct["Phụ cấp"] || "", "Mã hỗ trợ": ht1, "Mã hỗ trợ 2": ht2,
         "Mã BHXH": ct["Mức đóng bảo hiểm"] || "", "Mã TNCN": ct["Thuế TNCN"] || "",
-        "Mã GT_TNCN_BT": gtBT, "Mã GT_TNCN_PT": gtPT, "Người phụ thuộc": soNguoiPhuThuoc(db, ma, b.dau, b.cuoi, ix),
+        "Mã GT_TNCN_BT": gtBT, "Mã GT_TNCN_PT": gtPT, "Người phụ thuộc": soNguoiPhuThuoc(db, ma, b.dau, b.cuoi),
         "Số CCCD": (cn && cn["Số CCCD"]) || nv["Số CCCD"] || "", "Số tài khoản": tk ? tk["Số tài khoản"] : "", "Tên Ngân hàng": tk ? tk["Tên ngân hàng"] : "",
         "HTTT": ct["HTTT"] || "", "Số HĐLĐ": hd["Số HĐLĐ"]
       });
@@ -309,11 +290,10 @@
     var name = {}; nvs.forEach(function (n) { name[n["Mã NV"]] = n["Họ và tên"]; });
     return {
       hethan: function (soNgay) {
-        var ix = buildIndex(db);
         var den = addDays(t, soNgay), rows = [];
         nvs.forEach(function (n) {
           if (n["Trạng thái"] === "Đã nghỉ việc") return;
-          var hh = hienHanh(db, n["Mã NV"], null, ix), hd = hh.hd;
+          var hh = hienHanh(db, n["Mã NV"]), hd = hh.hd;
           if (!hd || !hd["Ngày hết hạn"] || hd["Ngày chấm dứt"]) return;
           var hh2 = d10(hd["Ngày hết hạn"]); if (hh2 > den) return;
           var con = Math.round((new Date(hh2) - new Date(t)) / 864e5);
@@ -322,25 +302,23 @@
         return rows.sort(function (a, b) { return a["Còn (ngày)"] - b["Còn (ngày)"]; });
       },
       tinhhinh: function () {
-        var ix = buildIndex(db);
         var by = function (fn) { var m = {}; nvs.forEach(function (n) { var k = fn(n) || "(chưa có)"; m[k] = (m[k] || 0) + 1; }); return Object.keys(m).sort().map(function (k) { return { "Nhóm": k, "Số người": m[k] }; }); };
         var dang = nvs.filter(function (n) { return n["Trạng thái"] !== "Đã nghỉ việc"; });
         var by2 = function (fn) { var m = {}; dang.forEach(function (n) { var k = fn(n) || "(chưa có)"; m[k] = (m[k] || 0) + 1; }); return Object.keys(m).sort().map(function (k) { return { "Nhóm": k, "Số người": m[k] }; }); };
         return {
           trangthai: by(function (n) { return n["Trạng thái"]; }),
-          phongban: by2(function (n) { return hienHanh(db, n["Mã NV"], null, ix).tenPB; }),
-          gioitinh: by2(function (n) { var c = hienHanh(db, n["Mã NV"], null, ix).cn; return c && c["Giới tính"]; }),
-          loaihd: by2(function (n) { var h = hienHanh(db, n["Mã NV"], null, ix).hd; return h && h["Hình thức HĐLĐ"]; })
+          phongban: by2(function (n) { return hienHanh(db, n["Mã NV"]).tenPB; }),
+          gioitinh: by2(function (n) { var c = hienHanh(db, n["Mã NV"]).cn; return c && c["Giới tính"]; }),
+          loaihd: by2(function (n) { var h = hienHanh(db, n["Mã NV"]).hd; return h && h["Hình thức HĐLĐ"]; })
         };
       },
       nghi: function (nam) {
-        var ix = buildIndex(db);
         var y = String(nam), rows = [];
         nvs.forEach(function (n) {
           var ma = n["Mã NV"];
-          var ql = rowsOf(db, "quyenloiphep", ma, ix).filter(function (r) { return String(r["Năm áp dụng"]) === y; });
+          var ql = rowsOf(db, "quyenloiphep", ma).filter(function (r) { return String(r["Năm áp dụng"]) === y; });
           var cap = ql.reduce(function (a, r) { return a + (+r["Số ngày được cấp"] || 0) + (+r["Số ngày cộng dồn năm trước"] || 0); }, 0);
-          var sum = function (k) { return rowsOf(db, k, ma, ix).filter(function (r) { return d10(r["Từ ngày"]).slice(0, 4) === y && r["Trạng thái duyệt"] === "Đã duyệt"; }).reduce(function (a, r) { return a + (+r["Số ngày nghỉ"] || 0); }, 0); };
+          var sum = function (k) { return rowsOf(db, k, ma).filter(function (r) { return d10(r["Từ ngày"]).slice(0, 4) === y && r["Trạng thái duyệt"] === "Đã duyệt"; }).reduce(function (a, r) { return a + (+r["Số ngày nghỉ"] || 0); }, 0); };
           var p = sum("nghiphep"), o = sum("nghiom");
           if (!cap && !p && !o) return;
           rows.push({ "Mã NV": ma, "Họ và tên": n["Họ và tên"], "Phép được cấp": cap, "Đã nghỉ phép": p, "Phép còn lại": cap - p, "Nghỉ ốm": o });
@@ -353,23 +331,21 @@
         });
       },
       sinhnhat: function (thang) {
-        var ix = buildIndex(db);
         var rows = [];
         nvs.forEach(function (n) {
           if (n["Trạng thái"] === "Đã nghỉ việc") return;
-          var c = hienHanh(db, n["Mã NV"], null, ix).cn, ns = c && d10(c["Ngày sinh"]);
-          if (ns && +ns.slice(5, 7) === +thang) rows.push({ "Mã NV": n["Mã NV"], "Họ và tên": n["Họ và tên"], "Ngày sinh": ns, "Phòng ban": hienHanh(db, n["Mã NV"], null, ix).tenPB });
+          var c = hienHanh(db, n["Mã NV"]).cn, ns = c && d10(c["Ngày sinh"]);
+          if (ns && +ns.slice(5, 7) === +thang) rows.push({ "Mã NV": n["Mã NV"], "Họ và tên": n["Họ và tên"], "Ngày sinh": ns, "Phòng ban": hienHanh(db, n["Mã NV"]).tenPB });
         });
         return rows.sort(function (a, b) { return a["Ngày sinh"].slice(8) < b["Ngày sinh"].slice(8) ? -1 : 1; });
       },
       soLaoDong: function () {
-        var ix = buildIndex(db);
         return nvs.map(function (n, i) {
-          var hh = hienHanh(db, n["Mã NV"], null, ix), c = hh.cn || {}, hd = hh.hd || {}, ct = hh.ct || {};
+          var hh = hienHanh(db, n["Mã NV"]), c = hh.cn || {}, hd = hh.hd || {}, ct = hh.ct || {};
           return { "STT": i + 1, "Mã NV": n["Mã NV"], "Họ và tên": n["Họ và tên"], "Giới tính": c["Giới tính"] || "", "Ngày sinh": c["Ngày sinh"] || "",
             "Số CCCD": c["Số CCCD"] || n["Số CCCD"] || "", "Ngày cấp": c["Ngày cấp"] || "", "Nơi cấp": c["Nơi cấp"] || "", "Quốc tịch": c["Quốc tịch"] || "",
             "Thường trú": c["Thường trú"] || "", "Chỗ ở hiện tại": c["Địa chỉ hiện tại"] || "", "Số điện thoại": c["Số điện thoại"] || "",
-            "Trình độ": (latestBy(rowsOf(db, "hocvan", n["Mã NV"], ix), "Ngày cấp bằng") || {})["Trình độ học vấn"] || "",
+            "Trình độ": (latestBy(rowsOf(db, "hocvan", n["Mã NV"]), "Ngày cấp bằng") || {})["Trình độ học vấn"] || "",
             "Phòng ban": hh.tenPB, "Chức vụ": hh.tenCV, "Số HĐLĐ": hd["Số HĐLĐ"] || "", "Loại HĐLĐ": hd["Hình thức HĐLĐ"] || "",
             "Ngày vào làm": hd["Ngày vào làm"] || "", "Ngày hết hạn": hd["Ngày hết hạn"] || "", "Ngày chấm dứt": hd["Ngày chấm dứt"] || "",
             "Lương cơ bản": +ct["Lương cơ bản"] || "", "Lương thỏa thuận": +ct["Lương thỏa thuận"] || "", "Số sổ BHXH": c["Số sổ BHXH"] || "", "Trạng thái": n["Trạng thái"] };
@@ -390,7 +366,7 @@
     };
   }
 
-  var api = { HR: HR, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, staffForPayroll: staffForPayroll,
+  var api = { HR: HR, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, staffForPayroll: staffForPayroll,
     seedDanhMuc: seedDanhMuc, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.HRM = api;
 })(typeof window !== "undefined" ? window : this);

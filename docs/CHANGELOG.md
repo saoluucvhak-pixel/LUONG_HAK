@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [2.0.0-alpha.5] — 10/10/2026 — PR2 hiệu năng (PERF-01)
+- Chỉ mục Mã NV (`HR.buildIndex`) cho dựng danh sách lương, danh sách Nhân sự, báo cáo nhân sự. Ở 5.000 NV:
+  - dựng danh sách lương **1.175 → 22 ms**;
+  - danh sách Nhân sự **550 → 12 ms**;
+  - báo cáo nhân sự **1.952 → 54 ms**.
+- Kết quả **giống hệt** bản alpha.4 (test so sánh với bản lưu nguyên `baseline_2.0.0-alpha.4/hr.js`). Không đổi engine, không đổi dữ liệu.
+- `tests/perf/bench.js` đo thêm danh sách Nhân sự, báo cáo; `HR_IMPL=` để so bản cũ. `docs/PERFORMANCE_REPORT.md`.
+- Test: 104 (+3 R-PERF), E2E 42/42.
+
 ## [2.0.0-alpha.4] — 10/10/2026 — Audit V2: kiểm tra ô ngày chấm công, kịch bản tính lương
 ### Sửa lỗi (chi tiết, bằng chứng: `AUDIT_V2.md` §2)
 - **A2-01/02 (High)**: ô chấm công số âm (`-1`), chữ lạ (`1.5.2`, `#`) trước đây được nhập không báo lỗi → nay **từ chối** khi nhập Excel, gõ trên lưới và dán Ctrl+V.

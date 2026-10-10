@@ -152,3 +152,10 @@ Sau khi sửa: cùng file → `invalid: 1`, lý do `Ngày 01: "-1" không đọc
 
 Rollback: cài lại alpha.3 — không đổi cấu trúc dữ liệu, không đổi engine.
 
+## 2.0.0-alpha.5 — PERF-01 (nhánh `claude/v2-perf`)
+| Lỗi | Thay đổi | File | Test |
+|---|---|---|---|
+| PERF-01 dựng DS lương / hienHanh O(N²): 5.000 NV mất 1.175 ms (DS lương), 1.952 ms (báo cáo) | Chỉ mục `Map` theo Mã NV dựng 1 lần mỗi lượt, giữ thứ tự dòng & so khớp đúng kiểu | `hr.js`, `app.js` (DS Nhân sự) | R-PERF-01…03 |
+
+Bằng chứng: `HR_IMPL=tests/regression/baseline_2.0.0-alpha.4/hr.js node tests/perf/bench.js` (bản cũ) so với `node tests/perf/bench.js` — `PERFORMANCE_REPORT.md` §3. Rollback: cài lại alpha.4.
+

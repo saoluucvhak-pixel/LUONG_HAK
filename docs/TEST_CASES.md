@@ -160,6 +160,13 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | R-01 | 80 NV × 3 kỳ, mọi loại lương/tăng ca/phụ cấp/BH/thuế: bảng lương, BHXH, TNCN, danh sách nhân sự **trùng 100%**; cảnh báo cũ không mất | — |
 | R-02 | Thưởng "500.000": v1.3.0 = 500đ, v1.4.0 = 500.000đ; người khác không đổi | **Sửa lỗi có chủ đích (BUG-002)** |
 
+## Regression — 2.0-α5 chỉ mục Mã NV (`tests/regression/perf-index.test.js`, so với `baseline_2.0.0-alpha.4/hr.js`)
+| ID | Nội dung |
+|---|---|
+| R-PERF-01 | `staffForPayroll` = bản alpha.4, 4 kỳ, 80 NV + biên (trùng ngày hiệu lực, Mã NV kiểu số, `__proto__`); bảng lương giống hệt |
+| R-PERF-02 | `hienHanh` có/không chỉ mục = alpha.4 (mọi NV × 3 ngày); 5 báo cáo nhân sự giống hệt |
+| R-PERF-03 | Dựng DS lương 5.000 NV < 200 ms |
+
 ## E2E (`tests/e2e/run-e2e.js`) — Electron thật, thư mục dữ liệu tạm
 E-01 mở app · (2.0-α4) ô chấm công `-1` bị từ chối, cột 31/09 khóa, dán Ctrl+V không ghi ô sai · (2.0-α2) tạo Admin + mã khôi phục · sai mật khẩu 5 lần → khóa · mật khẩu tạm bắt buộc đổi · menu theo vai trò · Kế toán lương không mở chốt · Q-14 chặn sửa hồi tố (Admin được) · mật khẩu đã băm + muối · nhật ký theo tài khoản · quên mật khẩu Admin bằng mã khôi phục · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
 

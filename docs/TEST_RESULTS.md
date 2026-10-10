@@ -1,5 +1,15 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.5 — PR2 hiệu năng (10/10/2026, nhánh `claude/v2-perf`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **104/104** (+3 R-PERF-01…03) |
+| E2E Electron (xvfb, Linux) | ✅ **42/42** |
+| Dựng DS lương 5.000 NV | ✅ 22 ms (mục tiêu < 200 ms; alpha.4: 1.175 ms) — chi tiết `PERFORMANCE_REPORT.md` |
+| Mutation test: đổi chỉ mục sang khóa chuỗi | ✅ R-PERF-01/02 thất bại như mong đợi |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.4 — Audit V2 (10/10/2026, nhánh `claude/v2-audit2-fixes`)
 | Nhóm | Kết quả |
 |---|---|
