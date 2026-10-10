@@ -905,6 +905,22 @@
     return c;
   }
 
+  // ---------- Hướng dẫn, quy trình, dự thảo quy chế (ui/guide.js) ----------
+  function tabHuongDan() {
+    var G = window.HAKGuide, w = h("div"), tabs = h("div", { class: "subtabs noprint" }), key = st.hd2 || "start";
+    G.TABS.forEach(function (t) { tabs.appendChild(h("button", { class: key === t[0] ? "on" : "", text: t[1], on: { click: function () { st.hd2 = t[0]; render(); } } })); });
+    w.appendChild(tabs);
+    var ctx = { db: db, E: E, nam: st.nam, thang: st.thang, congTy: congTy() };
+    var bar = h("div", { class: "bar noprint" }, [btn("🖨 In", "", function () { window.print(); })]);
+    if (key === "rules") {
+      bar.appendChild(btn("⬇ Tải file Word (.doc) để chỉnh sửa", "pri", function () { download("Du_thao_Quy_che_tra_luong_" + kyKey(st.nam, st.thang) + ".doc", "application/msword", G.regulationDoc(ctx)); audit("Tải dự thảo Quy chế trả lương", kyLabel(kyKey(st.nam, st.thang))); }));
+      bar.appendChild(h("span", { class: "hint", style: "margin:0", text: "Bảng mức lương, phụ cấp, BH, thuế lấy theo danh mục đang có hiệu lực ở kỳ " + st.thang + "/" + st.nam + " (đổi kỳ ở góc phải trên)." }));
+    }
+    w.appendChild(bar);
+    w.appendChild(h("div", { class: "card guide" + (key === "rules" ? " g-doc" : ""), html: G.section(key, ctx) }));
+    return w;
+  }
+
   // ---------- Danh mục ----------
   function tabDanhMuc() {
     var w = h("div"), bar = h("div", { class: "bar" });
@@ -1677,7 +1693,7 @@
     ["grp", "Dữ liệu gốc"],
     ["nhansu", "👥", "Nhân sự"], ["baocao", "📊", "Báo cáo nhân sự"], ["dm", "📚", "Danh mục"],
     ["grp", "Hệ thống"],
-    ["backup", "⚙", "Công ty & Sao lưu"]
+    ["backup", "⚙", "Công ty & Sao lưu"], ["huongdan", "📖", "Hướng dẫn & Quy chế"]
   ];
   // Tab nào cần quyền xem nào (kiểm tra cả khi mở bằng trạng thái đã lưu, không chỉ ẩn menu)
   var TAB_PERM = { luong: "payroll.view", slips: "payroll.view", kyluong: "payroll.view", baocaoluong: "payroll.view", nhansu: "hr.view", nv: "hr.view", baocao: "report.view" };
@@ -1688,7 +1704,7 @@
     if (S[t]) return can("input.view");
     return TAB_PERM[t] ? can(TAB_PERM[t]) : true;
   }
-  var TITLES = { home: "Trang chủ", luong: "Tính lương", slips: "Phiếu lương", dm: "Danh mục", backup: "Công ty & Sao lưu", nhansu: "Nhân sự", nv: "Hồ sơ nhân viên", baocao: "Báo cáo nhân sự", kyluong: "Kỳ lương đã chốt", baocaoluong: "Báo cáo lương" };
+  var TITLES = { home: "Trang chủ", luong: "Tính lương", slips: "Phiếu lương", dm: "Danh mục", backup: "Công ty & Sao lưu", nhansu: "Nhân sự", nv: "Hồ sơ nhân viên", baocao: "Báo cáo nhân sự", kyluong: "Kỳ lương đã chốt", baocaoluong: "Báo cáo lương", huongdan: "Hướng dẫn & Quy chế lương" };
   function updateNav() { document.querySelectorAll("#nav button[data-k]").forEach(function (b) { var k = b.getAttribute("data-k"), n = $(".n", b); if (n && ALL[k]) n.textContent = countOf(k); }); }
   function periodBox() {
     var m = h("select"), y = h("input", { class: "i", type: "number", style: "width:80px", value: st.nam });
@@ -1717,7 +1733,7 @@
       $("#nav").innerHTML = ""; var t0 = $("#top"); t0.innerHTML = ""; t0.appendChild(h("h2", { text: !(db.nguoidung || []).length ? "Thiết lập ban đầu" : "Đăng nhập" }));
       var m0 = $("#main"); m0.innerHTML = "";
       m0.appendChild(!(db.nguoidung || []).length ? setupAdminScreen() : st.authView === "recover" ? recoverAdminScreen() : loginScreen());
-      $("#sidefoot").textContent = "v2.0.0-alpha.2"; return;
+      $("#sidefoot").textContent = "v2.0.0-alpha.3"; return;
     }
     if (!tabAllowed(st.tab)) st.tab = "home";
     var nav = $("#nav"); nav.innerHTML = "";
@@ -1731,7 +1747,7 @@
       if (n[0] === "nhansu") b.appendChild(h("span", { class: "n", text: db.nhanvien.filter(function (r) { return r["Trạng thái"] !== "Đã nghỉ việc"; }).length }));
       nav.appendChild(b);
     });
-    $("#sidefoot").textContent = "v2.0.0-alpha.2 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
+    $("#sidefoot").textContent = "v2.0.0-alpha.3 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
     var bb = $(".brand small"); if (bb) bb.textContent = congTy()["Tên công ty"] || "Chạy offline";
     var top = $("#top"); top.innerHTML = "";
     var title = TITLES[st.tab] || (S[st.tab] && S[st.tab].ten) || "";
@@ -1750,6 +1766,7 @@
     else if (st.tab === "baocao") m.appendChild(tabBaoCao());
     else if (st.tab === "kyluong") m.appendChild(tabKyLuong());
     else if (st.tab === "baocaoluong") m.appendChild(tabBaoCaoLuong());
+    else if (st.tab === "huongdan") m.appendChild(tabHuongDan());
     else if (S[st.tab]) m.appendChild(grid(st.tab, S[st.tab]));
     else { st.tab = "home"; render(); }
   }
