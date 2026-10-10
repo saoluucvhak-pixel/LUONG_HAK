@@ -1,6 +1,7 @@
 // Kiểm thử end-to-end trên ứng dụng Electron thật (bản đóng gói chạy từ mã nguồn).
 // Chạy: ELECTRON_PATH=<đường dẫn electron> PLAYWRIGHT_MODULE=<đường dẫn playwright> node tests/e2e/run-e2e.js
 // (Linux không màn hình: xvfb-run -a node tests/e2e/run-e2e.js)
+/* global document */ // dùng trong các hàm w.evaluate(...) chạy bên trong cửa sổ app
 // Dùng thư mục dữ liệu tạm (biến HAK_USER_DATA) — không đụng dữ liệu thật.
 "use strict";
 const fs = require("fs"), os = require("os"), path = require("path");
