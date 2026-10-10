@@ -8,11 +8,11 @@ Môi trường: Linux, Node v22.22.0, Intel Xeon 2.10GHz 4 CPU · Chromium (Play
 |---|---|
 | Cú pháp (`node --check` mọi file JS) | ✅ đạt |
 | Lint (`eslint . --max-warnings 0`) | ✅ 0 lỗi, 0 cảnh báo |
-| Unit (engine 14 · core 10 · storage 7) | ✅ 31/31 |
+| Unit (engine 14 · core 10 · storage 7 · giao diện 3) | ✅ 34/34 |
 | Integration | ✅ 8/8 |
 | Regression so với v1.3.0 | ✅ 2/2 — trùng 100% trên 80 NV × 3 kỳ (>200 phiếu lương); 1 khác biệt có chủ đích (BUG-002) |
-| **Tổng `npm test`** | ✅ **41/41** |
-| E2E trên Electron 43.7.9 | ✅ **22/22** (gồm nâng cấp từ dữ liệu 1.3.0) |
+| **Tổng `npm test`** | ✅ **44/44** |
+| E2E trên Electron 43.7.9 | ✅ **23/23** (gồm nâng cấp từ dữ liệu 1.3.0, font + icon giao diện) |
 | Giao diện trong trình duyệt (Playwright, CSP bật) | ✅ không lỗi JS, không vi phạm CSP |
 | `npm audit --omit=dev` (phần chạy trong app) | ✅ 0 lỗ hổng |
 | `npm audit` (gồm công cụ build) | ⚠ 8 *moderate* — chỉ trong công cụ build (xem AUDIT_REPORT SEC-05) |
@@ -29,6 +29,7 @@ Môi trường: Linux, Node v22.22.0, Intel Xeon 2.10GHz 4 CPU · Chromium (Play
 ```
 PASS Mở ứng dụng — 439 ms
 PASS Cầu nối lưu trữ (preload) hoạt động
+PASS Giao diện: font Be Vietnam Pro đóng gói nạp được, menu dùng icon SVG — {"font":true,"icons":14,"emoji":0}
 PASS Tính lương: 12.000.000 − BH 630.000 = 11.370.000
 PASS Chốt kỳ lương (hộp nhập của app, không dùng window.prompt)
 PASS Mở chốt không cho để trống lý do
@@ -49,7 +50,7 @@ PASS Nâng cấp: kỳ đã chốt kiểu cũ giữ nguyên
 PASS Mở lần 2 không tạo thêm bản trước nâng cấp
 PASS Kỳ chốt kiểu cũ hiển thị 'Bản cũ'
 PASS Không lỗi JavaScript khi mở dữ liệu cũ
-E2E: 22/22 đạt
+E2E: 23/23 đạt
 ```
 
 Xác nhận lỗi gốc BUG-003 trên Electron 33.2.0 (bản dùng trong 1.3.0): `window.prompt()` → *"prompt() is and will not be supported."*
@@ -71,6 +72,6 @@ Xác nhận lỗi gốc BUG-003 trên Electron 33.2.0 (bản dùng trong 1.3.0):
 Nhận xét: "Dựng DS lương" tăng theo bình phương (PERF-01) — xử lý ở Phase 2. Với 5.000 NV, dữ liệu ~9 MB / 3 kỳ (~36 MB/năm), mỗi lần lưu ghi lại toàn bộ file → lý do chính chuyển SQLite.
 
 ## 6. Cách tự kiểm tra lại
-1. `cd LuongHAK_Offline && npm test` → `# pass 41`.
+1. `cd LuongHAK_Offline && npm test` → `# pass 44`.
 2. CI GitHub Actions trên PR: job *check*, *e2e*, *build* đều xanh; tải artifact `TinhLuongHAK-Setup` và cài thử trên Windows.
 3. Trên Windows: mở app → *Công ty & Sao lưu* → *Kiểm tra dữ liệu* (xem cảnh báo dữ liệu cũ, đặc biệt "Lương … quá nhỏ" do BUG-001).

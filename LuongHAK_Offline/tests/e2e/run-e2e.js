@@ -27,9 +27,11 @@ async function launch(dataDir) {
   let { app, w, errs } = await launch();
   ok("Mở ứng dụng", true, (Date.now() - t0) + " ms");
   ok("Cầu nối lưu trữ (preload) hoạt động", await w.evaluate(() => !!window.hakStore && typeof window.hakStore.save === "function"));
-  await w.click("#nav button[data-k=backup]"); await w.click("text=Nạp danh mục chuẩn HAK");
+  const ui = await w.evaluate(async () => { await document.fonts.ready; return { font: document.fonts.check('600 16px "Be Vietnam Pro"') && [...document.fonts].some((f) => f.family.replace(/"/g, "") === "Be Vietnam Pro" && f.status === "loaded"), icons: document.querySelectorAll("#nav svg.icn").length, emoji: [...document.querySelectorAll("#nav .ic")].filter((e) => e.textContent.trim()).length }; });
+  ok("Giao diện: font Be Vietnam Pro đóng gói nạp được, menu dùng icon SVG", ui.font && ui.icons >= 14 && ui.emoji === 0, JSON.stringify(ui));
+  await w.click("#nav button[data-k=backup]"); await w.click('button:has-text("Nạp danh mục chuẩn HAK")');
   // nhân viên + chấm công
-  await w.click("#nav button[data-k=nhansu]"); await w.click("text=＋ Thêm nhân viên");
+  await w.click("#nav button[data-k=nhansu]"); await w.click('button:has-text("Thêm nhân viên")');
   const F = (l) => w.locator(".dlg .fld", { hasText: l }).first();
   await F("Họ và tên").locator("input").fill("E2E Nhân Viên");
   await F("Ngày vào làm").locator("input").fill("2025-01-01");
@@ -39,11 +41,11 @@ async function launch(dataDir) {
   await F("Lương cơ bản").locator("input").fill("6.000.000");
   await F("Thuế TNCN").locator("select").selectOption("MT00");
   await F("Hình thức trả lương").locator("select").selectOption("Tiền mặt");
-  await w.click("text=💾 Lưu nhân viên");
+  await w.click('button:has-text("Lưu nhân viên")');
   await w.evaluate(() => { const s = JSON.parse(localStorage.getItem("luonghak_db_v1_ui") || "{}"); s.nam = 2026; s.thang = 9; localStorage.setItem("luonghak_db_v1_ui", JSON.stringify(s)); });
   await w.click("#nav button[data-k=chamcong]");
   await w.selectOption("#top select", "9"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change");
-  await w.click("text=＋ Thêm dòng");
+  await w.click('button:has-text("Thêm dòng")');
   const row = w.locator("main tbody tr").last().locator("input");
   await row.nth(0).fill("NV001"); await row.nth(0).dispatchEvent("change");
   for (let d = 1; d <= 30; d++) if (new Date(2026, 8, d).getDay()) { await row.nth(1 + d).fill("1"); await row.nth(1 + d).dispatchEvent("change"); }
@@ -51,18 +53,18 @@ async function launch(dataDir) {
   await w.click("#nav button[data-k=luong]"); await w.click("button.big");
   const line = await w.locator("main tbody tr").first().innerText();
   ok("Tính lương: 12.000.000 − BH 630.000 = 11.370.000", /11\.370\.000/.test(line), line.replace(/\t/g, " | "));
-  await w.click("text=🔒 Chốt kỳ lương"); await w.waitForSelector(".dlg");
+  await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForSelector(".dlg");
   await w.locator(".dlg input").fill("Chốt bởi E2E"); await w.click(".dlg footer button.pri"); await w.waitForSelector(".locked");
   ok("Chốt kỳ lương (hộp nhập của app, không dùng window.prompt)", (await w.locator(".locked").first().innerText()).indexOf("đã chốt") >= 0);
   // mở chốt bắt buộc lý do → chốt lại = phiên bản 2
-  await w.click("text=🔓 Mở chốt để sửa"); await w.waitForSelector(".dlg");
+  await w.click('button:has-text("Mở chốt để sửa")'); await w.waitForSelector(".dlg");
   await w.click(".dlg footer button.pri");
   ok("Mở chốt không cho để trống lý do", await w.locator(".dlg").count() === 1);
   await w.locator(".dlg textarea").fill("Kiểm thử mở chốt"); await w.click(".dlg footer button.pri"); await w.waitForSelector("button.big");
-  await w.click("button.big"); await w.click("text=🔒 Chốt kỳ lương"); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForSelector(".locked");
+  await w.click("button.big"); await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForSelector(".locked");
   ok("Chốt lại sau khi mở chốt", true);
   // xuất Excel trọn bộ
-  await w.click("text=⬇ Xuất trọn bộ Excel");
+  await w.click('button:has-text("Xuất trọn bộ Excel")');
   let xf = null; for (let i = 0; i < 30 && !xf; i++) { await w.waitForTimeout(200); xf = fs.readdirSync(DL).filter((f) => /^KyLuong_2026-09\.xlsx$/.test(f))[0]; }
   if (xf) {
     const XLSX = require(path.join(APP, "xlsx.full.min.js")), wb = XLSX.read(fs.readFileSync(path.join(DL, xf)), { type: "buffer" });

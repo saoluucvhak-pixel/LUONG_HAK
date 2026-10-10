@@ -21,6 +21,7 @@
       "preload.js",
       "main/**",
       "core/**",
+      "ui/**",
       "index.html",
       "style.css",
       "app.js",

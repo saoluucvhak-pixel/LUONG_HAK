@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: Kiểm tra cú pháp
-        run: for f in app.js engine.js hr.js main.js preload.js core/*.js main/*.js; do node --check "$f"; done
+        run: for f in app.js engine.js hr.js main.js preload.js core/*.js main/*.js ui/*.js; do node --check "$f"; done
       - name: Lint (eslint, không chấp nhận cảnh báo)
         run: npx --yes eslint@9.39.5 . --max-warnings 0
       - name: Unit + Integration + Regression (so với v1.3.0)
