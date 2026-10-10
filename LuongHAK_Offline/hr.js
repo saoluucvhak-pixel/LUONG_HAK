@@ -233,6 +233,13 @@
     };
   }
 
+  var _seed = seedDanhMuc;
+  seedDanhMuc = function () {
+    var d = _seed();
+    d.dm_phongban.forEach(function (p) { p["Tài khoản chi phí"] = p["Mã khối"] === "02" ? "622" : (/Kinh doanh/i.test(p["Tên phòng ban"]) ? "641" : "642"); });
+    return d;
+  };
+
   // ---------- Chuyển dữ liệu bản cũ ----------
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function migrate(db) {
