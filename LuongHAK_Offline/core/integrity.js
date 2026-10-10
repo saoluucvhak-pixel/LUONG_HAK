@@ -96,8 +96,9 @@
     (db.chamcong || []).forEach(function (r) {
       DAYS.forEach(function (d) {
         var v = r[d]; if (v === "" || v == null) return;
-        var m = String(v).match(/^(\d+(?:[.,]\d+)?)/);
-        if (m && parseFloat(m[1].replace(",", ".")) > 3) push("Medium", "chamcong", r["Mã NV"] + " kỳ " + r["Kỳ"] + " ngày " + d + ": " + v + " công — vượt 3 công/ngày");
+        var dc = V.dayCell(d, v, r["Kỳ"]), lab = r["Mã NV"] + " kỳ " + r["Kỳ"] + " (" + (r["Hình thức công"] || "BT") + ")";
+        if (dc.error) push("High", "chamcong", lab + ": " + dc.error + (+d > V.daysInKy(r["Kỳ"]) ? " — bảng lương hiện VẪN CỘNG ô này (Q-21), hãy xóa ô" : " — số công tính ra có thể sai, hãy sửa ô"));
+        else if (dc.warn) push("Medium", "chamcong", lab + ": " + dc.warn);
       });
     });
     var order = { Critical: 0, High: 1, Medium: 2, Low: 3 };

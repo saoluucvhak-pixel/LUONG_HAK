@@ -128,3 +128,27 @@ Giải pháp gồm:
 2. **Lỗi nghiêm trọng** (fatal) → chế độ chỉ xem / khôi phục, **không ghi** file.
 3. **Lỗi dòng** → liệt kê ở *Kiểm tra dữ liệu*, **không tự xóa**. Bảng lạ được giữ nguyên.
 4. `ensureTables` chỉ tạo bảng còn thiếu, không bao giờ thay thế bảng đã có.
+
+## 2.0.0-alpha.4 — Audit V2 (nhánh `claude/v2-audit2-fixes`)
+
+Bằng chứng tái hiện (script chạy trên alpha.3, nguyên văn):
+```
+tachCong: -1→{"soCong":0,"nhan":"-1"} … abc→{"soCong":0,"nhan":"abc"} … 1.5.2→{"soCong":1.5,"nhan":".2"}
+import ô âm/chữ/7 công: {"add":1,…,"invalid":0,…} (không lỗi)
+→ tổng công 9.5 | kiểm tra dữ liệu: Medium:NV001 kỳ 2026-09 ngày 03: 7 công — vượt 3 công/ngày
+ngày 31/09 (không tồn tại): {"add":1,…} → tổng công 1
+```
+Sau khi sửa: cùng file → `invalid: 1`, lý do `Ngày 01: "-1" không đọc được (cần dạng 1, 0.5, 1QC hoặc QC) — số công không được âm`.
+
+| Lỗi | Thay đổi | File | Test |
+|---|---|---|---|
+| A2-01 ô âm | `dayCell` từ chối số âm (chuỗi và kiểu số) | `core/validate.js`, `core/importer.js`, `app.js` lưới | U-CC-13, U-CC-15, E2E |
+| A2-02 ô chữ lạ | Ô phải khớp `số[nhãn]` / `nhãn`, nhãn bắt đầu bằng chữ | như trên | U-CC-13, U-CC-15 |
+| A2-03 ngày không tồn tại | Chặn nhập; lưới khóa cột; *Kiểm tra dữ liệu* High; chốt kỳ báo số ô sai; engine giữ nguyên (Q-21) | `core/validate.js`, `core/importer.js`, `core/integrity.js`, `app.js` | U-CC-14…16, E2E |
+| A2-04 > 3 công/ngày | Cảnh báo ở xem trước nhập và khi gõ | `core/importer.js`, `app.js` | U-CC-15 |
+| A2-05 nhãn không có mã phụ cấp | Cảnh báo ở xem trước nhập | `core/importer.js` | U-CC-15 |
+| A2-06 dán ghi ô sai | Ô sai không được ghi | `app.js` paste | E2E "Dán từ Excel" |
+| A2-07 cột ngày thừa | Khóa ô ngày không tồn tại (ô trống) | `app.js` lưới | E2E |
+
+Rollback: cài lại alpha.3 — không đổi cấu trúc dữ liệu, không đổi engine.
+

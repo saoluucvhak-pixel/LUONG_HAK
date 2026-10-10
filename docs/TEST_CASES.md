@@ -94,6 +94,25 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-15 | Cất file hỏng 3 lần cùng thời điểm → 3 tên, không mất file hỏng nào |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α4 ô ngày chấm công (`tests/unit/daycell.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-CC-13 | `dayCell`: hợp lệ 1 / 0.5 / 1,5 / 1QC / QC; lỗi số âm (chuỗi và số), `1.5.2`, `#`, `1.`, `+1`, `1/2`; > 3 công → cảnh báo |
+| U-CC-14 | Ngày không có trong tháng: 31/09, 29/02/2026 lỗi; 29/02/2028 (nhuận), 31/10 hợp lệ |
+| U-CC-15 | Nhập Excel: ô âm / chữ lạ / 31/09 / 1.5.2 → *Lỗi dữ liệu*, không ghi; 7 công + nhãn lạ → ghi kèm cảnh báo |
+| U-CC-16 | Dữ liệu cũ có ô sai → *Kiểm tra dữ liệu* báo High, không sửa dữ liệu; engine vẫn cộng 31/09 (Q-21) |
+| U-CC-17 | Cùng ngày khác hình thức (BT + TC) → 2 dòng riêng; cùng hình thức khác số → xung đột (Q-12); chưa có "ca" (Q-18) |
+
+## Integration — 2.0-α4 kịch bản tính lương (`tests/integration/payroll-scenarios.test.js`)
+| ID | Nội dung (số tính tay — `AUDIT_V2.md` §5) |
+|---|---|
+| I-15 | Đủ tháng: BH 630.000, thuế 193.500, thực lĩnh 19.177.000 |
+| I-16 | Vào làm 15/09: lương theo 14/26 công, thuế 0, BH vẫn trừ đủ [Q-23] |
+| I-17 | Nghỉ việc 20/09: 17 công; tháng 10 không có lương |
+| I-18 | Nhiều tạm ứng + thưởng + thu nhập khác + trừ khác cộng dồn; tạm ứng kỳ sau không trừ |
+| I-19 | Khoản trừ vượt thu nhập → thực lĩnh 0 + cảnh báo số còn thiếu |
+| I-20 | Phụ lục giữa tháng → cả tháng theo mức mới [Q-22] |
+
 ## Unit — 2.0-α3 hướng dẫn & quy chế (`tests/unit/guide.test.js`)
 | ID | Nội dung |
 |---|---|
@@ -142,7 +161,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | R-02 | Thưởng "500.000": v1.3.0 = 500đ, v1.4.0 = 500.000đ; người khác không đổi | **Sửa lỗi có chủ đích (BUG-002)** |
 
 ## E2E (`tests/e2e/run-e2e.js`) — Electron thật, thư mục dữ liệu tạm
-E-01 mở app · (2.0-α2) tạo Admin + mã khôi phục · sai mật khẩu 5 lần → khóa · mật khẩu tạm bắt buộc đổi · menu theo vai trò · Kế toán lương không mở chốt · Q-14 chặn sửa hồi tố (Admin được) · mật khẩu đã băm + muối · nhật ký theo tài khoản · quên mật khẩu Admin bằng mã khôi phục · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
+E-01 mở app · (2.0-α4) ô chấm công `-1` bị từ chối, cột 31/09 khóa, dán Ctrl+V không ghi ô sai · (2.0-α2) tạo Admin + mã khôi phục · sai mật khẩu 5 lần → khóa · mật khẩu tạm bắt buộc đổi · menu theo vai trò · Kế toán lương không mở chốt · Q-14 chặn sửa hồi tố (Admin được) · mật khẩu đã băm + muối · nhật ký theo tài khoản · quên mật khẩu Admin bằng mã khôi phục · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
 
 ## Hiệu năng (`tests/perf/bench.js`) — baseline, chưa đặt ngưỡng
 100 / 500 / 1.000 / 5.000 NV × 3 kỳ: dung lượng, ghi/đọc JSON, dựng danh sách lương, tính lương 1 kỳ, kiểm tra toàn vẹn, lập kế hoạch nhập lại chấm công, bộ nhớ.

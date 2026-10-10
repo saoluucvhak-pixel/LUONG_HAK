@@ -1,7 +1,7 @@
 // Kiểm thử end-to-end trên ứng dụng Electron thật (bản đóng gói chạy từ mã nguồn).
 // Chạy: ELECTRON_PATH=<đường dẫn electron> PLAYWRIGHT_MODULE=<đường dẫn playwright> node tests/e2e/run-e2e.js
 // (Linux không màn hình: xvfb-run -a node tests/e2e/run-e2e.js)
-/* global document */ // dùng trong các hàm w.evaluate(...) chạy bên trong cửa sổ app
+/* global document, DataTransfer, ClipboardEvent */ // dùng trong các hàm w.evaluate(...) chạy bên trong cửa sổ app
 // Dùng thư mục dữ liệu tạm (biến HAK_USER_DATA) — không đụng dữ liệu thật.
 "use strict";
 const fs = require("fs"), os = require("os"), path = require("path");
@@ -74,6 +74,16 @@ async function launch(dataDir, opt) {
   const row = w.locator("main tbody tr").last().locator("input");
   await row.nth(0).fill("NV001"); await row.nth(0).dispatchEvent("change");
   for (let d = 1; d <= 30; d++) if (new Date(2026, 8, d).getDay()) { await row.nth(1 + d).fill("1"); await row.nth(1 + d).dispatchEvent("change"); }
+  // Ô ngày không hợp lệ: số âm bị từ chối + giữ nguyên; ngày 31/09 không cho nhập
+  dialogs = [];
+  await row.nth(1 + 6).fill("-1"); await row.nth(1 + 6).dispatchEvent("change"); await w.waitForTimeout(200);
+  const v6 = await row.nth(1 + 6).inputValue(), dis31 = await row.nth(1 + 31).isDisabled();
+  // Dán từ Excel: ô sai (-1) KHÔNG được ghi, ô đúng vẫn ghi (ngày 13 là Chủ nhật, đang trống)
+  await row.nth(1 + 13).evaluate((el) => { const dt = new DataTransfer(); dt.setData("text/plain", "-1\t1"); el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); });
+  await w.waitForTimeout(300);
+  const row2 = w.locator("main tbody tr").last().locator("input"), v13 = await row2.nth(1 + 13).inputValue(), v14 = await row2.nth(1 + 14).inputValue();
+  ok("Dán từ Excel: ô '-1' không được ghi, ô hợp lệ vẫn ghi", v13 === "" && v14 === "1", "13='" + v13 + "', 14='" + v14 + "'");
+  ok("Chấm công: ô '-1' bị từ chối (giữ trống), cột 31 tháng 9 bị khóa", v6 === "" && dis31 && dialogs.some((d) => /không được âm/.test(d)), "ô 06='" + v6 + "', 31 khóa=" + dis31 + " | " + dialogs.join(" | "));
   // tính + chốt
   await w.click("#nav button[data-k=luong]"); await w.click("button.big");
   const line = await w.locator("main tbody tr").first().innerText();
