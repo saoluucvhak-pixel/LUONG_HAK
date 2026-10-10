@@ -56,6 +56,17 @@ test("U-GRD-04 tham chiếu Mã NV (chặn đổi mã đã chốt) + nhật ký 
   assert.equal(db.kyluong[0].nguoiChot, "kt@may1");
 });
 
+test("U-GRD-05 (Q-15) phụ lục đã dùng tính lương kỳ đã chốt → khóa (kể cả Admin); phụ lục mới / chưa dùng → sửa được", () => {
+  const db = closedDb(), pl1 = db.chitiethd[0], pl2 = db.chitiethd[1];
+  assert.deepEqual(GRD.frozenAppendix(db, pl1), ["2026-08", "2026-09"]);
+  assert.deepEqual(GRD.frozenAppendix(db, pl2), []); // hiệu lực 10/2026, chưa chốt
+  assert.deepEqual(GRD.frozenOfContract(db, "NV001", "HD1"), ["2026-08", "2026-09"]);
+  assert.deepEqual(GRD.frozenOfContract(db, "NV002", "X"), []);
+  // mở chốt kỳ 9 → phụ lục chỉ còn khóa bởi kỳ 8
+  CLS.reopen(db, "2026-09", "điều chỉnh", { user: "admin" });
+  assert.deepEqual(GRD.frozenAppendix(db, pl1), ["2026-08"]);
+});
+
 test("U-CLS-03 checksum phát hiện sửa cả số liệu đã chốt LẪN dữ liệu đầu vào đã chốt", () => {
   const db = closedDb(), k = db.kyluong[0];
   assert.equal(CLS.verify(k), "ok");

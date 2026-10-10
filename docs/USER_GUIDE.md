@@ -33,7 +33,7 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
 ## Nhập Excel (v1.4)
 - Sau khi chọn file, app hiện **màn hình xem trước**: số dòng *Thêm mới · Cập nhật · Trùng (bỏ qua) · Lỗi dữ liệu · Sai tham chiếu · Kỳ đã chốt*. Chỉ dòng Thêm mới / Cập nhật được ghi. Bấm **⬇ Tải danh sách lỗi** để sửa và nhập lại.
 - Nhập lại cùng file **không tạo dòng trùng**: dòng cùng khóa (VD chấm công cùng Kỳ + Mã NV + Hình thức công) được cập nhật.
-- **(2.0) Cách cập nhật dòng đã có** — ô chọn ngay trên màn hình xem trước:
+- **(2.0) Cách cập nhật dòng đã có** — nếu file có dòng trùng với dữ liệu đã có, màn hình xem trước báo số dòng trùng và cho bạn chọn:
   - **Chỉ bổ sung/sửa ô có dữ liệu** (mặc định, an toàn): ô để trống trong file **giữ nguyên** dữ liệu đang có. Ví dụ: tháng nhập 2 lần (ngày 1–15 rồi ngày 16–30) vẫn đủ cả tháng.
   - **Ghi đè cả dòng theo file**: ô trống trong file **xóa** dữ liệu đang có. App báo trước số ô sẽ bị xóa.
   - Cột *Lý do* ghi rõ từng thay đổi, ví dụ "sửa 1 ô (05: 1 → 0.5)", "thêm 15 ô", "giữ 15 ô".
@@ -66,6 +66,7 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
   - App **hỏi xác nhận** và ghi nhật ký kèm nhãn *HỒI TỐ*.
   - Bảng lương đã chốt **không đổi**. Muốn áp dụng cho kỳ đó: *Mở chốt* → tính lại → chốt lại thành phiên bản mới, rồi bấm *So sánh* để xem chênh lệch.
 - (2.0) Không đổi được **Mã NV** nếu nhân viên đã có trong bảng lương đã chốt (để số đã chốt luôn khớp hồ sơ).
+- (2.0-α2) **Phụ lục hợp đồng** đã dùng để tính lương một kỳ đã chốt **không sửa / xóa được (kể cả Admin)**. Muốn tăng lương, đổi chức vụ hoặc phòng ban: vào *Hồ sơ nhân viên → Hợp đồng lao động → Lương & phụ lục HĐ → ＋ Thêm* để lập **phụ lục mới** có ngày hiệu lực mới. App tự chép nội dung phụ lục gần nhất để bạn chỉ sửa phần thay đổi.
 - (2.0) Bản chốt ghi **người chốt**; lần mở chốt ghi **người mở, lý do, thời điểm**.
 
 ## Báo cáo lương (menu 📈 Báo cáo lương)

@@ -254,6 +254,7 @@
       p.items.forEach(function (it) {
         if (it.action !== "add" && it.action !== "update") return;
         if (!okT) { it.action = "locked"; it.reason = "Vai trò của bạn không có quyền ghi bảng này (" + PERM.PERMS[perm] + ")"; return; }
+        if (it.action === "update" && p.table === "chitiethd" && GRD.frozenAppendix(db, it.target).length) { it.action = "locked"; it.reason = "Phụ lục đã dùng tính lương kỳ đã chốt " + GRD.frozenAppendix(db, it.target).map(GRD.label).join(", ") + " — không sửa được, hãy thêm phụ lục mới (Q-15)"; return; }
         if (!can("retro.edit")) {
           var imp0 = GRD.impactChange(db, p.table, it.target || null, Object.assign({}, it.target || {}, it.row));
           if (imp0.kind === "retro") { it.action = "locked"; it.reason = "HỒI TỐ kỳ đã chốt " + imp0.periods.map(GRD.label).join(", ") + " — chỉ Admin được ghi"; }
@@ -266,12 +267,17 @@
     Object.keys(IMP.LABEL).forEach(function (k) { tot[k] = 0; });
     plans.forEach(function (p) { Object.keys(tot).forEach(function (k) { tot[k] += p.summary[k] || 0; }); });
     body.appendChild(h("div", { class: "hint", html: "File <b>" + esc(fileName) + "</b> — kiểm tra trước khi ghi. Chỉ dòng <b>Thêm mới</b> và <b>Cập nhật</b> được ghi; dòng <b>Gộp</b> đã được cộng vào dòng cùng khóa; các dòng lỗi/trùng/xung đột/kỳ đã chốt bị bỏ qua." }));
-    // Chế độ cập nhật dòng đã có
-    var modeSel = h("select", { on: { change: function () { importPreview(replan, fileName, done, modeSel.value); } } }, [
-      h("option", { value: "merge", text: "Chỉ bổ sung/sửa ô có dữ liệu — ô trống trong file GIỮ NGUYÊN dữ liệu đang có (an toàn, mặc định)" }),
-      h("option", { value: "replace", text: "Ghi đè cả dòng theo file — ô trống trong file sẽ XÓA dữ liệu đang có" })]);
-    modeSel.value = mode;
-    body.appendChild(h("div", { class: "fld", style: "margin:8px 0 12px" }, [h("label", { text: "Cách cập nhật dòng đã có" }), modeSel]));
+    // Q-13 (chủ sở hữu xác nhận): khi file có dòng TRÙNG với dữ liệu đã có → người dùng chọn Bổ sung hay Ghi đè
+    var nSame = 0; plans.forEach(function (p) { p.items.forEach(function (it) { if (it.target) nSame++; }); });
+    var choice = h("div", { class: nSame ? "warn" : "hint", style: "margin:8px 0 12px" });
+    choice.appendChild(h("div", { html: nSame ? "<b>File có " + nSame + " dòng trùng với dữ liệu đã có.</b> Chọn cách xử lý:" : "Cách xử lý nếu có dòng trùng với dữ liệu đã có:" }));
+    [["merge", "Bổ sung", "chỉ thêm/sửa ô có dữ liệu trong file — ô để trống GIỮ NGUYÊN số đang có (mặc định, an toàn)"],
+      ["replace", "Ghi đè", "thay cả dòng theo file — ô để trống trong file sẽ XÓA số đang có"]].forEach(function (o) {
+      var r0 = h("input", { type: "radio", name: "impmode", value: o[0], "data-mode": o[0] }); r0.checked = mode === o[0];
+      r0.addEventListener("change", function () { if (r0.checked) importPreview(replan, fileName, done, o[0]); });
+      choice.appendChild(h("label", { style: "display:flex;gap:8px;align-items:flex-start;margin:6px 0;cursor:pointer" }, [r0, h("span", { html: "<b>" + o[1] + "</b> — " + o[2] })]));
+    });
+    body.appendChild(choice);
     var sumRows = plans.map(function (p) { var o = { "Bảng": ALL[p.table].ten, "Sheet": p.sheet }; Object.keys(IMP.LABEL).forEach(function (k) { o[IMP.LABEL[k]] = p.summary[k] || 0; }); return o; });
     body.appendChild(simpleTable(sumRows));
     var clears = 0, retro = {};
@@ -572,12 +578,20 @@
         if (bad.length) { alert("Số tiền không hợp lệ: " + bad.join(", ")); return; }
         var dupKey = IMP.keyOf(key, Object.assign({}, base || {}, d));
         if (dupKey && db[key].some(function (r) { return r !== row && IMP.keyOf(key, r) === dupKey; })) { alert("Đã có bản ghi trùng (" + IMP.KEYS[key].join(" + ") + "). Hãy sửa bản ghi đó thay vì thêm mới."); return; }
+        if (!need("hr.edit", "sửa hồ sơ nhân sự")) return;
+        if (key === "chitiethd" && row) {
+          var fz = GRD.frozenAppendix(db, row);
+          if (fz.length) { alert("⛔ Phụ lục này đã dùng để tính lương kỳ ĐÃ CHỐT " + fz.map(GRD.label).join(", ") + " — không được sửa (quy tắc Q-15).\nMuốn thay đổi lương/chức vụ/phòng ban: bấm '＋ Thêm' để lập PHỤ LỤC MỚI có ngày hiệu lực mới."); return; }
+        }
+        if (key === "hopdong" && row && row["Số HĐLĐ"] !== d["Số HĐLĐ"]) {
+          var fzH = GRD.frozenOfContract(db, row["Mã NV"], row["Số HĐLĐ"]);
+          if (fzH.length) { alert("⛔ Không đổi được Số HĐLĐ: phụ lục của hợp đồng này đã dùng tính lương kỳ đã chốt " + fzH.map(GRD.label).join(", ") + " (Q-15)."); return; }
+        }
         if (key === "hopdong") {
           var dup = db.hopdong.some(function (r) { return r !== row && r["Mã NV"] === data["Mã NV"] && r["Số HĐLĐ"] === d["Số HĐLĐ"]; });
           if (dup) { alert("Số HĐLĐ này đã có"); return; }
           if (row && row["Số HĐLĐ"] !== d["Số HĐLĐ"]) HRM.HD_TABS.forEach(function (k) { (db[k] || []).forEach(function (r) { if (r["Mã NV"] === row["Mã NV"] && r["Số HĐLĐ"] === row["Số HĐLĐ"]) r["Số HĐLĐ"] = d["Số HĐLĐ"]; }); });
         }
-        if (!need("hr.edit", "sửa hồ sơ nhân sự")) return;
         var after = Object.assign({}, base || {}, row || {}, d), beforeCopy = row ? Object.assign({}, row) : null;
         if (!guardChange(key, beforeCopy, after, isNew ? "thêm " + cfg.ten : "sửa " + cfg.ten)) return;
         if (isNew) db[key].push(Object.assign({ _id: HRM.uid() }, base || {}, d)); else Object.assign(row, d);
@@ -626,6 +640,8 @@
       acts.appendChild(btn("✕", "red ghost", function (ev) {
         ev.stopPropagation();
         if (!need("hr.edit", "xóa hồ sơ nhân sự")) return;
+        var fzD = key === "chitiethd" ? GRD.frozenAppendix(db, r) : key === "hopdong" ? GRD.frozenOfContract(db, r["Mã NV"], r["Số HĐLĐ"]) : [];
+        if (fzD.length) { alert("⛔ Không xóa được: " + (key === "hopdong" ? "phụ lục của hợp đồng này" : "phụ lục này") + " đã dùng tính lương kỳ ĐÃ CHỐT " + fzD.map(GRD.label).join(", ") + " (quy tắc Q-15)."); return; }
         var impD = GRD.impact(db, key, r);
         if (impD.kind === "retro" && !can("retro.edit")) { alert("⛔ Bản ghi này có hiệu lực trong kỳ lương đã chốt " + impD.periods.map(GRD.label).join(", ") + ". Chỉ Admin được xóa dữ liệu hồi tố."); return; }
         if (!confirm("Xóa dòng này?" + (key === "hopdong" ? "\nToàn bộ phụ lục lương, nghỉ phép… của hợp đồng này cũng bị xóa." : "") + (impD.kind === "retro" ? "\n\n" + retroText(impD) : ""))) return;

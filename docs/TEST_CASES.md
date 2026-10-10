@@ -76,6 +76,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-GRD-02 | Phụ lục hồi tố: đúng các kỳ đã chốt còn hiệu lực (tới trước phụ lục kế tiếp); dời ngày hiệu lực vào kỳ chốt → retro; NV không có trong bảng chốt → none |
 | U-GRD-03 | Danh mục có hiệu lực, nhân viên trong bảng chốt → retro; bảng không ảnh hưởng lương → none |
 | U-GRD-04 | Tham chiếu Mã NV (chặn đổi mã); nhật ký trước/sau; người chốt |
+| U-GRD-05 | (Q-15) Phụ lục đã dùng cho kỳ chốt → khóa; phụ lục chưa dùng → sửa được; mở chốt 1 kỳ → chỉ còn khóa bởi kỳ khác |
 | U-CLS-03 | Checksum phát hiện sửa kết quả **và** dữ liệu đầu vào đã chốt; mở chốt ghi người + lý do + thời điểm |
 | U-SCH-01 | Fatal: gốc không phải object, bảng không phải danh sách, schemaVersion mới hơn / sai kiểu |
 | U-SCH-02 | Lỗi dữ liệu (10 loại) được báo đủ, **không sửa** dữ liệu; bảng lạ giữ nguyên |

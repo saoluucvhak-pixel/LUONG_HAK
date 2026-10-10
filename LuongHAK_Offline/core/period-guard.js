@@ -100,9 +100,24 @@
     });
     return out;
   }
+  /**
+   * Q-15 (chủ sở hữu xác nhận 10/10/2026): phụ lục HĐ đã được dùng tính lương cho kỳ ĐÃ CHỐT thì KHÔNG ai được sửa/xóa
+   * (kể cả Admin) — muốn thay đổi phải thêm phụ lục mới. Trả danh sách kỳ đã chốt dùng phụ lục này ([] = sửa được).
+   */
+  function frozenAppendix(db, r) {
+    if (!r) return [];
+    var imp = impact(db, "chitiethd", r);
+    return imp.kind === "retro" ? imp.periods : [];
+  }
+  /** Phụ lục bị khóa của 1 hợp đồng (khi đổi số HĐ / xóa HĐ kéo theo phụ lục). */
+  function frozenOfContract(db, ma, soHD) {
+    var out = {};
+    (db.chitiethd || []).forEach(function (x) { if (x["Mã NV"] === ma && x["Số HĐLĐ"] === soHD) frozenAppendix(db, x).forEach(function (p) { out[p] = 1; }); });
+    return Object.keys(out).sort();
+  }
   function label(ky) { var p = String(ky).split("-"); return (+p[1]) + "/" + p[0]; }
 
-  var api = { impact: impact, impactChange: impactChange, rangeOf: rangeOf, changedFields: changedFields, references: references, closedPeriods: closedPeriods, label: label };
+  var api = { frozenAppendix: frozenAppendix, frozenOfContract: frozenOfContract, impact: impact, impactChange: impactChange, rangeOf: rangeOf, changedFields: changedFields, references: references, closedPeriods: closedPeriods, label: label };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.guard = api; }
 })(typeof window !== "undefined" ? window : this);

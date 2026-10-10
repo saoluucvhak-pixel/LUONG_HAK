@@ -153,6 +153,18 @@ async function launch(dataDir, opt) {
   const cell2 = w.locator("#main tbody tr").first().locator("input").nth(4);
   await cell2.fill("Sửa hồi tố E2E"); await cell2.press("Tab"); await w.waitForTimeout(700);
   ok("Admin sửa được dữ liệu hồi tố (có cảnh báo)", (await cell2.inputValue()) === "Sửa hồi tố E2E" && !dialogs.some((d) => /Chỉ Admin/.test(d)));
+  // Q-15: phụ lục đã dùng tính lương kỳ đã chốt → không ai sửa được (kể cả Admin); thêm phụ lục mới thì được
+  dialogs = [];
+  await w.click("#nav button[data-k=nhansu]"); await w.locator("#main table tbody tr").first().click();
+  await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
+  const plCard = w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') });
+  const nPL = await plCard.locator("tbody tr").count();
+  await plCard.locator("tbody tr").first().click(); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
+  const blocked15 = dialogs.some((d) => /Q-15/.test(d) && /PHỤ LỤC MỚI/.test(d));
+  if (await w.locator(".dlg").count()) await w.click(".dlg header button");
+  await plCard.locator('button:has-text("Thêm")').click(); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(400);
+  const nPL2 = await w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') }).locator("tbody tr").count();
+  ok("Q-15: Admin KHÔNG sửa được phụ lục đã dùng cho kỳ đã chốt; thêm phụ lục mới thì được", blocked15 && nPL2 === nPL + 1, dialogs.join(" | ").slice(0, 160) + " · phụ lục " + nPL + "→" + nPL2);
   ok("Không lỗi JavaScript khi phân quyền", errs.length === 0, errs.join(" | "));
   await app.close();
   const sv2 = JSON.parse(fs.readFileSync(path.join(DATA, "data.json"), "utf8"));
