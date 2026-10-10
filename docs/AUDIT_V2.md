@@ -36,7 +36,7 @@
 **Nhận xét kiến trúc** (đưa vào PR3/PR4, không sửa ở PR1):
 - **K-01:** không có lớp repository. 13 nhóm thao tác ghi nằm rải trong `app.js` (§3). Việc kiểm tra quyền và kỳ chốt được gọi lặp ở từng chỗ. Hiện tất cả đều có kiểm tra (§3), nhưng thêm màn hình mới dễ quên kiểm tra.
 - **K-02:** mỗi lần lưu ghi lại toàn bộ file JSON: 169 ms ở 5.000 NV (RISK-01). Mục tiêu là SQLite `node:sqlite` (PR4; đã xác minh chạy được trên Electron 43 / Node 24.21).
-- **K-03:** `staffForPayroll` / `hienHanh` quét toàn bộ bảng cho mỗi nhân viên, độ phức tạp O(N²) (PR2).
+- **K-03:** `staffForPayroll` / `hienHanh` quét toàn bộ bảng cho mỗi nhân viên, độ phức tạp O(N²) → ✅ đã sửa ở PR2 (alpha.5, chỉ mục Mã NV — `PERFORMANCE_REPORT.md`).
 
 ## 2. Danh sách vấn đề
 
