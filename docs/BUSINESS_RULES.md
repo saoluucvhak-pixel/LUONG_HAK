@@ -10,8 +10,10 @@
   - Khóa được chuẩn hóa: kỳ `YYYY-MM`; *Hình thức công* viết hoa, để trống = BT.
 - R-03a (2.0) Chấm công 1 dòng = 1 *Kỳ + Mã NV + Hình thức công*:
   - Trong 1 file có nhiều dòng cùng khóa → **gộp theo ngày**.
-  - Cùng 1 ngày có dữ liệu ở 2 dòng → **xung đột**, không ghi. Không đoán, kể cả khi 2 giá trị bằng nhau.
-  - Dữ liệu đang có nhiều dòng cùng khóa → nhập bị chặn cho tới khi gộp. Công cụ gộp chỉ gộp dòng không trùng ngày và không thuộc kỳ đã chốt.
+  - (Q-12, chủ sở hữu xác nhận 10/10/2026) Cùng 1 ngày + cùng hình thức ở 2 dòng = **nhập trùng**:
+    - cùng số công → **tính 1 lần**;
+    - khác số công (VD 1 / 0,5) → **xung đột**, không ghi, người dùng tự sửa.
+  - Dữ liệu đang có nhiều dòng cùng khóa → nhập bị chặn cho tới khi gộp. Công cụ gộp: ngày nhập trùng cùng số công → tính 1 lần; nhóm có ngày khác số công hoặc thuộc kỳ đã chốt → giữ nguyên.
 - R-03b (2.0) Cập nhật khi nhập Excel:
   - Mặc định **bổ sung**: ô trống trong file **không xóa** dữ liệu đang có.
   - **Ghi đè cả dòng** phải chọn rõ; app báo trước số ô sẽ bị xóa.
@@ -71,8 +73,8 @@ Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 | Q-09 | Ngày công tác có nhãn (QC…) trên dòng CL/PN có được phụ cấp công tác? | Có (mọi dòng có nhãn) |
 | Q-10 | Khấu trừ vãng lai 10%: áp dụng mọi khoản hay chỉ khi mỗi lần chi đạt ngưỡng theo quy định hiện hành? | Mọi khoản |
 | Q-11 | Bản Google Apps Script (GAS-01): đổi quyền truy cập web app sang chỉ người trong tổ chức / danh sách email? | Đang mở cho mọi người có link |
-| Q-12 | Chấm công: 2 dòng cùng NV + cùng hình thức + **cùng ngày** (VD 0,5 + 0,5): là 2 buổi hợp lệ (cộng) hay nhập trùng (lấy 1)? | Chặn — báo xung đột để người dùng sửa |
+| Q-12 | Chấm công: 2 dòng cùng NV + cùng hình thức + **cùng ngày** (VD 0,5 + 0,5): là 2 buổi hợp lệ (cộng) hay nhập trùng (lấy 1)? | ✅ **Đã trả lời (10/10/2026): nhập trùng.** Cùng số công → tính 1 lần; khác số công → chặn để người dùng sửa |
 | Q-13 | Nhập Excel cập nhật dòng đã có: mặc định **bổ sung** (ô trống giữ dữ liệu) có phù hợp quy trình? Có cần quyền riêng cho chế độ *ghi đè*? | Mặc định bổ sung; ai cũng chọn được ghi đè |
-| Q-14 | Thay đổi **hồi tố** chạm kỳ đã chốt: chỉ cảnh báo (hiện tại) hay **chặn** và bắt buộc mở chốt? Ai được phép? | Cảnh báo + nhật ký |
+| Q-14 | Thay đổi **hồi tố** chạm kỳ đã chốt: chỉ cảnh báo (hiện tại) hay **chặn** và bắt buộc mở chốt? Ai được phép? | ✅ **Đã trả lời: chỉ Admin được phép** — triển khai cùng đăng nhập/phân quyền (PR riêng) |
 | Q-15 | Khi đã chốt, có cấm **sửa trực tiếp phụ lục cũ** và bắt buộc lập phụ lục mới không? | Cho sửa, có cảnh báo + nhật ký trước/sau |
-| Q-16 | Định dạng "người thực hiện" cho tới khi có đăng nhập: tên tự khai + tài khoản Windows có đủ cho kiểm toán nội bộ? | Tên tự khai + `user@máy` |
+| Q-16 | Định dạng "người thực hiện" cho tới khi có đăng nhập: tên tự khai + tài khoản Windows có đủ cho kiểm toán nội bộ? | ✅ **Đã trả lời: cần đăng nhập + phân quyền** — triển khai PR riêng |

@@ -58,7 +58,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 |---|---|---|
 | U-CC-01 | Nhập lại cùng file 3 lần → không thêm dòng, công không đổi | đạt |
 | U-CC-02 | 2 dòng cùng NV + cùng hình thức trong 1 file (nửa tháng) → gộp, đủ 30 công | **thất bại** (15 công) |
-| U-CC-03 | Trùng ngày (1/1 hoặc 1/0,5) → xung đột cả 2 dòng, không ghi | **thất bại** |
+| U-CC-03 | (Q-12) Trùng ngày cùng số công (1/1, "1qc"/"1QC") → tính 1 lần; khác số công (1/0,5) → xung đột cả 2 dòng | **thất bại** |
 | U-CC-04 | Nhiều hình thức công (BT/TC/CC/CL) → không ghi đè nhau | đạt |
 | U-CC-05 | Nhập bổ sung ngày 16–30 → giữ ngày 1–15 | **thất bại** (mất 15 công) |
 | U-CC-06 | Nhập điều chỉnh 1 ô → cập nhật đúng ô, báo trước/sau | **thất bại** (không có diff) |
@@ -66,7 +66,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-CC-08 | Kỳ đã chốt (ghi dạng 9/2026, 2026-9) → bị chặn | đạt |
 | U-CC-09 | "bt" / để trống = BT → không cộng đôi | **thất bại** (60 công) |
 | U-CC-10 | Dữ liệu có sẵn 2 dòng cùng khóa → chặn nhập (không thành 45 công); gộp → nhập được | **thất bại** |
-| U-CC-11 | Công cụ gộp bỏ qua nhóm trùng ngày / kỳ đã chốt; tổng công không đổi | đạt (mới) |
+| U-CC-11 | Công cụ gộp: ngày nhập trùng → tính 1 lần (21 → 20 công); nhóm khác số công / kỳ đã chốt giữ nguyên | đạt (mới) |
 | U-CC-12 | Bảng khác: cùng khóa khác dữ liệu → xung đột; ô trống không xóa CCCD | **thất bại** |
 
 ## Unit — 2.0 kỳ chốt & cấu trúc (`tests/unit/guard-schema.test.js`)

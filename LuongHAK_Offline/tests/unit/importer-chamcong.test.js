@@ -35,13 +35,16 @@ test("U-CC-02 nhiều dòng cùng NV + cùng hình thức trong 1 file (tách n�
   assert.equal(db.chamcong.length, 1); assert.equal(cong(db).tongCong, 30);
 });
 
-test("U-CC-03 2 dòng cùng khóa trùng NGÀY trong file → XUNG ĐỘT, không ghi dòng nào (không đoán)", () => {
-  for (const [a, b] of [[1, 1], [1, 0.5]]) {
-    const db = mkDb(), p = imp(db, [row("NV001", 1, 10, "BT", a), row("NV001", 10, 20, "BT", b)]);
-    assert.equal(p.summary.conflict, 2, "giá trị " + a + "/" + b);
-    assert.equal(db.chamcong.length, 0);
-    assert.match(p.items[1].reason, /ngày 10/);
-  }
+test("U-CC-03 (Q-12) cùng ngày + cùng hình thức = NHẬP TRÙNG: cùng số công → tính 1 lần; khác số công → xung đột, không ghi", () => {
+  let db = mkDb(), p = imp(db, [row("NV001", 1, 10, "BT", 1), row("NV001", 10, 20, "BT", 1)]);
+  assert.equal(p.summary.add, 1); assert.equal(p.summary.merged, 1); assert.match(p.items[1].reason, /ngày 10 nhập trùng → tính 1 lần/);
+  assert.equal(cong(db).tongCong, 20); // ngày 1–20, ngày 10 không bị cộng 2 lần
+  // "1" và "1,0" / "1qc" và "1QC" là cùng giá trị
+  db = mkDb(); const a = row("NV001", 1, 3, "BT", "1qc"), b2 = row("NV001", 3, 5, "BT", "1QC");
+  assert.equal(imp(db, [a, b2]).summary.merged, 1); assert.equal(cong(db).tongCong, 5);
+  db = mkDb(); p = imp(db, [row("NV001", 1, 10, "BT", 1), row("NV001", 10, 20, "BT", 0.5)]);
+  assert.equal(p.summary.conflict, 2); assert.equal(db.chamcong.length, 0);
+  assert.match(p.items[1].reason, /ngày 10 \(1 \/ 0\.5\)/);
 });
 
 test("U-CC-04 nhiều hình thức công của 1 NV → mỗi hình thức 1 dòng, không ghi đè lẫn nhau", () => {
@@ -108,15 +111,19 @@ test("U-CC-10 dữ liệu đang có 2 dòng cùng khóa → nhập bị CHẶN (
   assert.equal(imp(db, [row("NV001", 1, 30)]).summary.duplicate, 1);
 });
 
-test("U-CC-11 công cụ gộp KHÔNG gộp nhóm trùng ngày hoặc thuộc kỳ đã chốt", () => {
-  const db = mkDb(); db.chamcong.push(row("NV001", 1, 15), row("NV001", 15, 20), row("NV002", 1, 10), row("NV002", 11, 20));
-  const before = cong(db).tongCong;
+test("U-CC-11 công cụ gộp: ngày nhập trùng cùng số công → tính 1 lần; khác số công hoặc kỳ đã chốt → giữ nguyên", () => {
+  const db = mkDb();
+  db.chamcong.push(row("NV001", 1, 15), row("NV001", 15, 20, "BT", 0.5), row("NV002", 1, 10), row("NV002", 10, 20));
+  assert.equal(cong(db, "NV002").tongCong, 21); // bản 1.4.0: ngày 10 bị cộng 2 lần
+  assert.ok(INT.check(db).some((i) => i.level === "High" && /nhập trùng/.test(i.msg)));
+  assert.ok(INT.check(db).some((i) => i.level === "High" && /KHÁC số công/.test(i.msg)));
+  const before1 = cong(db).tongCong;
   const r = INT.mergeChamCong(db, { "2026-09": true });
   assert.equal(r.groups, 0); assert.equal(r.skipped.length, 2); assert.equal(db.chamcong.length, 4);
   const r2 = INT.mergeChamCong(db, {});
-  assert.equal(r2.groups, 1); assert.match(r2.skipped[0].reason, /trùng ngày 15/);
-  assert.equal(cong(db).tongCong, before);
-  assert.ok(INT.check(db).some((i) => i.level === "High" && /trùng NGÀY/.test(i.msg)));
+  assert.equal(r2.groups, 1); assert.equal(r2.dupDays, 1); assert.match(r2.skipped[0].reason, /khác số công 15/);
+  assert.equal(cong(db, "NV002").tongCong, 20); // ngày 10 tính 1 lần
+  assert.equal(cong(db).tongCong, before1);      // NV001 (khác số công) giữ nguyên
 });
 
 test("U-CC-12 bảng khác: cùng khóa trong file nhưng dữ liệu khác → xung đột cả 2 dòng; ô trống không xóa dữ liệu", () => {

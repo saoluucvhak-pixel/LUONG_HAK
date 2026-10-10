@@ -69,18 +69,28 @@
     if (mode !== "replace" && d.keep.length) t.push("giữ " + d.keep.length + " ô đang có vì ô trong file để trống");
     return t.join(" · ");
   }
+  /** 2 ô công "giống nhau": "1" = 1 = "1,0"; "1qc" = "1QC". */
+  function sameCell(x, y) {
+    var a = str(x).trim().toUpperCase().replace(",", "."), b = str(y).trim().toUpperCase().replace(",", ".");
+    if (a === b) return true;
+    var ma = a.match(/^(\d+(?:\.\d+)?)(.*)$/), mb = b.match(/^(\d+(?:\.\d+)?)(.*)$/);
+    return !!(ma && mb && parseFloat(ma[1]) === parseFloat(mb[1]) && ma[2].trim() === mb[2].trim());
+  }
   /**
-   * Gộp 2 dòng chấm công cùng khóa: hợp từng ô ngày. Cùng 1 NGÀY có dữ liệu ở cả 2 dòng → XUNG ĐỘT, kể cả khi bằng nhau
-   * (VD 0.5 + 0.5 có thể là 2 buổi hoặc nhập trùng — không đoán, để người dùng quyết định).
+   * Gộp 2 dòng chấm công cùng khóa (Kỳ + Mã NV + Hình thức công): hợp từng ô ngày.
+   * Quy tắc Q-12 (chủ sở hữu xác nhận 10/10/2026): cùng ngày + cùng hình thức = NHẬP TRÙNG.
+   *  - cùng giá trị → tính 1 lần (dupDays)
+   *  - khác giá trị (VD 1 / 0.5) → XUNG ĐỘT, không đoán giá trị nào đúng
    */
   function mergeCells(a, b) {
-    var out = Object.assign({}, a), conflicts = [];
+    var out = Object.assign({}, a), conflicts = [], dupDays = [];
     Object.keys(b).forEach(function (c) {
       if (blank(b[c])) return;
       if (blank(out[c])) { out[c] = b[c]; return; }
-      if (/^\d\d$/.test(c) || str(out[c]) !== str(b[c])) conflicts.push("ngày " + c + " (" + out[c] + " / " + b[c] + ")");
+      if (sameCell(out[c], b[c])) { if (/^\d\d$/.test(c)) dupDays.push(c); return; }
+      conflicts.push("ngày " + c + " (" + out[c] + " / " + b[c] + ")");
     });
-    return { row: out, conflicts: conflicts };
+    return { row: out, conflicts: conflicts, dupDays: dupDays };
   }
 
   /**
@@ -133,12 +143,12 @@
           // Nhiều dòng cùng NV + cùng hình thức công trong 1 file (VD: tách nửa tháng) → gộp từng ngày, không bỏ sót công
           var mg = mergeCells(first.row, r);
           if (mg.conflicts.length) {
-            item.action = "conflict"; item.reason = "Cùng NV/kỳ/hình thức với dòng " + first.line + " và cùng có công ở: " + mg.conflicts.join(", ") + " — không biết là 2 lần công hay nhập trùng; sửa file (gộp thành 1 dòng) rồi nhập lại";
-            first.action = "conflict"; first.reason = "Trùng ngày với dòng " + item.line + ": " + mg.conflicts.join(", ");
+            item.action = "conflict"; item.reason = "Cùng NV/kỳ/hình thức với dòng " + first.line + " nhưng cùng ngày lại khác số công: " + mg.conflicts.join(", ") + " — không biết số nào đúng; sửa file rồi nhập lại";
+            first.action = "conflict"; first.reason = "Khác số công cùng ngày với dòng " + item.line + ": " + mg.conflicts.join(", ");
             items.push(item); return;
           }
           first.row = mg.row; first.mergedLines = (first.mergedLines || []).concat(item.line);
-          item.action = "merged"; item.reason = "Gộp vào dòng " + first.line + " (cùng NV, kỳ, hình thức công)"; items.push(item); return;
+          item.action = "merged"; item.reason = "Gộp vào dòng " + first.line + " (cùng NV, kỳ, hình thức công)" + (mg.dupDays.length ? " · ngày " + mg.dupDays.join(", ") + " nhập trùng → tính 1 lần" : ""); items.push(item); return;
         }
         var same0 = fingerprint(cols, first.row) === fp;
         if (same0) { item.action = "duplicate"; item.reason = "Trùng y hệt dòng " + first.line + " trong cùng file"; items.push(item); return; }
@@ -191,7 +201,7 @@
   }
 
   var LABEL = { add: "Thêm mới", update: "Cập nhật", merged: "Gộp vào dòng khác", duplicate: "Trùng (bỏ qua)", conflict: "Xung đột (không ghi)", invalid: "Lỗi dữ liệu", refError: "Sai tham chiếu", locked: "Kỳ đã chốt" };
-  var api = { KEYS: KEYS, REQUIRED: REQUIRED, keyOf: keyOf, plan: plan, apply: apply, mergeCells: mergeCells, LABEL: LABEL };
+  var api = { KEYS: KEYS, REQUIRED: REQUIRED, keyOf: keyOf, plan: plan, apply: apply, mergeCells: mergeCells, sameCell: sameCell, LABEL: LABEL };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.importer = api; }
 })(typeof window !== "undefined" ? window : this);

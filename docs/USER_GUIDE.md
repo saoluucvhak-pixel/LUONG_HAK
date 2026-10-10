@@ -16,7 +16,7 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
   - Cột *Lý do* ghi rõ từng thay đổi, ví dụ "sửa 1 ô (05: 1 → 0.5)", "thêm 15 ô", "giữ 15 ô".
 - **(2.0) Chấm công nhiều dòng cùng nhân viên, cùng hình thức công trong 1 file**:
   - Các dòng **không trùng ngày** được **gộp** (phân loại *Gộp vào dòng khác*).
-  - Nếu cùng 1 ngày có công ở 2 dòng, app báo **Xung đột (không ghi)**, vì không biết đó là 2 buổi hay nhập trùng. Hãy gộp trong Excel rồi nhập lại.
+  - Cùng 1 ngày có công ở 2 dòng là **nhập trùng**: cùng số công thì app **tính 1 lần**; khác số công (VD 1 và 0,5) thì app báo **Xung đột (không ghi)**, vì không biết số nào đúng — sửa trong Excel rồi nhập lại.
 - **(2.0)** Nếu dữ liệu đang có sẵn nhiều dòng chấm công cùng khóa, app chặn nhập và hướng dẫn: *Công ty & Sao lưu → Kiểm tra dữ liệu → **Gộp dòng chấm công trùng*** (tổng công không đổi; app sao lưu trước).
 - Ngày nhập được dạng 2026-09-15 hoặc 15/09/2026; kỳ dạng 2026-09 hoặc 09/2026; tiền dạng 1500000 hoặc 1.500.000. CCCD/SĐT bị Excel làm mất số 0 đầu được tự bù.
 - (2.0) App luôn tự sao lưu trước khi ghi. Nếu không lưu được xuống đĩa, **toàn bộ lần nhập được hủy**. File tối đa 20 MB.
