@@ -31,7 +31,7 @@ Thứ tự ưu tiên: **1. Tính đúng · 2. Bảo toàn dữ liệu · 3. Ki�
 |---|---|
 | Không còn lỗi Critical chưa xử lý | ⚠ còn GAS-01 (bản Google, chờ chủ sở hữu quyết định); bản offline: 0 |
 | Lỗi High ảnh hưởng dữ liệu/tiền lương đã xử lý | ✅ (SEC-03 đã giảm thiểu, chờ vá thư viện) |
-| Kiểm thử nghiệp vụ bắt buộc đạt | ✅ 87/87 + E2E 39/39 (2.0.0-alpha.2) |
+| Kiểm thử nghiệp vụ bắt buộc đạt | ✅ 90/90 + E2E 40/40 (2.0.0-alpha.3) |
 | Công thức đã đối chiếu | ✅ hồi quy 100% với v1.3.0; ⏳ chờ xác nhận Q-01…Q-10 |
 | Không có dữ liệu trùng ngoài quy tắc | ✅ importer + form chặn trùng; *Kiểm tra dữ liệu* phát hiện trùng cũ |
 | Dữ liệu chốt lương truy vết được | ✅ snapshot đầu vào + phiên bản + lý do + checksum + nhật ký |

@@ -96,6 +96,14 @@ async function launch(dataDir, opt) {
     const bl = XLSX.utils.sheet_to_json(wb.Sheets.BangLuong);
     ok("Xuất Excel trọn bộ: đủ 4 sheet, số khớp bảng đã chốt", wb.SheetNames.join(",") === "BangLuong,BHXH,ThueTNCN,ChuyenKhoan" && bl[0]["Thực lĩnh"] === 11370000, wb.SheetNames.join(",") + " · thực lĩnh " + bl[0]["Thực lĩnh"]);
   } else ok("Xuất Excel trọn bộ kỳ đã chốt", false, "không thấy file");
+  // Hướng dẫn & Quy chế: 5 phần, quy chế sinh từ danh mục, tải Word
+  await w.click("#nav button[data-k=huongdan]");
+  const gTabs = await w.locator(".subtabs button").count();
+  await w.click('.subtabs button:has-text("Quy chế")'); await w.waitForTimeout(200);
+  const qc = await w.locator(".guide").innerText();
+  await w.click('button:has-text("Tải file Word")');
+  let qf = null; for (let i = 0; i < 30 && !qf; i++) { await w.waitForTimeout(200); qf = fs.readdirSync(DL).filter((f) => /^Du_thao_Quy_che_tra_luong_2026-09\.doc$/.test(f))[0]; }
+  ok("Hướng dẫn & Quy chế: 5 phần, quy chế lấy từ danh mục đang dùng, tải được file Word", gTabs === 5 && /QUY CHẾ TRẢ LƯƠNG/.test(qc) && /TG1/.test(qc) && /BH01/.test(qc) && !!qf && /QUY CHẾ TRẢ LƯƠNG/.test(fs.readFileSync(path.join(DL, qf), "utf8")), gTabs + " phần · " + (qf || "không thấy file"));
   await w.waitForTimeout(800);
   ok("Không có lỗi JavaScript (lần chạy 1)", errs.length === 0, errs.join(" | "));
   await app.close();

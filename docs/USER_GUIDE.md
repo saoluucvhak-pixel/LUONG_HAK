@@ -2,6 +2,13 @@
 
 Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK-Setup-x.y.z.exe`.
 
+> **Từ 2.0-alpha.3**, hướng dẫn đầy đủ nằm ngay trong app: menu **Hướng dẫn & Quy chế**, gồm 5 phần:
+> - Bắt đầu nhanh;
+> - Quy trình tính lương hằng tháng;
+> - **Dự thảo Quy chế trả lương**: sinh từ danh mục đang dùng, in hoặc tải file Word được;
+> - Hướng dẫn từng màn hình;
+> - Câu hỏi thường gặp.
+
 ## Đăng nhập & người dùng (từ 2.0-alpha.2)
 
 **Lần đầu mở app** (cài mới, hoặc nâng cấp từ bản cũ)

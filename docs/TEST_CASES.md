@@ -94,6 +94,13 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-15 | Cất file hỏng 3 lần cùng thời điểm → 3 tên, không mất file hỏng nào |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α3 hướng dẫn & quy chế (`tests/unit/guide.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-GUIDE-01 | Mô tả công chuẩn trong quy chế khớp đúng số `engine.congChuan` cho mọi mã lương chuẩn |
+| U-GUIDE-02 | Quy chế lấy số liệu từ danh mục **có hiệu lực của kỳ** (biểu thuế 12/2025 ≠ 2026; phụ cấp mới từ 10/2026 chỉ hiện ở kỳ 10) |
+| U-GUIDE-03 | Mọi [Q-xx] trong quy chế có trong BUSINESS_RULES; dữ liệu người dùng được escape (không chèn HTML/script); đủ 5 phần; file Word hợp lệ |
+
 ## Unit — 2.0-α2 phân quyền (`tests/unit/permissions.test.js`)
 | ID | Nội dung |
 |---|---|
