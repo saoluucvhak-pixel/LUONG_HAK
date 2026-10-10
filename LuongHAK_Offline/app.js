@@ -45,6 +45,7 @@
   var migMsg = HRM.migrate(db);
   Object.keys(ALL).forEach(function (k) { if (!db[k]) db[k] = []; });
   if (!db.congty) db.congty = [];
+  if (!db.kyluong) db.kyluong = [];
   var saveTimer = null, dirty = false;
   function saveNow() {
     clearTimeout(saveTimer); dirty = false;
@@ -246,15 +247,17 @@
   function grid(key, def) {
     var wrap = h("div"), card = h("div", { class: "card" }), bar = h("div", { class: "bar" }), body = h("div", { class: "tw" });
     var theoKy = !!(def.kyCol || def.dateCol), cnt = h("span", { class: "hint", style: "margin:0" });
+    var locked = theoKy && !!kyChot(kyStr());
     var q = h("input", { class: "i search", placeholder: "🔍 Tìm trong bảng...", value: st.q });
     q.addEventListener("input", function () { st.q = q.value; draw(); q.focus(); });
     var newRow = function () { var r = Object.assign({}, def.def || {}); if (def.kyCol) r[def.kyCol] = kyStr(); if (def.dateCol) r[def.dateCol] = kyStr() + "-01"; return r; };
-    bar.appendChild(btn("＋ Thêm dòng", "pri", function () { db[key].push(newRow()); save(); st.q = ""; q.value = ""; draw(); var tw = body; tw.scrollTop = tw.scrollHeight; }));
+    if (!locked) bar.appendChild(btn("＋ Thêm dòng", "pri", function () { db[key].push(newRow()); save(); st.q = ""; q.value = ""; draw(); var tw = body; tw.scrollTop = tw.scrollHeight; }));
     bar.appendChild(q); bar.appendChild(cnt); bar.appendChild(h("span", { class: "sp" }));
     bar.appendChild(btn("📄 Tải file mẫu", "", function () { downloadTemplate(key); }, "File Excel mẫu có sẵn tên cột + dòng ví dụ"));
-    bar.appendChild(btn("⬆ Nhập Excel", "", function () { importFile(key, draw); }, "Nhập từ file .xlsx / .xls / .csv"));
+    if (!locked) bar.appendChild(btn("⬆ Nhập Excel", "", function () { importFile(key, draw); }, "Nhập từ file .xlsx / .xls / .csv"));
     bar.appendChild(btn("⬇ Xuất Excel", "", function () { var rows = db[key].filter(function (r) { return !theoKy || rowInKy(r, def); }); saveXlsx(slug(def.ten) + (theoKy ? "_" + kyStr() : "") + ".xlsx", [{ name: def.ten, cols: def.cols, rows: rows }]); }));
     card.appendChild(bar);
+    if (locked) card.appendChild(h("div", { class: "locked", html: "🔒 <b>" + kyLabel(kyStr()) + " đã chốt lương</b> — dữ liệu kỳ này chỉ xem, không sửa được. Muốn sửa: vào <b>Kỳ lương đã chốt</b> → Mở chốt." }));
     card.appendChild(h("div", { class: "hint", text: (def.hint ? def.hint + " " : "") + "Nhập hàng loạt: bấm '📄 Tải file mẫu' → điền Excel → '⬆ Nhập Excel'. Hoặc copy nhiều dòng từ Excel rồi Ctrl+V vào một ô." }));
     card.appendChild(body); wrap.appendChild(card);
     var vis = def.cols.filter(function (c) { return (def.hide || []).indexOf(c) < 0; });
@@ -305,12 +308,13 @@
             });
             save(); draw(); toast("Đã dán " + lines.length + " dòng");
           });
+          if (locked) inp.disabled = true;
           var td = h("td", { class: cls }, [inp]); if (inp._dl) td.appendChild(inp._dl);
           tr.appendChild(td);
           if (c === "Mã NV" && def.showName) { var nm = tenNV(r["Mã NV"]); nameTd = h("td", { class: "dis", text: nm || (r["Mã NV"] ? "⚠ chưa có trong Nhân sự" : "") }); tr.appendChild(nameTd); }
         });
         if (def.total) { updTot(); tr.appendChild(tot); }
-        tr.appendChild(h("td", { style: "text-align:center" }, [btn("✕", "red ghost", function () { if (confirm("Xóa dòng này?")) { db[key].splice(ri, 1); save(); draw(); updateNav(); } }, "Xóa dòng")]));
+        tr.appendChild(h("td", { style: "text-align:center" }, [locked ? null : btn("✕", "red ghost", function () { if (confirm("Xóa dòng này?")) { db[key].splice(ri, 1); save(); draw(); updateNav(); } }, "Xóa dòng")]));
         tb.appendChild(tr);
       });
       t.appendChild(tb); body.appendChild(t);
@@ -709,9 +713,85 @@
     kq.canhbao = sp.warn.concat(kq.canhbao); kq.ky = kyStr();
     return kq;
   }
+  // ---------- Chốt kỳ lương ----------
+  function kyChot(ky) { return db.kyluong.filter(function (k) { return k.ky === ky; })[0] || null; }
+  function kyLabel(ky) { var m = String(ky).split("-"); return "Tháng " + (+m[1]) + "/" + m[0]; }
+  function fmtTime(isoS) { var d = new Date(isoS); return isNaN(d) ? "" : d.toLocaleString("vi-VN"); }
+  function excelSheets(r, ky) {
+    var mm = String(ky).split("-");
+    var ck = r.bangluong.filter(function (x) { return x["HTTT"] === "Chuyển khoản" && x["Thực lĩnh"] > 0; }).map(function (x, i) { return { "STT": i + 1, "Mã NV": x["Mã NV"], "Họ và tên": x["Họ và tên"], "Số tài khoản": x["Số tài khoản"], "Ngân hàng": x["Ngân hàng"], "Số tiền": x["Thực lĩnh"], "Nội dung": "Luong T" + (+mm[1]) + "/" + mm[0] + " " + x["Mã NV"] }; });
+    return {
+      bl: { name: "BangLuong", cols: COLS_FULL.concat(["HTTT", "Số tài khoản", "Ngân hàng"]), rows: r.bangluong },
+      bh: { name: "BHXH", cols: r.bhxh[0] ? Object.keys(r.bhxh[0]) : ["Mã NV"], rows: r.bhxh },
+      tn: { name: "ThueTNCN", cols: r.tncn[0] ? Object.keys(r.tncn[0]) : ["Mã NV"], rows: r.tncn },
+      ck: { name: "ChuyenKhoan", cols: ["STT", "Mã NV", "Họ và tên", "Số tài khoản", "Ngân hàng", "Số tiền", "Nội dung"], rows: ck }
+    };
+  }
+  function exportAll(r, ky) { var x = excelSheets(r, ky); saveXlsx("KyLuong_" + ky + ".xlsx", [x.bl, x.bh, x.tn, x.ck]); }
+  function chotKy() {
+    if (!st.kq) return;
+    var ky = kyStr(), sum = st.kq.bangluong.reduce(function (a, x) { return a + (+x["Thực lĩnh"] || 0); }, 0);
+    var note = prompt("CHỐT " + kyLabel(ky).toUpperCase() + "\n" + st.kq.bangluong.length + " nhân viên · Tổng thực lĩnh " + fmt(sum) +
+      "\n\nSau khi chốt: bảng lương được lưu lại để xem về sau, dữ liệu chấm công/sản lượng/thưởng/tạm ứng của kỳ này bị khóa sửa.\n\nGhi chú (không bắt buộc):", "");
+    if (note === null) return;
+    db.kyluong = db.kyluong.filter(function (k) { return k.ky !== ky; });
+    db.kyluong.push({ ky: ky, ngayChot: new Date().toISOString(), ghiChu: note, buTheoNgay: st.bu,
+      kq: JSON.parse(JSON.stringify({ bangluong: st.kq.bangluong, bhxh: st.kq.bhxh, tncn: st.kq.tncn, canhbao: st.kq.canhbao })) });
+    db.kyluong.sort(function (a, b) { return a.ky < b.ky ? 1 : -1; });
+    saveNow(); st.kq = null; render(); toast("Đã chốt và lưu " + kyLabel(ky));
+  }
+  function moChot(ky) {
+    if (!confirm("Mở chốt " + kyLabel(ky) + "?\n\nBảng lương đã lưu của kỳ này sẽ bị XÓA, dữ liệu kỳ được mở khóa để sửa và tính lại.\nNên xuất Excel kỳ này trước khi mở chốt.")) return;
+    db.kyluong = db.kyluong.filter(function (k) { return k.ky !== ky; });
+    saveNow(); st.kq = null; render(); toast("Đã mở chốt " + kyLabel(ky));
+  }
+  function doiChieu(chot) {
+    var now = tinhLuong(), a = {}, b = {}, rows = [];
+    chot.kq.bangluong.forEach(function (x) { a[x["Mã NV"]] = x; });
+    now.bangluong.forEach(function (x) { b[x["Mã NV"]] = x; });
+    Object.keys(a).concat(Object.keys(b).filter(function (k) { return !a[k]; })).forEach(function (k) {
+      var x = a[k], y = b[k], v1 = x ? x["Thực lĩnh"] : 0, v2 = y ? y["Thực lĩnh"] : 0;
+      if (v1 !== v2) rows.push({ "Mã NV": k, "Họ và tên": (x || y)["Họ và tên"], "Đã chốt": v1, "Tính lại hôm nay": v2, "Chênh lệch": v2 - v1, "Ghi chú": !x ? "Mới có trong dữ liệu" : (!y ? "Không còn trong dữ liệu" : "") });
+    });
+    var body = h("div");
+    body.appendChild(h("div", { class: rows.length ? "warn" : "ok", text: rows.length ? rows.length + " nhân viên có thực lĩnh khác với bảng đã chốt (do hồ sơ/danh mục đã thay đổi sau khi chốt). Bảng đã chốt KHÔNG bị thay đổi." : "Khớp hoàn toàn: tính lại với dữ liệu hiện tại ra đúng bảng đã chốt." }));
+    if (rows.length) body.appendChild(simpleTable(rows));
+    modal("Đối chiếu " + kyLabel(chot.ky) + " với dữ liệu hiện tại", body, function (close) { return [btn("Đóng", "", close)]; });
+  }
+  function tabKyLuong() {
+    var c = h("div", { class: "card" });
+    c.appendChild(h("div", { class: "hint", text: "Các kỳ lương đã chốt được lưu nguyên bảng lương, BHXH, thuế TNCN tại thời điểm chốt — sửa hồ sơ hay danh mục về sau không làm thay đổi số đã chốt." }));
+    if (!db.kyluong.length) { c.appendChild(h("div", { class: "empty", html: "Chưa chốt kỳ nào.<br>Vào <b>Tính lương</b>, tính xong bấm <b>🔒 Chốt kỳ lương</b>." })); return c; }
+    var t = h("table"), tr = h("tr");
+    ["Kỳ lương", "Ngày chốt", "Số NV", "Tổng thu nhập", "BH NLĐ", "Thuế TNCN", "Tổng thực lĩnh", "Ghi chú", ""].forEach(function (x, i) { tr.appendChild(h("th", { class: i >= 2 && i <= 6 ? "r" : "", text: x })); });
+    t.appendChild(h("thead", {}, [tr])); var tb = h("tbody");
+    db.kyluong.forEach(function (k) {
+      var bl = k.kq.bangluong, sm = function (f) { return bl.reduce(function (a, x) { return a + (+x[f] || 0); }, 0); };
+      var go = function () { var m = k.ky.split("-"); st.nam = +m[0]; st.thang = +m[1]; st.tab = "luong"; st.kq = null; saveUi(); render(); };
+      var x = h("tr", { class: "click", on: { click: go } });
+      [kyLabel(k.ky), fmtTime(k.ngayChot)].forEach(function (v) { x.appendChild(h("td", { class: "t", text: v })); });
+      [bl.length, sm("Tổng thu nhập"), sm("BH trừ NLĐ"), sm("Thuế TNCN"), sm("Thực lĩnh")].forEach(function (v, i) { x.appendChild(h("td", { class: "r", text: fmt(v), style: i === 4 ? "font-weight:700" : "" })); });
+      x.appendChild(h("td", { class: "t", text: k.ghiChu || "" }));
+      x.appendChild(h("td", { style: "text-align:right;white-space:nowrap" }, [
+        btn("Xem", "", function (e) { e.stopPropagation(); go(); }),
+        btn("⬇ Excel", "", function (e) { e.stopPropagation(); exportAll(k.kq, k.ky); }),
+        btn("Mở chốt", "red ghost", function (e) { e.stopPropagation(); moChot(k.ky); })]));
+      tb.appendChild(x);
+    });
+    t.appendChild(tb); c.appendChild(h("div", { class: "tw" }, [t]));
+    return c;
+  }
   function tabLuong() {
-    var box = h("div");
+    var box = h("div"), chot = kyChot(kyStr());
     var card = h("div", { class: "card" }), bar = h("div", { class: "bar" });
+    if (chot) {
+      st.kq = Object.assign({ ky: chot.ky }, chot.kq);
+      box.appendChild(h("div", { class: "locked", html: "🔒 <b>" + kyLabel(chot.ky) + " đã chốt</b> lúc " + esc(fmtTime(chot.ngayChot)) + (chot.ghiChu ? " — " + esc(chot.ghiChu) : "") +
+        "<br><span>Đây là bảng lương đã lưu, không tính lại. Dữ liệu chấm công/sản lượng/thưởng/tạm ứng của kỳ này đang bị khóa.</span>" }, [
+        h("div", { class: "bar", style: "margin:8px 0 0" }, [btn("⬇ Xuất trọn bộ Excel", "pri", function () { exportAll(chot.kq, chot.ky); }), btn("🔍 Đối chiếu với dữ liệu hiện tại", "", function () { doiChieu(chot); }), btn("🔓 Mở chốt để sửa", "red", function () { moChot(chot.ky); })])]));
+      card.appendChild(bar);
+      return renderKq(box, card, bar);
+    }
     var sel = h("select"); [["false", "Bù sản lượng theo THÁNG"], ["true", "Bù sản lượng theo NGÀY (kiểu Đại Hiệp)"]].forEach(function (o) { sel.appendChild(h("option", { value: o[0], text: o[1] })); });
     sel.value = String(st.bu); sel.addEventListener("change", function () { st.bu = sel.value === "true"; saveUi(); });
     bar.appendChild(btn("▶ Tính lương tháng " + st.thang + "/" + st.nam, "pri big", function () {
@@ -727,6 +807,10 @@
       if (sp.warn.length) card.appendChild(h("div", { class: "warn", html: "<b>⚠ Hồ sơ cần bổ sung:</b><br>" + sp.warn.map(esc).join("<br>") }));
       box.appendChild(card); return box;
     }
+    bar.appendChild(btn("🔒 Chốt kỳ lương", "pri", chotKy, "Lưu bảng lương kỳ này để xem lại về sau và khóa dữ liệu kỳ"));
+    return renderKq(box, card, bar);
+  }
+  function renderKq(box, card, bar) {
     var r = st.kq, sum = function (c) { return r.bangluong.reduce(function (a, x) { return a + (+x[c] || 0); }, 0); };
     box.appendChild(h("div", { class: "kpis" }, [
       h("div", { class: "kpi", html: "<small>Số nhân viên</small><b>" + r.bangluong.length + "</b>" }),
@@ -743,9 +827,8 @@
     var mn = h("select", { style: "min-width:150px" }); mn.appendChild(h("option", { text: "⬇ Xuất Excel…" }));
     [["Bảng lương", "bl"], ["BHXH", "bh"], ["Thuế TNCN", "tn"], ["Danh sách chuyển khoản", "ck"]].forEach(function (o) { mn.appendChild(h("option", { value: o[1], text: o[0] })); });
     mn.addEventListener("change", function () {
-      var ck = r.bangluong.filter(function (x) { return x["HTTT"] === "Chuyển khoản" && x["Thực lĩnh"] > 0; }).map(function (x, i) { return { "STT": i + 1, "Mã NV": x["Mã NV"], "Họ và tên": x["Họ và tên"], "Số tài khoản": x["Số tài khoản"], "Ngân hàng": x["Ngân hàng"], "Số tiền": x["Thực lĩnh"], "Nội dung": "Luong T" + st.thang + "/" + st.nam + " " + x["Mã NV"] }; });
-      var m = { ck: [["STT", "Mã NV", "Họ và tên", "Số tài khoản", "Ngân hàng", "Số tiền", "Nội dung"], ck, "ChuyenKhoan"], bl: [COLS_FULL.concat(["HTTT", "Số tài khoản", "Ngân hàng"]), r.bangluong, "BangLuong"], bh: [r.bhxh[0] ? Object.keys(r.bhxh[0]) : [], r.bhxh, "BHXH"], tn: [r.tncn[0] ? Object.keys(r.tncn[0]) : [], r.tncn, "ThueTNCN"] }[mn.value];
-      if (m) saveXlsx(m[2] + "_" + r.ky + ".xlsx", [{ name: m[2], cols: m[0], rows: m[1] }]); mn.selectedIndex = 0;
+      var m = excelSheets(r, r.ky || kyStr())[mn.value];
+      if (m) saveXlsx(m.name + "_" + (r.ky || kyStr()) + ".xlsx", [m]); mn.selectedIndex = 0;
     });
     bar.appendChild(mn);
     card.appendChild(h("div", { class: "hint", text: "Bấm vào một dòng để xem chi tiết cách tính và in phiếu lương của người đó." }));
@@ -803,7 +886,7 @@
       ["nhansu", "Nhập hồ sơ Nhân sự + hợp đồng", countOf("nhanvien") + " nhân viên", countOf("nhanvien") > 0 && countOf("chitiethd") > 0],
       ["chamcong", "Nhập Chấm công tháng " + st.thang, "Dán từ Excel hoặc nhập tay", db.chamcong.some(function (r) { return r["Kỳ"] === kyStr(); })],
       ["sanluong", "Nhập Sản lượng / Bơm dăm / Thưởng / Tạm ứng", "Nếu có phát sinh trong tháng", db.sanluong.length + db.bandam.length + db.psluong.length + db.ungluong.length > 0],
-      ["luong", "Tính lương & xuất Excel / in phiếu", "Bấm nút Tính lương", !!st.kq]
+      ["luong", "Tính lương → kiểm tra → 🔒 Chốt kỳ", "Chốt để lưu bảng lương, xem lại về sau", !!kyChot(kyStr())]
     ];
     var g = h("div", { class: "steps" });
     steps.forEach(function (s, i) { g.appendChild(h("div", { class: "step" + (s[3] ? " done" : ""), on: { click: function () { st.tab = s[0]; saveUi(); render(); } } }, [h("div", { class: "no", text: s[3] ? "✓" : i + 1 }), h("div", { html: "<b>" + s[1] + "</b><small>" + s[2] + "</small>" })])); });
@@ -830,7 +913,7 @@
     bar.appendChild(btn("⬇ Sao lưu ra file", "pri", function () { download("LuongHAK_backup_" + new Date().toISOString().slice(0, 10) + ".json", "application/json", JSON.stringify(db)); }));
     bar.appendChild(btn("⬆ Khôi phục từ file", "", function () {
       var f = h("input", { type: "file", accept: ".json" });
-      f.addEventListener("change", function () { var fr = new FileReader(); fr.onload = function () { try { var o = JSON.parse(fr.result); if (!confirm("Ghi đè TOÀN BỘ dữ liệu hiện tại bằng file này?")) return; db = o; var mm = HRM.migrate(db); Object.keys(ALL).forEach(function (k) { if (!db[k]) db[k] = []; }); if (!db.congty) db.congty = []; saveNow(); toast("Đã khôi phục"); render(); if (mm.length) alert(mm.join("\n")); } catch (e) { alert("File không hợp lệ"); } }; fr.readAsText(f.files[0]); });
+      f.addEventListener("change", function () { var fr = new FileReader(); fr.onload = function () { try { var o = JSON.parse(fr.result); if (!confirm("Ghi đè TOÀN BỘ dữ liệu hiện tại bằng file này?")) return; db = o; var mm = HRM.migrate(db); Object.keys(ALL).forEach(function (k) { if (!db[k]) db[k] = []; }); if (!db.congty) db.congty = []; if (!db.kyluong) db.kyluong = []; saveNow(); toast("Đã khôi phục"); render(); if (mm.length) alert(mm.join("\n")); } catch (e) { alert("File không hợp lệ"); } }; fr.readAsText(f.files[0]); });
       f.click();
     }));
     bar.appendChild(btn("📋 Nạp danh mục chuẩn HAK", "", napMau));
@@ -841,7 +924,7 @@
     bar.appendChild(btn("📄 Tải toàn bộ file mẫu", "pri", downloadAllTemplates));
     bar.appendChild(btn("⬆ Nhập từ file Excel tổng", "", importAllFile));
     bar.appendChild(h("span", { class: "sp" }));
-    bar.appendChild(btn("🗑 Xóa toàn bộ dữ liệu", "red", function () { if (confirm("XÓA TOÀN BỘ dữ liệu? Không thể hoàn tác!") && confirm("Chắc chắn chứ?")) { db = { congty: [] }; Object.keys(ALL).forEach(function (k) { db[k] = []; }); saveNow(); st.kq = null; render(); } }));
+    bar.appendChild(btn("🗑 Xóa toàn bộ dữ liệu", "red", function () { if (confirm("XÓA TOÀN BỘ dữ liệu? Không thể hoàn tác!") && confirm("Chắc chắn chứ?")) { db = { congty: [], kyluong: [] }; Object.keys(ALL).forEach(function (k) { db[k] = []; }); saveNow(); st.kq = null; render(); } }));
     c.appendChild(bar);
     c.appendChild(h("div", { class: "hint", text: "Hiện có — " + Object.keys(ALL).map(function (k) { return ALL[k].ten + ": " + countOf(k); }).join(" · ") }));
     var w = h("div"); w.appendChild(cardCongTy()); w.appendChild(c);
@@ -856,7 +939,7 @@
 
   // ---------- Khung & điều hướng ----------
   var NAV = [
-    ["home", "🏠", "Trang chủ"], ["luong", "▶", "Tính lương"],
+    ["home", "🏠", "Trang chủ"], ["luong", "▶", "Tính lương"], ["kyluong", "🔒", "Kỳ lương đã chốt"],
     ["grp", "Nhập liệu hàng tháng"],
     ["chamcong", "🗓", "Chấm công"], ["sanluong", "⚖", "Sản lượng"], ["bandam", "🚛", "Bơm dăm"], ["psluong", "🎁", "Thưởng / Trừ"], ["ungluong", "💵", "Tạm ứng"], ["tiencom", "🍚", "Suất cơm"],
     ["grp", "Dữ liệu gốc"],
@@ -864,7 +947,7 @@
     ["grp", "Hệ thống"],
     ["backup", "⚙", "Công ty & Sao lưu"]
   ];
-  var TITLES = { home: "Trang chủ", luong: "Tính lương", slips: "Phiếu lương", dm: "Danh mục", backup: "Công ty & Sao lưu", nhansu: "Nhân sự", nv: "Hồ sơ nhân viên", baocao: "Báo cáo nhân sự" };
+  var TITLES = { home: "Trang chủ", luong: "Tính lương", slips: "Phiếu lương", dm: "Danh mục", backup: "Công ty & Sao lưu", nhansu: "Nhân sự", nv: "Hồ sơ nhân viên", baocao: "Báo cáo nhân sự", kyluong: "Kỳ lương đã chốt" };
   function updateNav() { document.querySelectorAll("#nav button[data-k]").forEach(function (b) { var k = b.getAttribute("data-k"), n = $(".n", b); if (n && ALL[k]) n.textContent = countOf(k); }); }
   function periodBox() {
     var m = h("select"), y = h("input", { class: "i", type: "number", style: "width:80px", value: st.nam });
@@ -881,15 +964,16 @@
       if (n[0] === "grp") { nav.appendChild(h("div", { class: "grp", text: n[1] })); return; }
       var b = h("button", { class: activeNav === n[0] ? "on" : "", "data-k": n[0], on: { click: function () { if (st.tab !== n[0]) st.q = ""; st.tab = n[0]; saveUi(); render(); } } }, [h("span", { class: "ic", text: n[1] }), h("span", { text: n[2] })]);
       if (S[n[0]]) b.appendChild(h("span", { class: "n", text: countOf(n[0]) }));
+      if (n[0] === "kyluong") b.appendChild(h("span", { class: "n", text: db.kyluong.length }));
       if (n[0] === "nhansu") b.appendChild(h("span", { class: "n", text: db.nhanvien.filter(function (r) { return r["Trạng thái"] !== "Đã nghỉ việc"; }).length }));
       nav.appendChild(b);
     });
-    $("#sidefoot").textContent = "v1.1 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
+    $("#sidefoot").textContent = "v1.2 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
     var bb = $(".brand small"); if (bb) bb.textContent = congTy()["Tên công ty"] || "Chạy offline";
     var top = $("#top"); top.innerHTML = "";
     var title = TITLES[st.tab] || (S[st.tab] && S[st.tab].ten) || "";
     top.appendChild(h("h2", { text: title }));
-    if (["nhansu", "nv", "dm", "backup"].indexOf(st.tab) < 0) top.appendChild(periodBox());
+    if (["nhansu", "nv", "dm", "backup", "kyluong"].indexOf(st.tab) < 0) top.appendChild(periodBox());
     var m = $("#main"); m.innerHTML = ""; refreshNVList();
     if (st.tab === "home") m.appendChild(tabHome());
     else if (st.tab === "luong") m.appendChild(tabLuong());
@@ -899,6 +983,7 @@
     else if (st.tab === "nhansu") m.appendChild(tabNhanSu());
     else if (st.tab === "nv") m.appendChild(tabNhanVien());
     else if (st.tab === "baocao") m.appendChild(tabBaoCao());
+    else if (st.tab === "kyluong") m.appendChild(tabKyLuong());
     else if (S[st.tab]) m.appendChild(grid(st.tab, S[st.tab]));
     else { st.tab = "home"; render(); }
   }

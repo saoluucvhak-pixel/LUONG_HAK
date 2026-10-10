@@ -99,3 +99,6 @@ tfoot td{position:sticky;bottom:0;background:#e6f4ee;font-weight:700;padding:8px
 tr.sel td{background:#e6f4ee!important;font-weight:600}
 .kv{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dotted #dde4e0}
 code{background:#eef3f0;padding:1px 5px;border-radius:4px;font-size:12.5px;word-break:break-all}
+.locked{background:#eef2fb;border:1px solid #b9c7ea;color:#24365f;padding:10px 12px;border-radius:8px;margin:0 0 12px}
+.locked span{font-size:13.5px;color:#4a5a80}
+td input:disabled{color:var(--ink);background:transparent}
