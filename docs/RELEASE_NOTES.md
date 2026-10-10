@@ -1,3 +1,30 @@
+# RELEASE_NOTES — Nhân sự - Tiền lương HAK 2.0.0-alpha.1
+
+**Ngày:** 10/10/2026 · **Loại:** bản thử nghiệm (alpha) của lộ trình 2.0 — giai đoạn ưu tiên 1, sửa lỗi dữ liệu. Nên cài thử trên 1 máy và giữ bản 1.4.0 dự phòng trước khi dùng cho cả công ty.
+
+## Vì sao cần bản này
+1. **Nhập Excel bổ sung có thể làm mất dữ liệu (1.4.0)**: ô để trống trong file xóa dữ liệu đang có. Ví dụ: nhập chấm công nửa cuối tháng làm mất nửa đầu; nhập danh sách nhân viên thiếu CCCD xóa CCCD đang có. Đã sửa: mặc định chỉ bổ sung.
+2. **Chấm công tách dòng bị mất công, hoặc bị cộng đôi khi viết "bt" thường**. Đã sửa.
+3. **Bản sao lưu tạo cùng giây ghi đè nhau; bản sao lưu bị hỏng vẫn khôi phục được**. Đã có tên duy nhất và mã kiểm tra.
+4. **Mở file sai cấu trúc hoặc của bản mới hơn có thể mất cả bảng dữ liệu**. App chuyển sang chế độ chỉ xem, không ghi.
+5. **Truy vết**: biết ai chốt, ai mở chốt, ai sửa dữ liệu hồi tố vào kỳ đã chốt.
+
+## Sau khi cài
+1. Vào **Công ty & Sao lưu → Người đang sử dụng máy này**, nhập tên.
+2. **Kiểm tra dữ liệu** → nếu có dòng "nên gộp" của chấm công, bấm **Gộp dòng chấm công trùng**.
+3. **Kiểm tra tất cả bản sao lưu**. Bản tạo trước 2.0 hiện "chưa có mã kiểm tra", vẫn dùng được.
+
+## Giới hạn còn tồn tại
+- Như 1.4.0: SheetJS 0.18.5 (chỉ nhập file từ nguồn tin cậy), chưa có đăng nhập/phân quyền, file dữ liệu chưa mã hóa, bộ cài chưa ký số.
+- "Người thực hiện" là tên tự khai + tài khoản Windows, **chưa xác thực**.
+- Lưu và sao lưu chậm hơn khoảng 2 lần (thêm bước bảo vệ). 5.000 NV: lưu ~170 ms, sao lưu ~250 ms.
+- Câu hỏi nghiệp vụ mới Q-12…Q-16 (`BUSINESS_RULES.md`).
+
+## Rollback
+Cài lại 1.4.0 → khôi phục `backups/*.json` gần nhất. Cấu trúc dữ liệu không đổi (schemaVersion 2), bản 1.4.0 đọc được.
+
+---
+
 # RELEASE_NOTES — Nhân sự - Tiền lương HAK 1.4.0
 
 **Ngày:** 10/10/2026 · **Loại:** bản sửa lỗi quan trọng (Phase 1) — **khuyến nghị cài cho mọi máy đang dùng 1.1–1.3.**

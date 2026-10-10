@@ -82,6 +82,7 @@
     if (isDateCol(col)) { var d = normDate(v); return d === null ? { value: String(v), error: "Ngày không hợp lệ (cần dạng 2026-09-15 hoặc 15/09/2026)" } : { value: d }; }
     if (isMoneyCol(col)) { if (v === "" || v == null) return { value: "" }; var n = parseMoney(v); return isNaN(n) ? { value: String(v), error: "Số tiền không đọc được" } : { value: String(Math.round(n * 1e6) / 1e6) }; }
     if (isIdCol(col)) return { value: normId(col, v) };
+    if (col === "Hình thức công") return { value: String(v == null ? "" : v).trim().toUpperCase() };
     if (v == null) return { value: "" };
     if (typeof v === "number") return { value: String(Math.round(v * 1e9) / 1e9) };
     if (v instanceof Date) return { value: normDate(v) };

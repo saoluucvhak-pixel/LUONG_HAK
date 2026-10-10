@@ -31,10 +31,11 @@
     MONTHLY.forEach(function (t) { input[t] = clone((db[t] || []).filter(function (r) { return V.rowPeriod(t, r) === ky; })); });
     var dm = {}; DM.forEach(function (t) { dm[t] = clone(db[t] || []); });
     var result = clone({ bangluong: kq.bangluong, bhxh: kq.bhxh, tncn: kq.tncn, canhbao: kq.canhbao });
+    var inp = { staff: clone(staff || []), data: input, danhmuc: dm };
     return {
       ky: ky, version: history(db, ky).length + 1, ngayChot: meta.now || new Date().toISOString(), nguoiChot: meta.user || "", ghiChu: meta.note || "",
       buTheoNgay: !!meta.buTheoNgay, engineVersion: meta.engineVersion || "", kq: result, totals: totals(kq), checksum: checksum(result),
-      input: { staff: clone(staff || []), data: input, danhmuc: dm }
+      input: inp, inputChecksum: checksum(inp)
     };
   }
   /** Ghi bản chốt. Lỗi nếu kỳ đã có bản chốt hiệu lực (phải mở chốt trước). */
@@ -68,7 +69,10 @@
   /** Kiểm tra bản chốt còn nguyên vẹn (checksum khớp). Bản chốt cũ (≤ v1.3) không có checksum → "legacy". */
   function verify(snap) {
     if (!snap.checksum) return "legacy";
-    return checksum(snap.kq) === snap.checksum ? "ok" : "modified";
+    if (checksum(snap.kq) !== snap.checksum) return "modified";
+    // Bản chốt từ v1.4.0 (bản cài nhánh 2.0) còn có checksum dữ liệu đầu vào — sửa dữ liệu vào của kỳ đã chốt cũng bị phát hiện
+    if (snap.inputChecksum && snap.input && checksum(snap.input) !== snap.inputChecksum) return "modified";
+    return "ok";
   }
   /** So sánh 2 kết quả theo từng nhân viên (dùng cho đối chiếu & báo cáo trước/sau điều chỉnh). */
   function diff(kqA, kqB, field) {

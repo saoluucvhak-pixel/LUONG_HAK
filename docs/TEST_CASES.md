@@ -53,6 +53,56 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-06 | Không sao lưu file hỏng; chặn đường dẫn lạ khi đọc bản sao lưu |
 | U-STO-07 | Giới hạn số bản sao lưu theo loại |
 
+## Unit — 2.0 nhập chấm công (`tests/unit/importer-chamcong.test.js`)
+| ID | Nội dung | Trên 1.4.0 |
+|---|---|---|
+| U-CC-01 | Nhập lại cùng file 3 lần → không thêm dòng, công không đổi | đạt |
+| U-CC-02 | 2 dòng cùng NV + cùng hình thức trong 1 file (nửa tháng) → gộp, đủ 30 công | **thất bại** (15 công) |
+| U-CC-03 | Trùng ngày (1/1 hoặc 1/0,5) → xung đột cả 2 dòng, không ghi | **thất bại** |
+| U-CC-04 | Nhiều hình thức công (BT/TC/CC/CL) → không ghi đè nhau | đạt |
+| U-CC-05 | Nhập bổ sung ngày 16–30 → giữ ngày 1–15 | **thất bại** (mất 15 công) |
+| U-CC-06 | Nhập điều chỉnh 1 ô → cập nhật đúng ô, báo trước/sau | **thất bại** (không có diff) |
+| U-CC-07 | Chế độ ghi đè cả dòng → xóa đúng 6 ô, có cảnh báo | **thất bại** |
+| U-CC-08 | Kỳ đã chốt (ghi dạng 9/2026, 2026-9) → bị chặn | đạt |
+| U-CC-09 | "bt" / để trống = BT → không cộng đôi | **thất bại** (60 công) |
+| U-CC-10 | Dữ liệu có sẵn 2 dòng cùng khóa → chặn nhập (không thành 45 công); gộp → nhập được | **thất bại** |
+| U-CC-11 | Công cụ gộp bỏ qua nhóm trùng ngày / kỳ đã chốt; tổng công không đổi | đạt (mới) |
+| U-CC-12 | Bảng khác: cùng khóa khác dữ liệu → xung đột; ô trống không xóa CCCD | **thất bại** |
+
+## Unit — 2.0 kỳ chốt & cấu trúc (`tests/unit/guard-schema.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-GRD-01 | Dữ liệu phát sinh kỳ chốt → locked; chuyển dòng vào kỳ chốt → locked |
+| U-GRD-02 | Phụ lục hồi tố: đúng các kỳ đã chốt còn hiệu lực (tới trước phụ lục kế tiếp); dời ngày hiệu lực vào kỳ chốt → retro; NV không có trong bảng chốt → none |
+| U-GRD-03 | Danh mục có hiệu lực, nhân viên trong bảng chốt → retro; bảng không ảnh hưởng lương → none |
+| U-GRD-04 | Tham chiếu Mã NV (chặn đổi mã); nhật ký trước/sau; người chốt |
+| U-CLS-03 | Checksum phát hiện sửa kết quả **và** dữ liệu đầu vào đã chốt; mở chốt ghi người + lý do + thời điểm |
+| U-SCH-01 | Fatal: gốc không phải object, bảng không phải danh sách, schemaVersion mới hơn / sai kiểu |
+| U-SCH-02 | Lỗi dữ liệu (10 loại) được báo đủ, **không sửa** dữ liệu; bảng lạ giữ nguyên |
+
+## Unit — 2.0 sao lưu & lỗi đĩa (`tests/unit/storage-failures.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-STO-08 | 5 bản sao lưu cùng thời điểm → 5 tên khác nhau, đủ nội dung; mã ngẫu nhiên trùng → không đè (thử lại) |
+| U-STO-09 | SHA-256: bản bị sửa (vẫn là JSON) → không cho khôi phục; bản cắt cụt → invalid; bản cũ chưa có mã → unverified |
+| U-STO-10 | Ổ đĩa ghi hỏng mọi bản sau → bản tốt duy nhất (ngoài 10 bản giữ) vẫn được giữ |
+| U-STO-11 | Đầy ổ (ENOSPC) khi lưu → thông báo rõ, file cũ nguyên, không sót file tạm |
+| U-STO-12 | EACCES / EPERM / EROFS → thông báo đúng loại, file cũ nguyên |
+| U-STO-13 | Mất điện giữa ghi và đổi tên → file cũ nguyên; file tạm sót được dọn khi mở |
+| U-STO-14 | Đọc lại sau ghi không khớp → không báo thành công |
+| U-STO-15 | Cất file hỏng 3 lần cùng thời điểm → 3 tên, không mất file hỏng nào |
+| U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
+
+## Integration — 2.0 (`tests/integration/flows-v2.test.js`)
+| ID | Luồng |
+|---|---|
+| I-09 | Chấm công 2 lần nhập (nửa đầu + bổ sung) + file tách dòng → lương đúng 30 công, nhập lại không đổi |
+| I-10 | Hồi tố sau khi chốt: snapshot bất biến + toàn vẹn; mở chốt (người, lý do) → chốt lại v2 → chênh lệch đúng 26 × 50.000 |
+| I-11 | Mọi đường nhập vào kỳ chốt bị chặn (chấm công, sản lượng, thưởng "500.000" ngày 30/09/2026, tạm ứng, chuyển kỳ) |
+| I-12 | Lưu thất bại khi chốt (đầy ổ) → hoàn tác, kỳ chưa chốt, file trên đĩa không đổi |
+| I-13 | Sao lưu → khôi phục: bản tốt qua kiểm tra cấu trúc, checksum kỳ chốt ok; bản bị sửa bị từ chối |
+| I-14 | Dữ liệu 1.4.0 có chấm công trùng + "bt" + "2026-9" → chuẩn hóa + gộp → lương không đổi, cấu trúc sạch |
+
 ## Integration (`tests/integration/flows.test.js`)
 | ID | Luồng |
 |---|---|
@@ -72,7 +122,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | R-02 | Thưởng "500.000": v1.3.0 = 500đ, v1.4.0 = 500.000đ; người khác không đổi | **Sửa lỗi có chủ đích (BUG-002)** |
 
 ## E2E (`tests/e2e/run-e2e.js`) — Electron thật, thư mục dữ liệu tạm
-E-01 mở app · E-02 preload · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
+E-01 mở app · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
 
 ## Hiệu năng (`tests/perf/bench.js`) — baseline, chưa đặt ngưỡng
 100 / 500 / 1.000 / 5.000 NV × 3 kỳ: dung lượng, ghi/đọc JSON, dựng danh sách lương, tính lương 1 kỳ, kiểm tra toàn vẹn, lập kế hoạch nhập lại chấm công, bộ nhớ.

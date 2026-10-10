@@ -1,5 +1,45 @@
 # CHANGELOG
 
+## [2.0.0-alpha.1] — 10/10/2026 — 2.0 giai đoạn ưu tiên 1: sửa lỗi dữ liệu, chốt kỳ, sao lưu
+Chi tiết: `AUDIT_REPORT.md` §6, `BUG_FIX_REPORT.md` (phần 2.0). **Công thức tính lương không đổi**: hồi quy so với v1.3.0 vẫn trùng 100%.
+
+### Sửa lỗi — mất dữ liệu
+- Nhập Excel bổ sung không còn **xóa ô đang có** khi ô trong file để trống. Ví dụ: file ngày 16–30 không còn xóa ngày 1–15; file Nhân viên thiếu CCCD không còn xóa CCCD. (BUG-022)
+- Bảng dữ liệu sai cấu trúc không còn bị thay bằng bảng rỗng. File của phiên bản mới hơn không còn bị ghi đè. Dữ liệu trình duyệt bị hỏng không còn bị ghi đè. (BUG-026/027/028)
+- Màn hình khôi phục chỉ cất file hỏng **sau khi** bạn xác nhận khôi phục. (BUG-029)
+- Bản sao lưu không còn ghi đè nhau khi tạo trong cùng 1 giây. Có **mã kiểm tra SHA-256**; bản sao lưu bị hỏng hoặc bị sửa **không được khôi phục**. Ghi an toàn có đọc lại để xác minh. Thông báo rõ khi đầy ổ đĩa hoặc không có quyền ghi. Không bao giờ xóa bản sao lưu tốt cuối cùng. (BUG-030…033)
+
+### Sửa lỗi — sai lương
+- Chấm công tách nhiều dòng cùng người, cùng hình thức trong 1 file → **gộp theo ngày**, không mất công. Trùng ngày → báo xung đột, không đoán. (BUG-021)
+- Nhập lại khi dữ liệu đang có dòng trùng khóa → chặn, có nút **Gộp dòng chấm công trùng**. "bt" / "BT" / để trống và "2026-9" / "2026-09" được nhận là cùng bản ghi → hết cộng đôi. (BUG-023/024)
+
+### Kiểm soát kỳ đã chốt & truy vết
+- Phân loại mọi thay đổi theo 3 nhóm:
+  - **dữ liệu kỳ đã chốt**: chặn;
+  - **hồi tố**: cảnh báo + nhật ký trước/sau, nhãn HỒI TỐ;
+  - **không ảnh hưởng**.
+  
+  Áp dụng cho: form hồ sơ, xóa hồ sơ, danh mục, cho nghỉ việc, nhập Excel. (BUG-035)
+- Không đổi được Mã NV đã có trong bảng lương đã chốt. Đổi Mã NV không bao giờ sửa dữ liệu của kỳ đã chốt. (BUG-034)
+- Ghi **người thực hiện** (tên khai trên máy + tài khoản Windows) vào nhật ký, người chốt và người mở chốt. Thêm màn hình **Nhật ký thao tác** (xuất được Excel). (BUG-036)
+- Checksum bản chốt bao cả dữ liệu đầu vào. (BUG-037)
+- Khôi phục: báo các kỳ đã chốt sẽ mất hoặc đổi; kiểm tra cấu trúc trước khi thay thế.
+- Nhập Excel luôn sao lưu trước khi ghi; lưu thất bại thì hoàn tác toàn bộ. (BUG-038)
+
+### Thêm mới
+- Chế độ cập nhật khi nhập Excel: **Bổ sung** (mặc định) hoặc **Ghi đè cả dòng** (báo trước số ô bị xóa). Hiển thị chi tiết từng ô trước → sau.
+- *Kiểm tra dữ liệu* thêm phần kiểm tra cấu trúc:
+  - phiên bản, bảng, kiểu ngày / tiền / kỳ;
+  - Mã NV, quan hệ hợp đồng ↔ phụ lục;
+  - toàn vẹn kỳ chốt và lịch sử chốt.
+- Nút **Kiểm tra tất cả bản sao lưu**.
+- Module mới: `core/period-guard.js`, `core/schema.js`.
+
+### Kỹ thuật
+- Phiên bản 2.0.0-alpha.1 (bản thử nghiệm của lộ trình 2.0). `schemaVersion` vẫn là 2, chỉ thêm trường.
+- Test: 78 unit/integration/regression (thêm 34), 27 kịch bản E2E (thêm 4).
+- Khảo sát: `node:sqlite` có sẵn trong Electron 43 → SQLite ở giai đoạn 2 không cần module native.
+
 ## [1.4.0] — 10/10/2026 — Phase 1: kiểm toán & sửa lỗi nghiêm trọng
 ### Sửa lỗi
 - **Số tiền**: form phụ lục lương không còn làm hỏng số tiền khi mở rồi lưu (300.000 → 300); gõ "500.000" ở mọi bảng được hiểu là 500.000đ; dữ liệu cũ dạng "500.000" tự chuẩn hóa. (BUG-001, BUG-002)

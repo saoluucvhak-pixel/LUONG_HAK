@@ -5,9 +5,21 @@
 ### Dữ liệu & nhập liệu
 - R-01 Ngày lưu `YYYY-MM-DD`; kỳ `YYYY-MM`; tiền là số đồng (hiểu đúng "1.500.000", "500.000", "1,500,000").
 - R-02 Mã định danh (CCCD, SĐT, số TK, MST, Mã NV, Số HĐLĐ, Phiếu cân) luôn là chữ; CCCD 12 số, SĐT 10 số (bù số 0 bị Excel làm mất).
-- R-03 Khóa nghiệp vụ chống trùng (nhập Excel và form): xem `DATABASE_SCHEMA.md` §1. Nhập trùng khóa → **cập nhật**; trùng y hệt → bỏ qua.
+- R-03 Khóa nghiệp vụ chống trùng (nhập Excel và form): xem `DATABASE_SCHEMA.md` §1.
+  - Nhập trùng khóa → **cập nhật**; trùng y hệt → bỏ qua.
+  - Khóa được chuẩn hóa: kỳ `YYYY-MM`; *Hình thức công* viết hoa, để trống = BT.
+- R-03a (2.0) Chấm công 1 dòng = 1 *Kỳ + Mã NV + Hình thức công*:
+  - Trong 1 file có nhiều dòng cùng khóa → **gộp theo ngày**.
+  - Cùng 1 ngày có dữ liệu ở 2 dòng → **xung đột**, không ghi. Không đoán, kể cả khi 2 giá trị bằng nhau.
+  - Dữ liệu đang có nhiều dòng cùng khóa → nhập bị chặn cho tới khi gộp. Công cụ gộp chỉ gộp dòng không trùng ngày và không thuộc kỳ đã chốt.
+- R-03b (2.0) Cập nhật khi nhập Excel:
+  - Mặc định **bổ sung**: ô trống trong file **không xóa** dữ liệu đang có.
+  - **Ghi đè cả dòng** phải chọn rõ; app báo trước số ô sẽ bị xóa.
+- R-03c (2.0) Cùng khóa trong 1 file nhưng khác dữ liệu (các bảng khác) → xung đột cả 2 dòng, không ghi.
 - R-04 Dữ liệu phát sinh (chấm công, tạm ứng, thưởng…) phải có Mã NV có trong Nhân sự.
-- R-05 Nhập Excel bắt buộc qua bước **xem trước**; tự sao lưu trước khi ghi ≥ 20 dòng.
+- R-05 Nhập Excel bắt buộc qua bước **xem trước**.
+  - (2.0) Luôn tự sao lưu trước khi ghi.
+  - Lưu xuống đĩa thất bại → **hoàn tác toàn bộ** lần nhập.
 
 ### Hồ sơ & hợp đồng
 - R-10 Lương tính theo **phụ lục mới nhất có hiệu lực ≤ cuối tháng** của hợp đồng còn hiệu lực trong tháng.
@@ -22,10 +34,26 @@
 - R-23 Snapshot chốt gồm kết quả + dữ liệu đầu vào + danh mục + phiên bản engine + checksum; không bị thay đổi bởi sửa hồ sơ/danh mục về sau.
 - R-24 Mở chốt bắt buộc **lý do**; bản cũ chuyển vào lịch sử (không xóa); chốt lại = phiên bản mới; có báo cáo trước/sau.
 - R-25 Mọi thao tác chốt, mở chốt, nhập Excel, khôi phục, xóa toàn bộ, nghỉ việc, nạp danh mục được ghi nhật ký.
+  - (2.0) Ghi thêm: sửa/xóa hồ sơ và danh mục kèm **trước → sau**, đổi Mã NV, gộp chấm công, đổi người sử dụng.
+  - Mỗi dòng nhật ký có **người thực hiện**: tên khai trên máy + tài khoản Windows.
+- R-26 (2.0) Phân loại thay đổi theo kỳ đã chốt:
+  - (1) **Dữ liệu kỳ đã chốt**: chấm công, sản lượng, bơm dăm, thưởng/trừ, tạm ứng, suất cơm thuộc kỳ chốt → **chặn** mọi đường sửa (ô nhập, dán, xóa dòng, nhập Excel, chuyển kỳ).
+  - (2) **Dữ liệu hồi tố**: phụ lục, hợp đồng, nhân thân, tài khoản, danh mục có hiệu lực chồng lên kỳ chốt, cho nghỉ việc lùi ngày → **cho lưu sau khi cảnh báo**, ghi nhật ký kèm nhãn HỒI TỐ.
+  - (3) **Không ảnh hưởng**: học vấn, sức khỏe…, hoặc nhân viên không có trong bảng lương đã chốt.
+  - (4) **Điều chỉnh bằng phiên bản mới**: muốn áp dụng (2) cho kỳ đã chốt → mở chốt (lý do, người, thời điểm) → tính lại → chốt lại vN+1, có báo cáo chênh lệch.
+- R-27 (2.0) Không đổi được Mã NV khi mã đã có trong bảng lương đã chốt. Đổi mã không bao giờ sửa `kyluong`, `kyluong_lichsu`, `auditlog`.
+- R-28 (2.0) Checksum bản chốt bao cả **kết quả** và **dữ liệu đầu vào**.
 
 ### Sao lưu
 - R-30 Sao lưu đầu ngày (60 ngày), khi mở app (10 bản), trước thao tác lớn (20 bản/loại), khi dữ liệu giảm > 50%.
 - R-31 Không bao giờ ghi đè file dữ liệu bằng dữ liệu không hợp lệ; không sao lưu file hỏng; file hỏng được cất giữ, không xóa.
+- R-32 (2.0) Bản sao lưu:
+  - Tên duy nhất, không bao giờ ghi đè nhau.
+  - Có mã SHA-256; bản không khớp **không được khôi phục**.
+  - Dọn bản cũ không bao giờ xóa bản sao lưu tốt mới nhất.
+- R-33 (2.0) Dữ liệu có cấu trúc nguy hiểm → chỉ xem / khôi phục, **không ghi**. Gồm: bảng không phải danh sách, phiên bản cấu trúc mới hơn, lỗi khi chuyển đổi.
+- R-34 (2.0) Lỗi dữ liệu dòng chỉ được **báo cáo**, không tự xóa. Bảng không nhận diện được giữ nguyên.
+- R-35 (2.0) Khôi phục phải liệt kê các kỳ đã chốt sẽ mất hoặc đổi. File hỏng chỉ được cất **sau khi** người dùng xác nhận khôi phục.
 
 ## 2. Câu hỏi mở — cần chủ sở hữu / kế toán xác nhận
 Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
@@ -43,3 +71,8 @@ Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 | Q-09 | Ngày công tác có nhãn (QC…) trên dòng CL/PN có được phụ cấp công tác? | Có (mọi dòng có nhãn) |
 | Q-10 | Khấu trừ vãng lai 10%: áp dụng mọi khoản hay chỉ khi mỗi lần chi đạt ngưỡng theo quy định hiện hành? | Mọi khoản |
 | Q-11 | Bản Google Apps Script (GAS-01): đổi quyền truy cập web app sang chỉ người trong tổ chức / danh sách email? | Đang mở cho mọi người có link |
+| Q-12 | Chấm công: 2 dòng cùng NV + cùng hình thức + **cùng ngày** (VD 0,5 + 0,5): là 2 buổi hợp lệ (cộng) hay nhập trùng (lấy 1)? | Chặn — báo xung đột để người dùng sửa |
+| Q-13 | Nhập Excel cập nhật dòng đã có: mặc định **bổ sung** (ô trống giữ dữ liệu) có phù hợp quy trình? Có cần quyền riêng cho chế độ *ghi đè*? | Mặc định bổ sung; ai cũng chọn được ghi đè |
+| Q-14 | Thay đổi **hồi tố** chạm kỳ đã chốt: chỉ cảnh báo (hiện tại) hay **chặn** và bắt buộc mở chốt? Ai được phép? | Cảnh báo + nhật ký |
+| Q-15 | Khi đã chốt, có cấm **sửa trực tiếp phụ lục cũ** và bắt buộc lập phụ lục mới không? | Cho sửa, có cảnh báo + nhật ký trước/sau |
+| Q-16 | Định dạng "người thực hiện" cho tới khi có đăng nhập: tên tự khai + tài khoản Windows có đủ cho kiểm toán nội bộ? | Tên tự khai + `user@máy` |

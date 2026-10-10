@@ -66,13 +66,23 @@
       (db[t] || []).forEach(function (r) {
         if (V.rowPeriod(t, r) === null) badDate++;
         if (r["Mã NV"] && !emp[r["Mã NV"]]) badRef[r["Mã NV"]] = 1;
-        var k = t === "chamcong" ? [r["Kỳ"], r["Mã NV"], String(r["Hình thức công"] || "BT").toUpperCase()].join("|") :
+        var k = t === "chamcong" ? ccKey(r) :
           (t === "sanluong" || t === "bandam") && r["Phiếu cân"] ? [r["Phiếu cân"], r["Mã NV"] || ""].join("|") : null;
         if (k) { if (seen[k]) dup++; seen[k] = 1; }
       });
       if (badDate) push("High", t, badDate + " dòng có ngày/kỳ không đọc được → bị BỎ QUA khi tính lương");
       if (Object.keys(badRef).length) push("High", t, "Mã NV không có trong Nhân sự: " + Object.keys(badRef).slice(0, 15).join(", "));
-      if (dup) push("High", t, dup + " dòng trùng khóa (" + (t === "chamcong" ? "Kỳ + Mã NV + Hình thức công" : "Phiếu cân + Mã NV") + ") → bị CỘNG 2 LẦN khi tính lương");
+      if (dup && t !== "chamcong") push("High", t, dup + " dòng trùng khóa (Phiếu cân + Mã NV) → bị CỘNG 2 LẦN khi tính lương");
+    });
+    // Chấm công: nhiều dòng cùng Kỳ + Mã NV + Hình thức công
+    var g = ccGroups(db.chamcong || []);
+    Object.keys(g).forEach(function (k) {
+      var rows = g[k]; if (rows.length < 2) return;
+      var acc = rows[0], over = [];
+      for (var j = 1; j < rows.length; j++) { var m = mergeRows(acc, rows[j]); over = over.concat(m.conflicts); acc = m.row; }
+      var r0 = rows[0], lab = r0["Mã NV"] + " kỳ " + r0["Kỳ"] + " hình thức " + String(r0["Hình thức công"] || "BT").toUpperCase();
+      if (over.length) push("High", "chamcong", lab + ": " + rows.length + " dòng trùng NGÀY (" + over.slice(0, 5).join(", ") + ") → các ngày này đang được CỘNG " + rows.length + " LẦN. Kiểm tra và sửa tay.");
+      else push("Medium", "chamcong", lab + ": " + rows.length + " dòng không trùng ngày → tính đúng, nên gộp thành 1 dòng (nút 'Gộp dòng chấm công trùng') để nhập Excel cập nhật được.");
     });
     // Một phiếu cân chia cho nhiều người: cảnh báo để đối chiếu tổng
     ["sanluong", "bandam"].forEach(function (t) {
@@ -93,7 +103,41 @@
     return out.sort(function (a, b) { return order[a.level] - order[b.level]; });
   }
 
-  var api = { normalizeDataset: normalizeDataset, check: check };
+  function ccKey(r) { return [V.normKy(r["Kỳ"]) || String(r["Kỳ"] || ""), String(r["Mã NV"] || "").trim(), String(r["Hình thức công"] || "BT").trim().toUpperCase() || "BT"].join("|"); }
+  function ccGroups(list) { var g = {}; list.forEach(function (r) { if (r && r["Mã NV"]) (g[ccKey(r)] = g[ccKey(r)] || []).push(r); }); return g; }
+  function mergeRows(a, b) {
+    var out = Object.assign({}, a), conflicts = [];
+    DAYS.forEach(function (d) {
+      var x = out[d], y = b[d];
+      if (y === "" || y == null) return;
+      if (x === "" || x == null) out[d] = y; else conflicts.push(d + ": " + x + "/" + y);
+    });
+    Object.keys(b).forEach(function (c) { if (DAYS.indexOf(c) < 0 && (out[c] === "" || out[c] == null)) out[c] = b[c]; });
+    return { row: out, conflicts: conflicts };
+  }
+  /**
+   * Gộp các dòng chấm công cùng Kỳ + Mã NV + Hình thức công KHÔNG trùng ngày thành 1 dòng (tổng công không đổi).
+   * Nhóm có ngày trùng hoặc thuộc kỳ đã chốt → giữ nguyên, báo lại. Trả { groups, removed, skipped: [{key, reason}] }.
+   */
+  function mergeChamCong(db, lockedPeriods) {
+    var locked = lockedPeriods || {}, g = ccGroups(db.chamcong || []), res = { groups: 0, removed: 0, skipped: [] }, drop = [];
+    Object.keys(g).forEach(function (k) {
+      var rows = g[k]; if (rows.length < 2) return;
+      var ky = V.normKy(rows[0]["Kỳ"]);
+      if (ky && locked[ky]) { res.skipped.push({ key: k, reason: "kỳ " + ky + " đã chốt" }); return; }
+      var acc = rows[0], over = [];
+      for (var j = 1; j < rows.length; j++) { var m = mergeRows(acc, rows[j]); over = over.concat(m.conflicts); acc = m.row; }
+      if (over.length) { res.skipped.push({ key: k, reason: "trùng ngày " + over.slice(0, 5).join(", ") }); return; }
+      Object.keys(acc).forEach(function (c) { rows[0][c] = acc[c]; });
+      rows[0]["Hình thức công"] = String(rows[0]["Hình thức công"] || "BT").trim().toUpperCase() || "BT";
+      for (var i = 1; i < rows.length; i++) drop.push(rows[i]);
+      res.groups++; res.removed += rows.length - 1;
+    });
+    if (drop.length) db.chamcong = db.chamcong.filter(function (r) { return drop.indexOf(r) < 0; });
+    return res;
+  }
+
+  var api = { normalizeDataset: normalizeDataset, check: check, mergeChamCong: mergeChamCong, ccKey: ccKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.integrity = api; }
 })(typeof window !== "undefined" ? window : this);
