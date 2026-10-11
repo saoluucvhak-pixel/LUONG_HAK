@@ -16,7 +16,7 @@
   function normalizeDataset(db) {
     var changed = { money: 0, ky: 0, date: 0, id: 0 };
     Object.keys(db).forEach(function (t) {
-      if (!Array.isArray(db[t]) || t === "kyluong" || t === "kyluong_lichsu" || t === "nhansu_cu" || t === "auditlog") return;
+      if (!Array.isArray(db[t]) || t === "kyluong" || t === "kyluong_lichsu" || t === "nhansu_cu" || t === "auditlog" || t === "nguoidung" || t === "baomat") return;
       db[t].forEach(function (r) {
         if (!r || typeof r !== "object") return;
         Object.keys(r).forEach(function (c) {

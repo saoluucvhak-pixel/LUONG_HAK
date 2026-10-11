@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## [2.0.0-alpha.2] — 10/10/2026 — Đăng nhập & phân quyền (Q-14, Q-16) · quy tắc chấm công Q-12
+### Thêm mới
+- **Đăng nhập** bắt buộc.
+  - Lần đầu: tạo Admin + **mã khôi phục**.
+  - Mật khẩu băm PBKDF2-SHA256 (210.000 vòng, muối riêng).
+  - Sai 5 lần → chờ 30 giây; 30 phút không thao tác → tự đăng xuất.
+  - Đổi mật khẩu; mật khẩu tạm bắt buộc đổi; quên mật khẩu Admin → dùng mã khôi phục (cấp mã mới).
+- **7 vai trò** theo Master Prompt 2.0 §9. Quyền kiểm tra ở **tầng nghiệp vụ** (`core/permissions.js`).
+  - **Chỉ Admin** sửa dữ liệu hồi tố, mở chốt, khôi phục dữ liệu, quản trị người dùng.
+  - Nhân sự không xem bảng lương.
+  - Kế toán lương chốt nhưng không mở chốt.
+- Màn hình **Người dùng & phân quyền** (Admin): thêm, sửa vai trò, khóa, đặt lại mật khẩu, cấp lại mã khôi phục. Không thể khóa hoặc hạ quyền Admin cuối cùng.
+- Nhật ký ghi tài khoản đăng nhập. Thêm thao tác đăng nhập, đăng xuất, quản trị người dùng.
+### Thay đổi
+- **Q-15**: phụ lục HĐ đã dùng tính lương kỳ đã chốt → không ai sửa/xóa được (kể cả Admin); không đổi được Số HĐLĐ hoặc xóa hợp đồng chứa nó; nhập Excel không cập nhật được → phải **thêm phụ lục mới**.
+- **Q-13**: nhập Excel có dòng trùng → màn hình xem trước báo số dòng trùng và cho chọn **Bổ sung** / **Ghi đè** (nút chọn rõ ràng thay cho ô thả xuống).
+- Sửa: đổi Số HĐLĐ từng kéo theo phụ lục **trước khi** kiểm tra quyền — nay kiểm tra quyền và khóa trước mọi thay đổi.
+- Q-12: chấm công cùng ngày + cùng hình thức = **nhập trùng** → cùng số công tính 1 lần, khác số công báo xung đột (nhập Excel + công cụ gộp).
+- Bỏ ô "Người đang sử dụng máy này" (thay bằng đăng nhập).
+### Sửa lỗi
+- Xóa nhân viên: cần quyền, có sao lưu và nhật ký; nhân viên đã có trong bảng lương đã chốt → chỉ Admin xóa được. (BUG-040)
+- *Xóa toàn bộ dữ liệu* giữ lại tài khoản và nhật ký. (BUG-041)
+### Kiểm thử
+- 87 unit/integration/regression (+8 phân quyền, +1 Q-15).
+- 39 E2E (+12): Q-15 (Admin không sửa được phụ lục đã chốt, thêm phụ lục mới được), tạo Admin, khóa khi sai mật khẩu, bắt buộc đổi mật khẩu tạm, menu theo vai trò, chặn mở chốt, chặn sửa hồi tố (Admin được), mật khẩu đã băm, nhật ký theo tài khoản, mã khôi phục.
+
 ## [2.0.0-alpha.1] — 10/10/2026 — 2.0 giai đoạn ưu tiên 1: sửa lỗi dữ liệu, chốt kỳ, sao lưu
 Chi tiết: `AUDIT_REPORT.md` §6, `BUG_FIX_REPORT.md` (phần 2.0). **Công thức tính lương không đổi**: hồi quy so với v1.3.0 vẫn trùng 100%.
 

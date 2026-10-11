@@ -56,6 +56,8 @@ Nguyên tắc:
 | `core/period-guard` (2.0) | `impact(db, table, row)` · `impactChange(db, table, before, after)` · `references(db, maNV)` · `changedFields(a, b)` | 1 thay đổi | `{kind: "locked"\|"retro"\|"none", periods}` |
 | `core/schema` (2.0) | `validate(db, {tables, hrTables})` | dữ liệu đã parse | `{ok, fatal, errors, info, stats}` — không sửa dữ liệu |
 | `preload` (2.0) | `hakStore.whoami()` · `hakStore.verifyBackups()` | — | `{user, host}` · trạng thái bản sao lưu |
+| `core/permissions` (2.0-α2) | `can(user, quyền)` · `need(user, quyền)` · `ROLES` · `PERMS` · `validatePassword` · `wouldRemoveLastAdmin` · chống dò mật khẩu | tài khoản đang đăng nhập | đúng/sai · ném lỗi `EPERM_APP` |
+| `preload` + `main.js` (2.0-α2) | `authSalt()` · `authHash(pw, salt, iter)` · `authVerify(pw, salt, iter, hash)` | mật khẩu | PBKDF2-SHA256 tính ở tiến trình chính, so sánh `timingSafeEqual`. Bản chạy trình duyệt dùng WebCrypto (U-PERM-08 chứng minh 2 cách cho cùng kết quả) |
 
 ## 4. Luồng tính & chốt lương (Phase 1)
 

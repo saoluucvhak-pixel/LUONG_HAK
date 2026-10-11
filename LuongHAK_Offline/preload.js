@@ -10,5 +10,8 @@ contextBridge.exposeInMainWorld("hakStore", {
   readBackup: (name) => ipcRenderer.sendSync("store-read", name),
   quarantine: () => ipcRenderer.sendSync("store-quarantine"),
   openFolder: () => ipcRenderer.send("open-data-folder"),
-  whoami: () => ipcRenderer.sendSync("app-user")             // { user, host } — tài khoản Windows đang dùng
+  whoami: () => ipcRenderer.sendSync("app-user"),            // { user, host } — tài khoản Windows đang dùng
+  authSalt: () => ipcRenderer.sendSync("auth-salt"),
+  authHash: (pw, salt, iter) => ipcRenderer.sendSync("auth-hash", pw, salt, iter),
+  authVerify: (pw, salt, iter, hash) => ipcRenderer.sendSync("auth-verify", pw, salt, iter, hash)
 });

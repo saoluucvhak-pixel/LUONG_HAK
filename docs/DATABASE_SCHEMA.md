@@ -9,6 +9,8 @@ File `%APPDATA%\Tinh Luong HAK\data.json` là một object; mỗi khóa là mộ
 | Hệ thống | `schemaVersion` | — | 2 từ v1.4.0 |
 | | `congty` | — | 1 dòng |
 | | `auditlog` | — | `{luc, nguoi, thaoTac, chiTiet}` (`nguoi` từ 2.0-P1). Giữ 20.000 dòng gần nhất; trước khi cắt bớt, app sao lưu `nhat-ky-truoc-cat_*` |
+| Tài khoản (2.0-α2) | `nguoidung` | `tenDangNhap` (không phân biệt hoa/thường) | `{id, tenDangNhap, hoTen, vaiTro, khoa, salt, iter, hash, phaiDoiMK, taoLuc, dangNhapLuc, doiMKLuc}` — **không** lưu mật khẩu rõ. Không nhập/xuất Excel |
+| | `baomat` | — | 1 dòng `{khoiPhuc: {salt, iter, hash}, taoLuc}` — mã khôi phục Admin (đã băm) |
 | Chốt kỳ | `kyluong` | `ky` (duy nhất) | snapshot: `{ky, version, ngayChot, nguoiChot, ghiChu, engineVersion, buTheoNgay, kq, totals, checksum, input:{staff, data, danhmuc}, inputChecksum}`. `inputChecksum` có từ 2.0-P1; bản chốt cũ không có trường này vẫn hợp lệ |
 | | `kyluong_lichsu` | `ky + version` | bản chốt đã mở chốt + `moChot:{luc, lyDo, nguoi}` — không bao giờ xóa |
 | Danh mục | `dm_luong` | Mã lương + Hiệu lực từ | có Hiệu lực từ/đến |

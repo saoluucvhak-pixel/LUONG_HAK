@@ -37,6 +37,13 @@
 - [ ] Chủ sở hữu trả lời Q-12…Q-16
 - [ ] Nghiệm thu trên Windows thật
 
+## 2.0-alpha.2 — Đăng nhập & phân quyền ✅ (nhánh `claude/v2-auth-rbac`)
+- [x] Đăng nhập, Admin đầu tiên + mã khôi phục, 7 vai trò, kiểm tra quyền ở nghiệp vụ, chỉ Admin sửa hồi tố (Q-14), quản trị người dùng, nhật ký theo tài khoản (Q-16)
+- [ ] Giới hạn **Trưởng bộ phận** theo phòng ban của mình (cần danh sách phòng ban ↔ người phụ trách)
+- [ ] Quy trình **phê duyệt** bảng lương trước khi chốt (vai trò Người phê duyệt đã có, chưa có luồng)
+- [ ] Mã hóa file dữ liệu (RISK-07); chặn bản cũ mở dữ liệu có tài khoản (RISK-06)
+- [ ] Chủ sở hữu duyệt ma trận quyền mặc định (`BUSINESS_RULES.md` R-45)
+
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)
 0. (Đã khảo sát) SQLite qua `node:sqlite` có sẵn trong Electron 43 / Node 24.21 — không cần module native.
 1. Tách `app.js` theo `ARCHITECTURE.md` §2: `src/renderer/pages/*` (mỗi trang 1 file), `src/modules/payroll/reports.js` (chuyển `bc*` ra khỏi UI, có test), `src/modules/hrm/*` (từ `hr.js`).

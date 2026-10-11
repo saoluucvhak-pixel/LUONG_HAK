@@ -61,7 +61,10 @@
     clip: '<path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     close: '<path d="M6 6l12 12M18 6 6 18"/>',
-    left: '<path d="M19 12H5M11 6l-6 6 6 6"/>'
+    left: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    stop: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>'
   };
   // Emoji/ký hiệu đứng đầu nhãn → icon
   var MAP = {
@@ -71,7 +74,7 @@
     "⚠": "warn", "✔": "check", "✓": "check", "🖨": "printer", "📂": "folder", "🗂": "folder", "🗑": "trash", "🏢": "building",
     "📋": "clipboard", "📒": "book", "↔": "swap", "🧾": "receipt", "🌴": "leaf", "🏖": "sun", "🤒": "thermo", "🎂": "cake",
     "🩺": "steth", "❤": "heart", "📞": "phone", "🪪": "id", "🎓": "cap", "👪": "family", "🏦": "bank", "💼": "case", "🔀": "shuffle",
-    "🏆": "award", "📎": "clip", "＋": "plus", "✕": "close", "←": "left"
+    "🏆": "award", "📎": "clip", "＋": "plus", "✕": "close", "←": "left", "⛔": "stop", "👁": "eye", "🔑": "key"
   };
   var LEAD = /^\s*([←-⯿＋]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDC00-\uDFFF])️?\s*/;
   var NS = "http://www.w3.org/2000/svg";

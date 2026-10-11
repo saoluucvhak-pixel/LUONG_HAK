@@ -10,7 +10,7 @@
   var CLS = (typeof module !== "undefined" && module.exports) ? require("./payroll-close.js") : root.HAKCore.close;
 
   var SUPPORTED_SCHEMA = 2;
-  var SYSTEM_TABLES = ["congty", "kyluong", "kyluong_lichsu", "auditlog", "nhansu"];
+  var SYSTEM_TABLES = ["congty", "kyluong", "kyluong_lichsu", "auditlog", "nhansu", "nguoidung", "baomat"];
   var SCALAR_KEYS = { schemaVersion: "number" };
   var MONTHLY = ["chamcong", "sanluong", "bandam", "psluong", "ungluong", "tiencom"];
 
@@ -57,7 +57,7 @@
     });
     // Kiểu cột: ngày, tiền, kỳ — trên mọi bảng nghiệp vụ
     Object.keys(res.stats).forEach(function (t) {
-      if (t === "kyluong" || t === "kyluong_lichsu" || t === "auditlog" || t === "nhansu") return;
+      if (t === "kyluong" || t === "kyluong_lichsu" || t === "auditlog" || t === "nhansu" || t === "nguoidung" || t === "baomat") return;
       var bd = 0, bm = 0, bk = 0, ex = [];
       rows(t).forEach(function (r) {
         Object.keys(r).forEach(function (c) {
@@ -95,6 +95,10 @@
       if (!k.ky || !k.moChot) err("kyluong_lichsu", "Bản ghi lịch sử chốt kỳ " + (k.ky || "?") + " thiếu thông tin mở chốt");
       else if (CLS.verify(k) === "modified") err("kyluong_lichsu", "Bản chốt cũ kỳ " + k.ky + " v" + (k.version || "?") + ": checksum không khớp");
     });
+    // Tài khoản: thiếu thông tin đăng nhập, vai trò lạ, không còn Admin hoạt động
+    var us = rows("nguoidung");
+    us.forEach(function (u) { if (!u.tenDangNhap || !u.hash || !u.salt) err("nguoidung", "Tài khoản " + (u.tenDangNhap || "?") + " thiếu thông tin đăng nhập"); });
+    if (us.length && !us.some(function (u) { return u.vaiTro === "admin" && !u.khoa; })) err("nguoidung", "Không còn tài khoản Admin đang hoạt động — dùng mã khôi phục để lấy lại quyền");
     res.ok = !res.fatal.length;
     return res;
   }

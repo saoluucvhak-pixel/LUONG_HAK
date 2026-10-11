@@ -2,6 +2,29 @@
 
 Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK-Setup-x.y.z.exe`.
 
+## Đăng nhập & người dùng (từ 2.0-alpha.2)
+
+**Lần đầu mở app** (cài mới, hoặc nâng cấp từ bản cũ)
+- App yêu cầu **tạo tài khoản Admin**: tên đăng nhập, họ tên, mật khẩu ≥ 8 ký tự có chữ và số.
+- Sau đó app hiện **mã khôi phục** dạng `XXXX-XXXX-XXXX-XXXX`. Mã chỉ hiện 1 lần — **ghi lại và cất ở nơi an toàn**. Đây là cách duy nhất vào lại app khi quên mật khẩu Admin.
+
+**Tạo tài khoản cho người khác** (chỉ Admin)
+- Vào **Công ty & Sao lưu → Người dùng & phân quyền → Thêm người dùng**.
+- Chọn **vai trò** (Nhân sự, Kế toán lương, Kế toán thanh toán, Trưởng bộ phận, Người phê duyệt, Người xem báo cáo) và đặt **mật khẩu tạm**. Người đó phải đổi mật khẩu ở lần đăng nhập đầu tiên.
+- Bấm vào một dòng để sửa vai trò, khóa tài khoản hoặc đặt lại mật khẩu tạm.
+
+**Người dùng chỉ thấy và làm được những việc vai trò cho phép.** Ví dụ:
+- Nhân sự không xem được bảng lương.
+- Kế toán lương chốt được kỳ nhưng **không mở chốt** được.
+- **Chỉ Admin** được sửa dữ liệu có hiệu lực ngược vào kỳ đã chốt, khôi phục dữ liệu và quản trị người dùng.
+
+**Bảo vệ tài khoản**
+- Nhập sai mật khẩu 5 lần → chờ 30 giây.
+- Không thao tác 30 phút → app tự đăng xuất.
+- Góc trên bên phải có **Đổi mật khẩu** và **Đăng xuất**.
+
+**Quên mật khẩu Admin**: ở màn hình đăng nhập, bấm **Quên mật khẩu Admin…**, nhập mã khôi phục và mật khẩu mới. App cấp mã khôi phục mới — ghi lại lần nữa.
+
 ## Bắt đầu
 1. **Công ty & Sao lưu** → nhập Hồ sơ công ty → bấm **Nạp danh mục chuẩn HAK** (phòng ban, chức vụ, mã lương, phụ cấp, tăng ca, hỗ trợ, bảo hiểm, thuế TNCN, biểu thuế 5 bậc 2026, giảm trừ 15,5tr/6,2tr — lấy từ hệ thống QL_NHANSU).
 2. **Nhân sự** → **＋ Thêm nhân viên**: 1 form gồm thông tin cơ bản, cá nhân, hợp đồng, lương/BH/thuế, tài khoản.
@@ -10,7 +33,7 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
 ## Nhập Excel (v1.4)
 - Sau khi chọn file, app hiện **màn hình xem trước**: số dòng *Thêm mới · Cập nhật · Trùng (bỏ qua) · Lỗi dữ liệu · Sai tham chiếu · Kỳ đã chốt*. Chỉ dòng Thêm mới / Cập nhật được ghi. Bấm **⬇ Tải danh sách lỗi** để sửa và nhập lại.
 - Nhập lại cùng file **không tạo dòng trùng**: dòng cùng khóa (VD chấm công cùng Kỳ + Mã NV + Hình thức công) được cập nhật.
-- **(2.0) Cách cập nhật dòng đã có** — ô chọn ngay trên màn hình xem trước:
+- **(2.0) Cách cập nhật dòng đã có** — nếu file có dòng trùng với dữ liệu đã có, màn hình xem trước báo số dòng trùng và cho bạn chọn:
   - **Chỉ bổ sung/sửa ô có dữ liệu** (mặc định, an toàn): ô để trống trong file **giữ nguyên** dữ liệu đang có. Ví dụ: tháng nhập 2 lần (ngày 1–15 rồi ngày 16–30) vẫn đủ cả tháng.
   - **Ghi đè cả dòng theo file**: ô trống trong file **xóa** dữ liệu đang có. App báo trước số ô sẽ bị xóa.
   - Cột *Lý do* ghi rõ từng thay đổi, ví dụ "sửa 1 ô (05: 1 → 0.5)", "thêm 15 ô", "giữ 15 ô".
@@ -43,6 +66,7 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
   - App **hỏi xác nhận** và ghi nhật ký kèm nhãn *HỒI TỐ*.
   - Bảng lương đã chốt **không đổi**. Muốn áp dụng cho kỳ đó: *Mở chốt* → tính lại → chốt lại thành phiên bản mới, rồi bấm *So sánh* để xem chênh lệch.
 - (2.0) Không đổi được **Mã NV** nếu nhân viên đã có trong bảng lương đã chốt (để số đã chốt luôn khớp hồ sơ).
+- (2.0-α2) **Phụ lục hợp đồng** đã dùng để tính lương một kỳ đã chốt **không sửa / xóa được (kể cả Admin)**. Muốn tăng lương, đổi chức vụ hoặc phòng ban: vào *Hồ sơ nhân viên → Hợp đồng lao động → Lương & phụ lục HĐ → ＋ Thêm* để lập **phụ lục mới** có ngày hiệu lực mới. App tự chép nội dung phụ lục gần nhất để bạn chỉ sửa phần thay đổi.
 - (2.0) Bản chốt ghi **người chốt**; lần mở chốt ghi **người mở, lý do, thời điểm**.
 
 ## Báo cáo lương (menu 📈 Báo cáo lương)
@@ -68,7 +92,7 @@ HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/
 - Nếu file dữ liệu bị hỏng, app **không ghi đè** mà mở **màn hình khôi phục**: chọn một bản sao lưu hoặc file bạn đã cất. File hỏng được giữ lại với tên `data.corrupt_….json.bak`.
 - **Công ty & Sao lưu → Kiểm tra dữ liệu**: liệt kê vấn đề có thể làm sai lương (trùng Mã NV/CCCD, chấm công trùng, ngày không đọc được, lương nghi bị lỗi lưu…). Sau khi nâng cấp lên 1.4.0 hãy mở mục này: phụ lục nào báo **"Lương … quá nhỏ"** là bị lỗi lưu số tiền của bản cũ, cần nhập lại.
 - (2.0) Nếu file dữ liệu có cấu trúc lạ (ví dụ file của **phiên bản mới hơn**, hoặc một bảng bị hỏng kiểu), app mở **màn hình khôi phục** và **không ghi gì** vào file. Hãy cài đúng phiên bản hoặc khôi phục bản sao lưu.
-- (2.0) **Người đang sử dụng máy này** (Công ty & Sao lưu): nhập tên của bạn. Tên này và tài khoản Windows được ghi vào **Nhật ký thao tác** (xem và xuất Excel ở cuối trang).
+- (2.0) **Nhật ký thao tác** (cuối trang Công ty & Sao lưu) ghi tài khoản đăng nhập + tài khoản Windows của người thực hiện; xem và xuất Excel được.
 - Gỡ cài đặt app **không xóa** dữ liệu.
 - Vẫn nên **Sao lưu ra file** định kỳ và cất sang USB/Drive. Đổi máy: cài app → **Khôi phục từ file**.
 - Nâng cấp từ bản 1.0: dữ liệu cũ (bảng Nhân sự phẳng) tự chuyển sang hồ sơ mới, mỗi người có 1 hợp đồng "HD-<mã>" và 1 phụ lục lương.
