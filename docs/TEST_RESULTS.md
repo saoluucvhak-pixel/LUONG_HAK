@@ -1,5 +1,14 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.11 — Q-22 phụ lục giữa tháng (11/10/2026, nhánh `claude/v2-q22-phuluc`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **124/124** (+5 U-PL-01…05, số tính tay) |
+| Hồi quy công thức (v1.3.0, alpha.4) khi không chọn tùy chọn | ✅ trùng 100% |
+| E2E Electron (xvfb, Linux) | ✅ **51/51** (+1: form phụ lục có lựa chọn) |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.10 — Q-20 Số chứng từ (11/10/2026, nhánh `claude/v2-q20-chungtu`)
 | Nhóm | Kết quả |
 |---|---|

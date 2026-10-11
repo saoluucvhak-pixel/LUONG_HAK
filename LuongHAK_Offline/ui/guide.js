@@ -108,7 +108,8 @@
 
     h += "<h3>Chương II. HÌNH THỨC TRẢ LƯƠNG VÀ CÁCH TÍNH</h3>";
     h += D("Các hình thức trả lương đang áp dụng") + table([["Mã", function (r) { return r["Mã lương"]; }], ["Hình thức", function (r) { return r["Hình thức lương"]; }], ["Cách tính", function (r) { return luongText(r); }], ["Lương phụ", function (r) { return n(r["Lương phụ"]) ? money(r["Lương phụ"]) : ""; }], ["Hiệu lực từ", function (r) { return dmy(r["Hiệu lực từ"]); }]], L);
-    h += "<p>Đơn giá ngày (lương thời gian) = Lương thỏa thuận ÷ Công chuẩn. Công tính lương thời gian không vượt quá công chuẩn; phần vượt được xét theo mục Làm thêm giờ của Quy chế này. Lương bơm dăm = số xe × đơn giá bơm dăm của mã lương.</p>";
+    h += "<p>Đơn giá ngày (lương thời gian) = Lương thỏa thuận ÷ Công chuẩn. Công tính lương thời gian không vượt quá công chuẩn; phần vượt được xét theo mục Làm thêm giờ của Quy chế này. Lương bơm dăm = số xe × đơn giá bơm dăm của mã lương.</p>" +
+      "<p><b>Thay đổi lương giữa tháng:</b> phụ lục có hiệu lực giữa tháng được áp dụng theo lựa chọn ghi trên phụ lục: <i>Cả tháng</i> — cả tháng theo mức mới; hoặc <i>Từ ngày hiệu lực</i> — công trước ngày hiệu lực tính theo lương thỏa thuận cũ, công từ ngày hiệu lực tính theo mức mới (cùng mã lương). Bảo hiểm tính theo phụ lục đang hiệu lực.</p>";
     h += D("Thời gian làm việc và chấm công") + "<p>Công được chấm hằng ngày theo các hình thức sau (mỗi người mỗi hình thức 1 dòng/tháng; cùng ngày, cùng hình thức nhập trùng chỉ tính 1 lần):</p>" + table([["Hình thức", function (r) { return r["Hình thức công"]; }], ["Nội dung", function (r) { return r["Diễn giải"] || r["Nội dung"]; }], ["Nhóm", function (r) { return r["Nội dung"]; }]], CC) +
       "<p><b>Tổng công</b> tính lương = tổng công mọi hình thức trừ công tính cơm (CC). <b>[cần quyết định — Q-02]</b> Hiện tổng công <b>gồm cả công tăng ca</b> (theo cách tính của bảng lương gốc); công ty xác nhận có giữ quy ước này không.</p>";
 
@@ -150,7 +151,7 @@
     h += "<h3>Chương VII. ĐIỀU KHOẢN THI HÀNH</h3>";
     h += D("Hiệu lực") + "<p>Quy chế có hiệu lực từ ngày …/…/" + nam + ". Các đơn vị, phòng ban và người lao động có trách nhiệm thực hiện. Quy chế được xem xét sửa đổi khi pháp luật hoặc điều kiện sản xuất kinh doanh thay đổi.</p>";
     h += "<div class='g-sign'><div><b>ĐẠI DIỆN TỔ CHỨC ĐẠI DIỆN NLĐ</b><br><i>(nếu có)</i></div><div><b>GIÁM ĐỐC</b><br><i>(ký, ghi rõ họ tên, đóng dấu)</i><br><br><br>" + esc(ct["Người đại diện pháp luật"] || "") + "</div></div>";
-    h += "<div class='g-warn g-noprint'><b>Các điểm cần công ty quyết định trước khi ban hành</b> (phần mềm đang áp dụng như mô tả, không tự đổi công thức): Q-01 phụ lục giữa tháng · Q-02 tổng công gồm tăng ca · Q-03 tiền cơm và thuế · Q-04 truy thu BH · Q-05 khoản trừ vượt thu nhập · Q-06 trần BH · Q-07 lương đóng BH với công nhật · Q-08 chia sản lượng nhiều người · Q-09 phụ cấp công tác · Q-10 khấu trừ vãng lai · Q-17 mức tăng ca tối thiểu theo luật. Chi tiết: <code>docs/BUSINESS_RULES.md</code>.</div>";
+    h += "<div class='g-warn g-noprint'><b>Các điểm cần công ty quyết định trước khi ban hành</b> (phần mềm đang áp dụng như mô tả, không tự đổi công thức): Q-02 tổng công gồm tăng ca · Q-03 tiền cơm và thuế · Q-04 truy thu BH · Q-05 khoản trừ vượt thu nhập · Q-06 trần BH · Q-07 lương đóng BH với công nhật · Q-08 chia sản lượng nhiều người · Q-09 phụ cấp công tác · Q-10 khấu trừ vãng lai · Q-17 mức tăng ca tối thiểu theo luật. Chi tiết: <code>docs/BUSINESS_RULES.md</code>.</div>";
     return h;
   }
 
@@ -178,7 +179,7 @@
   function faq() {
     var Q = [
       ["Nhân viên không có trong bảng lương?", "Kiểm tra: có hợp đồng còn hiệu lực trong kỳ (Ngày vào làm ≤ cuối tháng, chưa chấm dứt trước đầu tháng) và có ít nhất 1 dòng <i>Lương & phụ lục HĐ</i> hiệu lực ≤ cuối tháng. Khung cảnh báo trên màn hình Tính lương ghi rõ lý do."],
-      ["Lương tháng này vẫn theo mức cũ dù đã tăng lương?", "Phụ lục mới phải có <i>Hiệu lực từ</i> ≤ ngày cuối tháng đó. Phụ lục giữa tháng hiện được áp dụng cho cả tháng [Q-01]."],
+      ["Lương tháng này vẫn theo mức cũ dù đã tăng lương?", "Phụ lục mới phải có <i>Hiệu lực từ</i> ≤ ngày cuối tháng đó. Phụ lục giữa tháng: chọn ô <i>Cách áp dụng trong tháng hiệu lực</i> = <b>Từ ngày hiệu lực</b> để chia theo công trước / từ ngày hiệu lực; để trống = cả tháng theo mức mới."],
       ["Nhập lại file chấm công có bị nhân đôi công không?", "Không. Dòng cùng Kỳ + Mã NV + Hình thức công được cập nhật (Bổ sung / Ghi đè); cùng ngày nhập trùng cùng số công chỉ tính 1 lần."],
       ["Muốn sửa chấm công của tháng đã chốt?", "Nhờ Admin <i>Mở chốt</i> (ghi lý do) → sửa → tính lại → chốt lại (phiên bản mới) → <i>So sánh</i> để biết chênh lệch."],
       ["Không sửa được phụ lục lương?", "Phụ lục đã dùng cho kỳ lương đã chốt bị khóa (quy chế). Bấm <i>＋ Thêm</i> để lập phụ lục mới — app tự chép nội dung phụ lục gần nhất."],

@@ -196,7 +196,18 @@
       var nghi = ns["Ngày nghỉ/thay đổi"];
       if (nghi && new Date(nghi) < dauKy) return;
       var c = cc[ma] || { tongCong: 0, congChuNhat: 0, congTangCa: 0, congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0, nhanTheoNgay: {}, congChinhTheoNgay: {} };
-      var luongTT = money(ns["Lương thỏa thuận"]);
+      var luongTT = money(ns["Lương thỏa thuận"]), luongTTMoi = luongTT, chiaPL = false;
+      // Q-22 (R-56): phụ lục mới hiệu lực từ ngày tuNgay trong kỳ, chọn "Từ ngày hiệu lực" → lương thỏa thuận của kỳ =
+      // bình quân theo công: (mức cũ × công chính trước ngày + mức mới × công chính từ ngày) / tổng công chính. Không có trường này = như cũ.
+      var tuNgay = +ns["Áp dụng từ ngày"] || 0;
+      if (tuNgay > 1 && ns["Lương thỏa thuận trước"] !== "" && ns["Lương thỏa thuận trước"] != null) {
+        var lttCu = money(ns["Lương thỏa thuận trước"]), cTruoc = 0, cSau = 0;
+        Object.keys(c.congChinhTheoNgay).forEach(function (k) { var v = c.congChinhTheoNgay[k] || 0; if (+k < tuNgay) cTruoc += v; else cSau += v; });
+        if (cTruoc + cSau > 0) {
+          luongTT = (lttCu * cTruoc + luongTTMoi * cSau) / (cTruoc + cSau); chiaPL = true;
+          out.canhbao.push(ma + ": phụ lục mới từ ngày " + tuNgay + " (Q-22, tính từ ngày hiệu lực) — " + Math.round(cTruoc * 100) / 100 + " công theo mức cũ " + lttCu.toLocaleString("vi-VN") + ", " + Math.round(cSau * 100) / 100 + " công theo mức mới " + luongTTMoi.toLocaleString("vi-VN"));
+        }
+      }
       var maTL1 = ns["Mã tiền lương 1"] || "";
       var dmL = dmLuong[ns["Mã tiền lương 1"]] || dmLuong[ns["Mã tiền lương 2"]] || null;
       if (!dmL && maTL1) out.canhbao.push(ma + ": mã lương '" + maTL1 + "' chưa có trong Danh mục lương (hoặc hết hiệu lực)");
@@ -207,7 +218,7 @@
       var donGiaTG = cChuan > 0 ? luongTT / cChuan : 0;
       var congTinhTG = Math.min(c.tongCong, cChuan) || c.tongCong;
       var luongTG;
-      if (maTL1 === "CĐ") luongTG = luongTT;
+      if (maTL1 === "CĐ") luongTG = chiaPL ? Math.round(luongTT) : luongTT;
       else if (maTL1 === "CN1" || maTL1 === "CN2" || maTL1 === "SP") luongTG = Math.round(luongTT * congTinhTG);
       else luongTG = Math.round(donGiaTG * congTinhTG);
       var luongPhu = dmL ? money(dmL["Lương phụ"]) : 0;
@@ -270,7 +281,7 @@
       var tongTN = luongTG + luongPhu + luongSL + luongBu + luongBD + tienTC + tienPC + pcCT + luongHT + tienCom + p["Thưởng"] + p["Thu nhập khác"];
 
       // BHXH
-      var bh = dmBH[ns["Mã BHXH"]], luongBH = money(ns["Lương cơ bản"]) || luongTT, bhNLD = 0, truyThu = 0;
+      var bh = dmBH[ns["Mã BHXH"]], luongBH = money(ns["Lương cơ bản"]) || luongTTMoi, bhNLD = 0, truyThu = 0; // BH theo phụ lục đang hiệu lực (không chia theo Q-22)
       if (bh && luongBH > 0 && luongBH < 1000) out.canhbao.push(ma + ": lương đóng BH = " + luongBH + "đ — quá nhỏ, kiểm tra lại 'Lương cơ bản' trong phụ lục hợp đồng");
       if (bh) {
         var tlNLD = num(bh["NLD.BHXH"]) + num(bh["NLD.BHYT"]) + num(bh["NLD.BHTN"]);
@@ -327,7 +338,7 @@
         "Mã NV": ma, "Họ và tên": ns["Họ và tên"],
         "Phòng ban": (pb[ns["Mã PB"]] || {})["Tên phòng ban"] || ns["Mã PB"] || "",
         "Chức vụ": (cv[ns["Mã CV"]] || {})["Tên chức vụ"] || ns["Mã CV"] || "",
-        "Lương thỏa thuận": luongTT, "Công chuẩn": cChuan, "Tổng công": c.tongCong, "Công CN": c.congChuNhat, "Công tăng ca": c.congTangCa,
+        "Lương thỏa thuận": luongTTMoi, "Công chuẩn": cChuan, "Tổng công": c.tongCong, "Công CN": c.congChuNhat, "Công tăng ca": c.congTangCa,
         "Lương thời gian": luongTG, "Lương phụ": luongPhu, "Sản lượng (tấn)": Math.round(tan * 1000) / 1000, "Lương sản lượng": luongSL,
         "Lương bù SL": luongBu, "Số xe bơm dăm": xe, "Lương bơm dăm": luongBD, "Tiền tăng ca": tienTC,
         "Phụ cấp": tienPC, "Phụ cấp công tác": pcCT, "Lương hỗ trợ": luongHT, "Ngày cơm": ngayCom, "Tiền cơm": tienCom,
@@ -338,7 +349,7 @@
     return out;
   }
 
-  var ENGINE_VERSION = "1.4.0";
+  var ENGINE_VERSION = "1.5.0"; // 1.5.0: Q-22 tùy chọn áp dụng phụ lục từ ngày hiệu lực (không chọn = giống 1.4.0)
   var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, tachCong: tachCong, tongHopChamCong: tongHopChamCong, hieuLuc: hieuLuc, num: num, pct: pct };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LuongEngine = api;
 })(typeof window !== "undefined" ? window : this);

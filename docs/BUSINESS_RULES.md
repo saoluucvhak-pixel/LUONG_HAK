@@ -97,14 +97,14 @@
 - R-53 (Q-19) Chi phí lương của nhân viên điều chuyển trong tháng **chia theo số công làm ở từng phòng ban** (theo ngày hiệu lực phụ lục / điều chuyển). *(đang triển khai)*
 - R-54 (Q-20) Thưởng / Trừ / Tạm ứng có cột **Số chứng từ**. Cùng *Số chứng từ + Mã NV* = cùng 1 khoản: nhập lại thì cập nhật, không cộng thêm; lưới chặn dòng trùng; *Kiểm tra dữ liệu* báo High nếu đang có nhiều dòng. Một phiếu chi cho nhiều người: mỗi người 1 dòng cùng số. Dòng chưa có số chứng từ: giữ cách cũ (bỏ qua dòng giống hệt) + nhắc ghi số.
 - R-55 (Q-21) Ô chấm công sai còn trong dữ liệu cũ (ngày không tồn tại, số âm): **giữ nguyên cách tính**, app chỉ cảnh báo (*Kiểm tra dữ liệu* High, hộp chốt kỳ), người dùng tự sửa.
-- R-56 (Q-22) Khi lập phụ lục có ngày hiệu lực giữa tháng, người lập chọn **cách áp dụng trong tháng hiệu lực**: *cả tháng theo mức mới* hoặc *từ ngày hiệu lực* (chia theo công trước / từ ngày hiệu lực). *(đang triển khai)*
+- R-56 (Q-22) Khi lập phụ lục có ngày hiệu lực giữa tháng, người lập chọn **cách áp dụng trong tháng hiệu lực**: *cả tháng theo mức mới* hoặc *từ ngày hiệu lực* (chia theo công trước / từ ngày hiệu lực; cùng mã lương; BH theo phụ lục đang hiệu lực). Để trống = cả tháng. Đã triển khai 2.0-α11 (engine 1.5.0, `PAYROLL_FORMULAS.md` §4a).
 
 ## 2. Câu hỏi mở — cần chủ sở hữu / kế toán xác nhận
 Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 
 | ID | Câu hỏi | Hiện tại |
 |---|---|---|
-| Q-01 | Phụ lục lương có hiệu lực **giữa tháng** (VD 15/09): tính cả tháng theo mức mới hay chia theo ngày công trước/sau? | Cả tháng theo mức mới |
+| Q-01 | Phụ lục lương có hiệu lực **giữa tháng** (VD 15/09): tính cả tháng theo mức mới hay chia theo ngày công trước/sau? | ✅ **Đã trả lời (11/10/2026, cùng Q-22): chọn trên phụ lục — cả tháng hoặc từ ngày hiệu lực** → R-56 |
 | Q-02 | "Tổng công" có **gồm công tăng ca** không? (ảnh hưởng ngưỡng BH, phụ cấp theo công, hỗ trợ cơ giới) | Có (giữ như bản Google gốc) |
 | Q-03 | Tiền cơm: loại trừ **toàn bộ** khỏi thu nhập chịu thuế hay chỉ đến mức quy định? | Toàn bộ |
 | Q-04 | Không đủ ngưỡng công đóng BH: truy thu **toàn bộ phần công ty đóng** từ NLĐ có đúng quy chế? | Có |
@@ -125,7 +125,7 @@ Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 | Q-19 | 1 nhân viên làm cho **2 phòng ban trong cùng tháng** (điều chuyển giữa tháng): chi phí lương chia theo công từng phòng hay ghi toàn bộ cho phòng ở phụ lục cuối? | ✅ **Đã trả lời: làm ở phòng nào tính chi phí phòng đó** (chia theo công) → R-53 *(đang triển khai)* |
 | Q-20 | Tạm ứng / thưởng **không có Số chứng từ**: 2 dòng cùng NV, cùng ngày, cùng số tiền là 2 lần chi hợp lệ hay nhập trùng? Có bắt buộc cột *Số chứng từ* để chống trùng không? | ✅ **Đã trả lời: theo đề xuất — thêm Số chứng từ** → R-54 (2.0-α10) |
 | Q-21 | Ô chấm công **sai đã có sẵn** trong dữ liệu (ngày 31 của tháng 30 ngày, số âm kiểu số): bảng lương có nên **bỏ qua** các ô này không? (Hiện engine vẫn cộng ngày không tồn tại.) | ✅ **Đã trả lời: giữ nguyên, người dùng tự sửa theo cảnh báo** → R-55 |
-| Q-22 | Phụ lục tăng lương có hiệu lực **giữa tháng** (VD 16/09): tính cả tháng theo mức mới (hiện tại), mức cũ, hay **chia theo số công trước/sau** ngày hiệu lực? | ✅ **Đã trả lời: khi lập phụ lục chọn cách áp dụng trong tháng hiệu lực — cả tháng hoặc từ ngày hiệu lực** → R-56 *(đang triển khai)* |
+| Q-22 | Phụ lục tăng lương có hiệu lực **giữa tháng** (VD 16/09): tính cả tháng theo mức mới (hiện tại), mức cũ, hay **chia theo số công trước/sau** ngày hiệu lực? | ✅ **Đã trả lời: khi lập phụ lục chọn cách áp dụng trong tháng hiệu lực — cả tháng hoặc từ ngày hiệu lực** → R-56 (2.0-α11) |
 | Q-23 | BHXH khi **vào làm / nghỉ giữa tháng** hoặc ít công: danh mục mặc định chưa đặt *Ngưỡng truy thu BH (công)* nên 2 công vẫn trừ đủ BH. Kế toán xác nhận ngưỡng áp dụng (theo quy định: không làm việc và không hưởng lương từ 14 ngày làm việc trở lên trong tháng thì không đóng) cho từng mã lương. | 🔎 **Đã kiểm tra (11/10/2026):** danh mục Mã lương CÓ cột *Ngưỡng truy thu BH (công)* nhưng danh mục chuẩn để TRỐNG cho cả 9 mã → mọi người bị trừ đủ BH. Công thức khi dưới ngưỡng: không trừ BH NLĐ nhưng **truy thu phần công ty đóng** → xem **Q-25** |
 | Q-24 | **Bảo mật lương:** Trưởng bộ phận (không có quyền xem bảng lương) có được thấy lương thỏa thuận / lương cơ bản của nhân viên ở hồ sơ không? | ✅ **Đã trả lời (11/10/2026): ẩn theo đề xuất** → R-51 |
 | Q-25 | **BH khi đi làm ít ngày (tiếp Q-23):** (a) Ngưỡng công cho từng mã lương là bao nhiêu (theo quy định: nghỉ không lương ≥ 14 ngày làm việc trong tháng thì không đóng — VD TG1 công chuẩn 26 → ngưỡng 13 công)? (b) Khi dưới ngưỡng: **không đóng BH cả 2 bên** (theo quy định) hay **giữ cách hiện tại** (truy thu phần công ty đóng vào lương NLĐ)? Kế toán xác nhận | Ngưỡng trống; dưới ngưỡng = truy thu phần công ty |

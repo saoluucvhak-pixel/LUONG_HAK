@@ -64,7 +64,7 @@ test("I-19 khoản trừ vượt thu nhập (2 công, tạm ứng 15tr) → th�
   assert.ok(warn.some((w) => /vượt thu nhập 14\.091\.538đ.*CHƯA được chuyển sang kỳ sau/.test(w)), warn.join("\n"));
 });
 
-test("I-20 phụ lục tăng lương hiệu lực GIỮA THÁNG (16/09) → cả tháng 9 tính mức mới, không chia theo ngày [chờ KT xác nhận — Q-22]", () => {
+test("I-20 phụ lục tăng lương hiệu lực GIỮA THÁNG (16/09), KHÔNG chọn cách áp dụng → cả tháng 9 tính mức mới (mặc định; chọn 'Từ ngày hiệu lực' xem U-PL-01, Q-22)", () => {
   const db = one(); db.chamcong = [ccRow("NV001", 2026, 8), ccRow("NV001", 2026, 9)];
   db.chitiethd.push(Object.assign({}, db.chitiethd[0], { "Hiệu lực từ": "2026-09-16", "Lương thỏa thuận": "26000000" }));
   assert.equal(pay(db, 2026, 9).b["Lương thời gian"], 26000000);

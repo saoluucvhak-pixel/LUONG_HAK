@@ -43,6 +43,7 @@
     chitiethd: { ten: "Lương & phụ lục HĐ", icon: "📑", lv: "hd", f: [
       { k: "Mã công tác", hint: "Số hiệu phụ lục, VD: HD001-PL01" }, { k: "Loại phụ lục", t: "sel", o: ["Hợp đồng gốc", "Phụ lục sửa đổi"], req: 1 },
       { k: "Hiệu lực từ", t: "date", req: 1, hint: "Lương từ tháng này trở đi lấy theo dòng này" },
+      { k: "Cách áp dụng trong tháng hiệu lực", t: "sel", o: ["Cả tháng", "Từ ngày hiệu lực"], hint: "Q-22: hiệu lực giữa tháng — 'Cả tháng' = cả tháng theo mức mới; 'Từ ngày hiệu lực' = công trước ngày hiệu lực tính mức cũ, từ ngày hiệu lực tính mức mới. Để trống = Cả tháng" },
       { k: "Phòng ban", t: "ref", ref: "dm_phongban", req: 1 }, { k: "Chức vụ", t: "ref", ref: "dm_chucvu" },
       { k: "Mã hình thức lương", t: "sel", o: ["LTG", "LSP"], req: 1, hint: "LTG = thời gian, LSP = sản phẩm" },
       { k: "Mã lương", t: "multi", ref: "dm_luong", req: 1, hint: "Chọn 1–2 mã. Mã thứ 2 dùng cho bơm dăm (BD) nếu có" },
@@ -173,6 +174,14 @@
       var ct = chiTietHD(db, ma, hd["Số HĐLĐ"], b.cuoi, ix);
       if (!ct) { warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): hợp đồng " + hd["Số HĐLĐ"] + " chưa có dòng 'Lương & phụ lục HĐ' hiệu lực — không tính lương"); return; }
       var ml = split(ct["Mã lương"]), ht = split(ct["Hỗ trợ"]), tc = split(ct["Tăng ca"]);
+      // Q-22 (R-56): phụ lục hiệu lực GIỮA tháng + chọn "Từ ngày hiệu lực" → công trước ngày đó tính theo lương thỏa thuận của phụ lục trước (cùng hợp đồng, cùng mã lương)
+      var tuNgay = "", lttTruoc = "", hl = d10(ct["Hiệu lực từ"]);
+      if (ct["Cách áp dụng trong tháng hiệu lực"] === "Từ ngày hiệu lực" && hl > b.dau && hl <= b.cuoi) {
+        var truocDo = rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return r["Số HĐLĐ"] === hd["Số HĐLĐ"] && d10(r["Hiệu lực từ"]) && d10(r["Hiệu lực từ"]) < hl; });
+        var prev = latestBy(truocDo, "Hiệu lực từ");
+        if (prev && (split(prev["Mã lương"])[0] || "") === (ml[0] || "")) { tuNgay = String(+hl.slice(8, 10)); lttTruoc = prev["Lương thỏa thuận"] || ""; }
+        else if (prev) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): phụ lục từ " + hl + " chọn 'Từ ngày hiệu lực' nhưng mã lương khác phụ lục trước (" + (split(prev["Mã lương"])[0] || "trống") + " → " + (ml[0] || "trống") + ") — không chia được, tính CẢ THÁNG theo phụ lục mới");
+      }
       var ht1 = "", ht2 = "";
       ht.forEach(function (c) {
         var inf = hotroInfo[c] || {}, txt = String((inf["Cách tính"] || "") + " " + (inf["Tên hỗ trợ"] || ""));
@@ -195,6 +204,7 @@
         "Số CCCD": (cn && cn["Số CCCD"]) || nv["Số CCCD"] || "", "Số tài khoản": tk ? tk["Số tài khoản"] : "", "Tên Ngân hàng": tk ? tk["Tên ngân hàng"] : "",
         "HTTT": ct["HTTT"] || "", "Số HĐLĐ": hd["Số HĐLĐ"]
       });
+      if (tuNgay) { out[out.length - 1]["Áp dụng từ ngày"] = tuNgay; out[out.length - 1]["Lương thỏa thuận trước"] = lttTruoc; } // chỉ thêm khi thật sự chia (dòng khác giữ y hệt bản trước)
     });
     return { list: out, warn: warn };
   }

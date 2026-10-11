@@ -194,3 +194,10 @@ Rollback: cài lại alpha.8 (không đổi dữ liệu).
 
 Rollback: cài lại alpha.9. Cột *Số chứng từ* chỉ là cột thêm, bản cũ bỏ qua cột này.
 
+## 2.0.0-alpha.11 — Q-22 (nhánh `claude/v2-q22-phuluc`)
+| Thay đổi nghiệp vụ (chủ sở hữu duyệt) | Cách làm | File | Test |
+|---|---|---|---|
+| Q-22 / R-56: chọn áp dụng phụ lục giữa tháng cả tháng hay từ ngày hiệu lực | Ô mới trên phụ lục; `staffForPayroll` gắn `Áp dụng từ ngày` + `Lương thỏa thuận trước` khi chia được; engine 1.5.0 tính LTT bình quân theo công chính | `hr.js`, `engine.js`, `ui/guide.js` | U-PL-01…05, I-20, hồi quy |
+
+Rollback: cài lại alpha.10. Phụ lục đã chọn "Từ ngày hiệu lực" sẽ được tính cả tháng như cũ; kỳ đã chốt không đổi.
+

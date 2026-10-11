@@ -21,7 +21,7 @@ File `%APPDATA%\Tinh Luong HAK\data.json` là một object; mỗi khóa là mộ
 | | `canhan`, `thanhtoan` | Mã NV + Hiệu lực từ | lịch sử theo hiệu lực |
 | | `nhanthan` | Mã NV + Họ tên nhân thân | người phụ thuộc có Hiệu lực từ/đến |
 | | `hopdong` | Mã NV + Số HĐLĐ | |
-| | `chitiethd` | Mã NV + Số HĐLĐ + Hiệu lực từ | **nguồn dữ liệu tính lương** |
+| | `chitiethd` | Mã NV + Số HĐLĐ + Hiệu lực từ | **nguồn dữ liệu tính lương**. (2.0-α11) cột mới *Cách áp dụng trong tháng hiệu lực*: `Cả tháng` (mặc định / để trống) \| `Từ ngày hiệu lực` (Q-22) |
 | | `congtac`, `hocvan`, `suckhoe`, `lienhe`, `nghenghiep`, `khamsk`, `quyenloiphep`, `nghiphep`, `nghiom`, `noiquy`, `khenthuong`, `tailieu` | xem `core/importer.js` KEYS | |
 | Phát sinh | `chamcong` | Kỳ + Mã NV + Hình thức công — chuẩn hóa: kỳ `YYYY-MM`, hình thức viết hoa, để trống = BT | 31 cột ngày `01`…`31`. Engine cộng **mọi** dòng. Từ 2.0-P1, nhập Excel giữ đúng 1 dòng / khóa (gộp theo ngày, xung đột nếu trùng ngày) |
 | | `sanluong`, `bandam` | Phiếu cân + Mã NV | |

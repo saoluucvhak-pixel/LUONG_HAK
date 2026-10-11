@@ -56,7 +56,8 @@
 - [x] Q-24 ẩn lương cá nhân với Trưởng bộ phận (alpha.9, R-51)
 - [ ] Chờ chủ sở hữu: R-45 ma trận quyền, phạm vi Trưởng bộ phận theo phòng ban
 - [x] Q-20 Số chứng từ (alpha.10); Q-18/Q-21 ghi nhận (R-52, R-55)
-- [ ] Q-22 chọn cách áp dụng phụ lục giữa tháng (R-56) · Q-19 chia chi phí theo phòng ban (R-53) · Q-25 BH dưới ngưỡng (chờ kế toán)
+- [x] Q-22 chọn cách áp dụng phụ lục giữa tháng (R-56, alpha.11, engine 1.5.0)
+- [ ] Q-19 chia chi phí theo phòng ban (R-53) · Q-25 BH dưới ngưỡng (chờ kế toán)
 - Tiếp theo: gom 4 đường ghi còn lại (nhập Excel, gộp chấm công, thêm NV, xóa NV) vào repository → SQLite ghi theo dòng
 
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)

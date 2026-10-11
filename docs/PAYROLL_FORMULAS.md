@@ -43,6 +43,21 @@ Danh mục dùng dòng còn hiệu lực trong tháng (`Hiệu lực từ ≤ cu
 
 Phân slot hỗ trợ (`hr.js`): mã có "công chuẩn/cơ giới/thiếu" (không chứa "cơm") → slot 2; còn lại slot 1.
 
+### 4a. Phụ lục hiệu lực giữa tháng (engine 1.5.0, Q-22 / R-56)
+Áp dụng khi **cả 3** điều kiện đúng:
+- phụ lục đang hiệu lực có *Cách áp dụng trong tháng hiệu lực* = **Từ ngày hiệu lực**;
+- *Hiệu lực từ* nằm sau ngày 1 của kỳ;
+- phụ lục liền trước (cùng hợp đồng) có **cùng mã lương 1**.
+
+Khi đó:
+- `Lương thỏa thuận kỳ = (LTT cũ × công chính trước ngày hiệu lực + LTT mới × công chính từ ngày hiệu lực) / tổng công chính`. Công chính là công các dòng không phải tăng ca, không phải cơm.
+- Mọi công thức dùng Lương thỏa thuận (lương thời gian, công nhật, cố định, đơn giá tăng ca, phụ cấp theo tỷ lệ) dùng số bình quân này.
+- **BH** vẫn theo phụ lục đang hiệu lực (Lương cơ bản, hoặc LTT mới nếu không có).
+- Cột *Lương thỏa thuận* trên bảng lương hiện mức mới. Cảnh báo ghi số công theo từng mức.
+- Ví dụ (U-PL-01): TG1, 20 tr → 26 tr từ 16/09/2026, mỗi nửa tháng 13 công → 10.000.000 + 13.000.000 = **23.000.000**.
+- Khác mã lương thì không chia: cả tháng theo phụ lục mới, kèm cảnh báo.
+- Không chọn, hoặc chọn *Cả tháng*: như engine 1.4.0.
+
 ## 5. Bảo hiểm
 - Lương đóng BH = LCB, nếu trống = LTT **[Q-07]**. Không áp mức trần **[Q-06]**.
 - Đủ ngưỡng (không khai "Ngưỡng truy thu BH" hoặc Tổng công ≥ ngưỡng): BH NLĐ = ROUND(Lương đóng × (NLĐ.BHXH + BHYT + BHTN)).

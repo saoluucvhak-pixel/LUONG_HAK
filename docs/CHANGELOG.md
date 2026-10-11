@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [2.0.0-alpha.11] — 11/10/2026 — Q-22: chọn cách áp dụng phụ lục giữa tháng (engine 1.5.0)
+- Phụ lục có thêm ô **Cách áp dụng trong tháng hiệu lực**:
+  - *Cả tháng* (mặc định, để trống = như cũ);
+  - *Từ ngày hiệu lực*: công trước ngày hiệu lực tính theo lương thỏa thuận cũ, công từ ngày hiệu lực tính theo mức mới (cùng mã lương).
+  - BH theo phụ lục đang hiệu lực. Khác mã lương thì không chia và có cảnh báo.
+- Ví dụ: 20 tr → 26 tr từ 16/09 → lương tháng 9 = 23.000.000 (trước đây 26.000.000).
+- Quy chế trong app, hướng dẫn và `PAYROLL_FORMULAS.md` §4a đã cập nhật; Q-01 = Q-22 đã trả lời.
+- **Không đổi** kết quả của mọi phụ lục không chọn *Từ ngày hiệu lực*: hồi quy v1.3.0 và alpha.4 trùng 100%.
+- Test: 124 (+5 U-PL), E2E 51/51 (+1).
+
 ## [2.0.0-alpha.10] — 11/10/2026 — Q-20 Số chứng từ; ghi nhận câu trả lời Q-18, Q-19, Q-21, Q-22, Q-23
 - **(Q-20) Số chứng từ** cho *Thưởng / Trừ* và *Tạm ứng*. Cột mới, không bắt buộc.
   - Nhập lại file có cùng *Số chứng từ + Mã NV* thì **cập nhật**, không cộng thêm. Bản cũ: nhập lại file tạm ứng đã sửa số tiền thì thành 2 khoản.

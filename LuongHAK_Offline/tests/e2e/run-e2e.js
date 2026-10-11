@@ -208,7 +208,10 @@ async function launch(dataDir, opt) {
   await plCard.locator("tbody tr").first().click(); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
   const blocked15 = dialogs.some((d) => /Q-15/.test(d) && /PHỤ LỤC MỚI/.test(d));
   if (await w.locator(".dlg").count()) await w.click(".dlg header button");
-  await plCard.locator('button:has-text("Thêm")').click(); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(400);
+  await plCard.locator('button:has-text("Thêm")').click(); await w.waitForSelector(".dlg");
+  const q22Opts = await w.locator(".dlg .fld", { hasText: "Cách áp dụng trong tháng hiệu lực" }).locator("option").allInnerTexts();
+  ok("Q-22: form phụ lục có lựa chọn 'Cách áp dụng trong tháng hiệu lực' (Cả tháng / Từ ngày hiệu lực)", q22Opts.includes("Cả tháng") && q22Opts.includes("Từ ngày hiệu lực"), q22Opts.join(", "));
+  await w.click(".dlg footer button.pri"); await w.waitForTimeout(400);
   const nPL2 = await w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') }).locator("tbody tr").count();
   ok("Q-15: Admin KHÔNG sửa được phụ lục đã dùng cho kỳ đã chốt; thêm phụ lục mới thì được", blocked15 && nPL2 === nPL + 1, dialogs.join(" | ").slice(0, 160) + " · phụ lục " + nPL + "→" + nPL2);
   ok("Không lỗi JavaScript khi phân quyền", errs.length === 0, errs.join(" | "));

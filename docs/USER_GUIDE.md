@@ -70,6 +70,14 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
    Trong tab **Hợp đồng lao động**: Lương & phụ lục HĐ, quyền lợi phép, nghỉ phép, nghỉ ốm, khám sức khỏe, khen thưởng, kỷ luật, tài liệu.
 4. Hằng tháng: nhập **Chấm công**, **Sản lượng**, **Bơm dăm**, **Thưởng/Trừ**, **Tạm ứng** → **Tính lương** → xuất Excel (bảng lương, BHXH, thuế, danh sách chuyển khoản) / in phiếu lương.
 
+## Tăng lương / đổi lương giữa tháng (từ 2.0-alpha.11)
+Khi lập phụ lục có *Hiệu lực từ* giữa tháng, chọn ô **Cách áp dụng trong tháng hiệu lực**:
+- **Cả tháng** (hoặc để trống): cả tháng tính theo mức mới.
+- **Từ ngày hiệu lực**: công trước ngày hiệu lực tính theo lương cũ, công từ ngày hiệu lực tính theo lương mới. Ví dụ: 20 tr → 26 tr từ 16/09, mỗi nửa tháng 13 công → lương tháng 9 = 23.000.000.
+  - Chỉ chia được khi phụ lục cũ và mới **cùng mã lương**.
+  - Bảo hiểm tính theo phụ lục mới.
+  - Màn hình Tính lương ghi rõ số công theo từng mức.
+
 ## Lương lấy từ hồ sơ như thế nào
 - Chỉ tính cho nhân viên có **hợp đồng còn hiệu lực trong kỳ** (Ngày vào làm ≤ cuối tháng, chưa chấm dứt trước đầu tháng).
 - Lấy dòng **Lương & phụ lục HĐ** mới nhất có "Hiệu lực từ" ≤ cuối tháng → tăng lương chỉ cần thêm 1 phụ lục mới.
