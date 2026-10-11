@@ -3,10 +3,12 @@ const path = require("path");
 const os = require("os");
 const { createStorage } = require("./main/storage");
 const { createExports } = require("./main/exports");
+const { createOcrService, sanitizeOcrItems } = require("./main/ocr-service");
 
 // Dữ liệu: %APPDATA%\Tinh Luong HAK\data.json — sao lưu trong thư mục backups (xem main/storage.js).
 // Gỡ cài đặt KHÔNG xóa thư mục này (electron-builder: deleteAppDataOnUninstall mặc định false).
-let storage = null, exportsDir = null;
+let storage = null, exportsDir = null, ocr = null;
+const ocrSvc = () => ocr || (ocr = createOcrService({ appDir: __dirname })); // nạp Tesseract khi dùng lần đầu
 const NO_SHELL = !!process.env.HAK_NO_SHELL; // kiểm thử tự động: không mở Explorer thật, chỉ ghi lại thao tác
 let lastShell = null;
 function shellDo(kind, f) { lastShell = { kind, name: path.basename(f) }; if (NO_SHELL) return; if (kind === "show") shell.showItemInFolder(f); else shell.openPath(f); }
@@ -31,6 +33,12 @@ function registerIpc() {
   ipcMain.on("store-quarantine", (e) => { try { e.returnValue = storage.quarantineCorrupt(); } catch (err) { e.returnValue = null; } });
   ipcMain.on("open-data-folder", () => { shell.openPath(path.dirname(storage.dataFile)); });
   // File xuất (2.0-α16): giao diện chỉ gửi TÊN file — đường dẫn ghép trong thư mục xuất (main/exports.js)
+  // OCR bảng chấm công (α20): giao diện gửi ẢNH Ô đã cắt (xám, nhỏ) — không gửi đường dẫn file; chạy offline
+  ipcMain.handle("ocr-batch", async (e, items) => {
+    if (!Array.isArray(items) || items.length > 5000) throw new Error("Lô OCR không hợp lệ");
+    return ocrSvc().batch(sanitizeOcrItems(items)); // ô sai kích thước → kết quả rỗng ĐÚNG VỊ TRÍ (không làm lệch thứ tự)
+  });
+  ipcMain.handle("ocr-selftest", async () => { try { return await ocrSvc().selfTest(); } catch (err) { return { ok: false, error: String(err.message || err) }; } });
   // Lịch sao lưu (α17) — cấu hình của máy này (settings.json)
   ipcMain.on("backup-schedule-get", (e) => { try { e.returnValue = Object.assign({ ok: true }, storage.getSchedule()); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
   ipcMain.on("backup-schedule-set", (e, o) => { try { e.returnValue = storage.setSchedule(o && typeof o === "object" ? { everyHours: o.everyHours, onClose: o.onClose, keepDaily: o.keepDaily } : {}); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
@@ -100,6 +108,15 @@ app.on("second-instance", () => {
   if (w) { if (w.isMinimized()) w.restore(); w.focus(); }
 });
 app.whenReady().then(() => {
+  // Kiểm tra OCR trong BẢN ĐÓNG GÓI (CI Windows): HAK_OCR_SELFTEST=<file kết quả> → đọc thử, ghi JSON, thoát. Không mở dữ liệu, không mở cửa sổ.
+  if (process.env.HAK_OCR_SELFTEST) {
+    const out = process.env.HAK_OCR_SELFTEST;
+    ocrSvc().selfTest().then((r) => r, (e) => ({ ok: false, error: String(e && e.message || e) })).then((r) => {
+      require("fs").writeFileSync(out, JSON.stringify(Object.assign({ packaged: app.isPackaged }, r)));
+      return ocr.terminate().catch(() => {}).then(() => app.exit(r.ok && /12/.test(r.text) ? 0 : 1));
+    });
+    return;
+  }
   storage = createStorage(app.getPath("userData"));
   exportsDir = createExports({ readSettings: storage.readSettings, writeSettings: storage.writeSettings, defaultDir: path.join(app.getPath("documents"), "Tinh Luong HAK", "File xuat"), fixedDir: process.env.HAK_DOWNLOAD_DIR || "" });
   try { storage.backup("startup"); } catch (e) { /* lần đầu chưa có dữ liệu */ }
@@ -111,4 +128,4 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => app.quit());
 // Lịch sao lưu (α17): cửa sổ đã đóng (giao diện đã lưu lần cuối ở beforeunload) → sao lưu "khi-dong" nếu dữ liệu đã đổi.
 // will-quit chạy cả khi bấm ✕ lẫn khi app.quit() (tắt máy / cài bản mới).
-app.on("will-quit", () => { if (storage) storage.backupOnClose(); });
+app.on("will-quit", () => { if (storage) storage.backupOnClose(); if (ocr) ocr.terminate().catch(() => {}); });

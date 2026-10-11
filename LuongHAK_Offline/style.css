@@ -330,3 +330,16 @@ label.chk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-siz
 table.sld-thieu td{white-space:normal;vertical-align:top}
 table.sld-thieu td:last-child{min-width:420px}
 table.sld-thieu button.b.chipbtn{white-space:normal;text-align:left;justify-content:flex-start}
+/* α20: đọc ảnh bảng chấm công (OCR) */
+.ocrgrid table{font-size:12.5px}
+.ocrgrid td,.ocrgrid th{padding:3px 4px;white-space:nowrap}
+.ocrgrid input.oc{width:36px;padding:3px 2px;text-align:center}
+.ocrgrid select{max-width:210px;padding:3px}
+.ocrgrid input.low,.legend i.low{background:var(--warnBg);border-color:var(--warnBd)}
+.ocrgrid input.bad,.legend i.bad{background:var(--redBg);border-color:var(--red);color:var(--red);font-weight:700}
+.ocrgrid tr.mismatch td{background:color-mix(in srgb,var(--redBg) 70%,transparent)}
+.ocrgrid tr.nomatch td:nth-child(2) select{border-color:var(--red)}
+.legend i.mm{background:var(--redBg)}.legend i.nm{border:2px solid var(--red)}
+.subtabs button.bad .n{background:var(--red);color:#fff}
+.ocrprev{margin-top:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.ocrprev canvas{border:1px solid var(--line);border-radius:8px;max-width:100%;background:#fff}

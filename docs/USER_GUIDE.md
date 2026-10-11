@@ -137,6 +137,16 @@ Mọi báo cáo xuất được Excel.
 3. **Tính lương** → chọn cách bù: *theo ngày — bậc thang (Đại Hiệp)* hoặc *theo bình quân tổ* (mức sàn = *Đơn giá bù lương*, ngưỡng tổ = *Ngưỡng công bù theo tổ* trong Danh mục Mã lương).
 4. **Báo cáo lương → Phân bổ sản lượng**: xem chia theo tổ / công nhân / từng phiếu và cảnh báo; **⬇ Xuất Excel (mẫu công cụ phân bổ)** ra file nhiều sheet như công cụ.
 
+## Đọc ảnh / PDF chấm công, chấm cơm (từ 2.0-alpha.20)
+1. **Nhập liệu hàng tháng → 📷 Đọc ảnh chấm công → 📂 Chọn ảnh / PDF…** (chọn được nhiều file). App đọc lần lượt từng trang, chạy hoàn toàn trên máy.
+   - Đang đọc mà muốn ngừng (chọn nhầm file, PDF dài): bấm **■ Dừng đọc**. Trang đã đọc xong giữ nguyên; trang chưa đọc có dấu ■ — mở thẻ đó, bấm **Đọc lại** khi cần.
+2. Mỗi trang 1 thẻ. Kiểm tra **Kỳ** (app tự lấy từ tiêu đề "Tháng 09/2026" nếu đọc được). Ảnh nằm ngang / ngược → bấm **↺ / ↻** để đọc lại.
+3. Lưới kết quả: cột **Nhân viên** đã gợi ý theo tên (dấu ≈ = gợi ý, % = độ khớp) — chọn lại nếu sai; dòng chưa chọn nhân viên tô xám. Cột **Loại**: Chấm công BT / TC, Suất cơm, hoặc bỏ qua dòng.
+4. Ô **vàng** = OCR không chắc; ô **?** = không đọc được — sửa trực tiếp; bấm vào ô để xem ảnh gốc của ô. Dòng **đỏ** = tổng tính khác tổng ghi trên giấy → xem lại.
+5. **⬇ Xuất Excel** để lưu / gửi bảng đã đọc; **✔ Đưa vào Chấm công / Suất cơm…** → màn hình xem trước như nhập Excel → xác nhận.
+- Mẹo chụp: chụp thẳng, đủ sáng, bảng chiếm gần hết khung; PDF quét ≥ 200 dpi. Chữ viết tay đọc kém hơn chữ in — luôn soát lại.
+- Không đọc tự động: giấy tăng ca, xác nhận vân tay, sổ xe… (không phải bảng kẻ ô theo ngày) — nhập tay.
+
 ## Phiếu lương, Báo cáo bảo hiểm (từ 2.0-alpha.18)
 - **🧾 Phiếu lương** (menu Kỳ lương): chọn kỳ ở góc trên → lọc phòng ban / tìm nhân viên → **In** (tích *In gọn* để in nhiều phiếu trên 1 tờ) hoặc **Xuất Excel**. Nên **chốt kỳ** trước khi gửi phiếu: kỳ chưa chốt app ghi rõ "tính tạm".
 - **Báo cáo lương → 🛡 Báo cáo bảo hiểm**: số công ty / người lao động đóng từng khoản, người tăng / giảm / đổi mức đóng so với tháng trước, theo phòng ban, chi tiết. Dùng để đối chiếu trước khi kê khai — mẫu nộp cơ quan BHXH vẫn lập trên phần mềm BHXH.

@@ -22,6 +22,11 @@ contextBridge.exposeInMainWorld("hakStore", {
   authHash: (pw, salt, iter) => ipcRenderer.sendSync("auth-hash", pw, salt, iter),
   authVerify: (pw, salt, iter, hash) => ipcRenderer.sendSync("auth-verify", pw, salt, iter, hash)
 });
+// OCR ảnh bảng chấm công / chấm cơm (α20): chỉ gửi ảnh ô đã cắt (xám) — chạy offline ở tiến trình chính
+contextBridge.exposeInMainWorld("hakOcr", {
+  batch: (items) => ipcRenderer.invoke("ocr-batch", items),       // [{ w, h, data: Uint8Array, mode: "digit"|"text"|"page" }] → [{ text, conf }]
+  selfTest: () => ipcRenderer.invoke("ocr-selftest")
+});
 // File xuất (Excel, báo cáo): chỉ thao tác theo TÊN file trong thư mục xuất — không truyền đường dẫn
 contextBridge.exposeInMainWorld("hakFiles", {
   info: () => ipcRenderer.sendSync("files-info"),                 // { ok, dir, openAfterDownload, files: [{ name, size, mtime }] }

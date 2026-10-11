@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [2.0.0-alpha.20] — 11/10/2026 — Đọc ảnh / PDF bảng chấm công, chấm cơm (OCR offline)
+- Menu **Nhập liệu hàng tháng → 📷 Đọc ảnh chấm công**: chọn **ảnh chụp (JPG, PNG) hoặc PDF quét** (nhiều file, PDF tối đa 30 trang). App tự xoay ảnh về đúng chiều, tìm các ô theo đường kẻ, đọc chữ / số từng ô bằng **Tesseract chạy offline trên máy** (không gửi ảnh ra mạng, không lưu ảnh), dựng **bảng xem như Excel** sửa được ngay trong app.
+- Đọc được 2 kiểu bảng: **dòng = người, cột = ngày 1…31** (có Tổng công / Tổng cơm, dòng Công / Tăng ca) và **dòng = ngày, cột = Công / Cơm** ("Lịch làm …", dòng TC). Tự nhận kỳ trong tiêu đề ("Tháng 09/2026"), tự gợi ý nhân viên theo tên (bỏ "anh / chú / cô"; không chắc thì để người dùng chọn).
+- Đọc **nhiều ảnh / nhiều PDF** một lần (mỗi trang 1 thẻ, mỗi trang chọn kỳ riêng). Nút **■ Dừng đọc**: dừng sau lô ô đang đọc, trang đã đọc giữ nguyên, trang chưa đọc đánh dấu ■ — bấm *Đọc lại* để đọc riêng trang đó.
+- Ô nghi ngờ tô **vàng** (OCR không chắc, nhận theo nét "1" viết tay, giá trị > 3), ô không đọc được có **?**, dòng **lệch tổng trên giấy** tô đỏ; bấm ô xem ảnh gốc của ô đó. Xoay trái / phải, đọc lại từng trang.
+- **⬇ Xuất Excel** (mỗi trang 1 sheet) và **✔ Đưa vào Chấm công / Suất cơm…** — ghi **qua màn hình xem trước như nhập Excel** (kiểm tra kỳ đã chốt, chọn bổ sung / thay thế, ghi nhật ký). Dòng chưa chọn nhân viên / còn ô "?" bị bỏ qua và được báo.
+- Kèm thư viện offline: tesseract.js 5.1.1 (Apache-2.0), dữ liệu ngôn ngữ vie + eng (tessdata_best_int), pdf.js 3.11.174 (Apache-2.0, chạy với `isEvalSupported: false` + CSP không eval).
+- Giới hạn: chữ in / bảng quét đọc tốt; **chữ viết tay và ảnh chụp nhỏ, nghiêng đọc kém** — luôn phải xem lại. Giấy tăng ca, xác nhận vân tay, sổ xe… (không phải bảng kẻ ô theo ngày) không đọc tự động.
+- **Không đổi công thức lương.** Test: 182 (+8 U-OCR, +4 I-OCR chạy Tesseract thật trên ảnh mẫu giả lập), E2E 91/91 (+9). CI: bước tự kiểm OCR trong bản đóng gói Windows.
+
 ## [2.0.0-alpha.19] — 11/10/2026 — Phân bổ khối lượng như công cụ HAK (engine 1.7.0)
 - **Chia phiếu cân theo tổ** như công cụ "Phân bổ khối lượng tính lương": phiếu ghi **Mã phòng ban** + **NV vắng** → chia đều cho người của tổ có mặt ngày cân (đã vào làm, chưa nghỉ việc, đúng tổ theo phụ lục ngày đó), trừ người vắng (tên cuối hoặc Mã NV). Phiếu ghi Mã NV vẫn giao trực tiếp. Phiếu không chia được → "chưa phân bổ" + cảnh báo. Áp dụng cho Sản lượng và Bơm dăm.
 - **2 cách bù lương của công cụ** (chọn ở Tính lương): **theo ngày — bậc thang (Đại Hiệp)** và **theo bình quân tổ**. Đối chiếu từng trường hợp với công thức của công cụ: trùng 100%. 2 cách bù cũ giữ nguyên số. Danh mục Mã lương thêm cột *Ngưỡng công bù theo tổ*; danh mục chuẩn: SP mức sàn 200.000đ/công, ngưỡng 15 công (như công cụ).

@@ -107,6 +107,26 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-PA-07 | 2 cách bù cũ không đổi số |
 | U-PA-08 | Đọc file mẫu công cụ: bỏ dòng tiêu đề, alias cột, "Số xe", báo đúng dòng Excel, cảnh báo mã tổ lạ |
 
+## Unit — 2.0-α20 OCR chấm công (`tests/unit/timesheet-ocr.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-OCR-01 | Đọc số trong ô: l / I / | / Ỉ → 1, O → 0, 0,5 / .5 / 1/2 → 0,5; ô trống = null, rác = NaN |
+| U-OCR-02 | Kỳ trong tiêu đề, loại dòng Công / Tăng ca / Cơm, ghép tên NV (bỏ anh / chú / cô; chỉ trùng tên → điểm thấp) |
+| U-OCR-03 | Kiểu A người × ngày: giá trị theo ngày, so Tổng công (báo lệch), bỏ dòng cộng 0 0 0 |
+| U-OCR-04 | Kiểu B lịch làm dọc: Công / Cơm, dòng TC (kể cả nhãn TC bị đọc thành số) |
+| U-OCR-05 | Không có bảng / không có hàng ngày → cảnh báo, không đoán |
+| U-OCR-06 | Tìm ô theo đường kẻ trên ảnh vẽ nghiêng nhẹ: đủ 5 × 8 ô |
+| U-OCR-07 | Nét "1" viết tay nhận theo hình; vòng "0" không |
+| U-OCR-08 | Cầu nối IPC: lô sai giữ đúng vị trí (không lệch kết quả), chế độ lạ → text; PNG xám hợp lệ |
+
+## Integration — 2.0-α20 OCR thật (`tests/integration/ocr-fixtures.test.js`, ảnh giả lập `tests/fixtures/ocr/make_fixtures.py`)
+| ID | Nội dung |
+|---|---|
+| I-OCR-01 | Tesseract offline + dữ liệu ngôn ngữ đóng gói chạy được (tự kiểm "12") |
+| I-OCR-02 | Bảng in người × ngày: đúng 3 tên, từng ngày (cả 0,5), khớp Tổng công, nhận kỳ 09/2026 |
+| I-OCR-03 | Lịch làm dọc nét "1" viết tay: Công 30 / Cơm 28 khớp TC; ảnh xoay 90° tự nhận đúng chiều |
+| I-OCR-04 | Trang PDF do pdf.js vẽ (nền xám nhạt, nhiễu JPEG): đọc đúng mọi ô (hồi quy lỗi "1" → 9 / 3 / 5) |
+
 E2E (α19): nhập file mẫu công cụ (4 phiếu) · chia T1 5 · T2 15 · T3 13 · T4 12 tấn (vắng, đã nghỉ việc) · bù bậc thang 140.000 · file Excel đủ sheet như công cụ · Tải file mẫu = mẫu công cụ · ExcelJS chạy với CSP.
 
 ## Unit — 2.0-α18 Báo cáo bảo hiểm (`tests/unit/bh-report.test.js`) · Sổ lao động thiếu thông tin (U-SLD-05)
@@ -297,7 +317,7 @@ R-PERF-02 (cập nhật): báo cáo nghỉ và sổ lao động mới phải gi�
 | R-PERF-03 | Dựng DS lương 5.000 NV < 200 ms |
 
 ## E2E (`tests/e2e/run-e2e.js`) — Electron thật, thư mục dữ liệu tạm
-E-01 mở app · (2.0-α13) chốt kỳ → bản sau-chot; Trang chủ nhắc sao lưu ra ngoài; chọn thư mục thứ hai → chép + hết nhắc · (2.0-α11) form phụ lục có lựa chọn cách áp dụng Q-22 · (2.0-α9) Q-24 Trưởng bộ phận không thấy lương ở danh sách, hồ sơ, phụ lục, form, báo cáo; Admin vẫn thấy · (2.0-α8) bảng 260 dòng chia trang 100, sang trang 2 đúng dòng 101, lọc sau khi ngừng gõ, ô tìm kiếm nhớ theo bảng, Enter xuống dòng / Ctrl+F · (2.0-α6) A3-01 đổi Số HĐLĐ hồi tố rồi Hủy → phụ lục không mồ côi · (2.0-α4) ô chấm công `-1` bị từ chối, cột 31/09 khóa, dán Ctrl+V không ghi ô sai · (2.0-α2) tạo Admin + mã khôi phục · sai mật khẩu 5 lần → khóa · mật khẩu tạm bắt buộc đổi · menu theo vai trò · Kế toán lương không mở chốt · Q-14 chặn sửa hồi tố (Admin được) · mật khẩu đã băm + muối · nhật ký theo tài khoản · quên mật khẩu Admin bằng mã khôi phục · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
+E-01 mở app · (2.0-α20) Dừng đọc giữa chừng → trang chưa đọc ■, trang đã đọc giữ nguyên, Đọc lại từng trang · OCR ảnh PNG + PDF ảnh mẫu giả lập: ghép NV theo tên, 0,5, Tổng công; sửa ô → dòng lệch tô đỏ; ghi qua xem trước đúng kỳ từng trang, bỏ dòng chưa chọn NV; xuất Excel; Kiểm tra OCR · (2.0-α13) chốt kỳ → bản sau-chot; Trang chủ nhắc sao lưu ra ngoài; chọn thư mục thứ hai → chép + hết nhắc · (2.0-α11) form phụ lục có lựa chọn cách áp dụng Q-22 · (2.0-α9) Q-24 Trưởng bộ phận không thấy lương ở danh sách, hồ sơ, phụ lục, form, báo cáo; Admin vẫn thấy · (2.0-α8) bảng 260 dòng chia trang 100, sang trang 2 đúng dòng 101, lọc sau khi ngừng gõ, ô tìm kiếm nhớ theo bảng, Enter xuống dòng / Ctrl+F · (2.0-α6) A3-01 đổi Số HĐLĐ hồi tố rồi Hủy → phụ lục không mồ côi · (2.0-α4) ô chấm công `-1` bị từ chối, cột 31/09 khóa, dán Ctrl+V không ghi ô sai · (2.0-α2) tạo Admin + mã khôi phục · sai mật khẩu 5 lần → khóa · mật khẩu tạm bắt buộc đổi · menu theo vai trò · Kế toán lương không mở chốt · Q-14 chặn sửa hồi tố (Admin được) · mật khẩu đã băm + muối · nhật ký theo tài khoản · quên mật khẩu Admin bằng mã khôi phục · E-02 preload · (2.0) SHA-256 mọi bản sao lưu · người thực hiện trong nhật ký/bản chốt/mở chốt · cấu trúc nguy hiểm ×2 (bảng sai kiểu, schemaVersion 3) → khôi phục, file nguyên từng byte · E-02b font Be Vietnam Pro nạp được dưới CSP + menu dùng icon SVG · E-03 tính lương (12tr − BH 630k = 11,37tr) · E-04 chốt bằng hộp nhập của app · E-05 mở chốt bắt buộc lý do · E-06 chốt lại · E-07 xuất Excel 4 sheet, số khớp · E-08 không lỗi JS · E-09 data.json có chốt v2 + lịch sử v1 · E-10 tiền lưu đúng · E-11 có sao lưu tự động · E-12 mở lại app dữ liệu còn, checksum nguyên vẹn · E-13 file hỏng → màn hình khôi phục · E-14 file hỏng không bị ghi đè · E-15 khôi phục từ sao lưu · E-16 file hỏng được giữ lại · E-17 nâng cấp 1.3→1.4 tạo `truoc-nang-cap` chứa nguyên trạng · E-18 chuẩn hóa tiền/ngày/CCCD + schemaVersion 2 · E-19 kỳ chốt kiểu cũ giữ nguyên · E-20 không tạo lại bản trước nâng cấp · E-21 kỳ chốt cũ hiển thị "Bản cũ" · E-22 không lỗi JS với dữ liệu cũ.
 
 ## Hiệu năng (`tests/perf/bench.js`) — baseline, chưa đặt ngưỡng
 100 / 500 / 1.000 / 5.000 NV × 3 kỳ: dung lượng, ghi/đọc JSON, dựng danh sách lương, tính lương 1 kỳ, kiểm tra toàn vẹn, lập kế hoạch nhập lại chấm công, bộ nhớ.

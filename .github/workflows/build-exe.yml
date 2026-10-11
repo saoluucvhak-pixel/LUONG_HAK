@@ -23,6 +23,7 @@ jobs:
         run: for f in app.js engine.js hr.js main.js preload.js core/*.js main/*.js ui/*.js; do node --check "$f"; done
       - name: Lint (eslint, không chấp nhận cảnh báo)
         run: npx --yes eslint@9.39.5 . --max-warnings 0
+      - run: npm ci   # tesseract.js (OCR thật trong integration test)
       - name: Unit + Integration + Regression (so với v1.3.0)
         run: npm test
       - name: Kiểm tra phụ thuộc — phần chạy trong app (bắt buộc sạch)
@@ -56,6 +57,14 @@ jobs:
         with: { node-version: 22 }
       - run: npm ci
       - run: npm run dist
+      - name: Tự kiểm OCR trong bản đóng gói (asarUnpack, worker, dữ liệu ngôn ngữ)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem dist/win-unpacked -Filter *.exe | Where-Object { $_.Name -notmatch 'Uninstall' } | Select-Object -First 1
+          $env:HAK_OCR_SELFTEST = "$PWD/ocr-selftest.json"
+          $p = Start-Process -FilePath $exe.FullName -PassThru -Wait
+          Get-Content ocr-selftest.json
+          if ($p.ExitCode -ne 0) { throw "OCR selftest thất bại (exit $($p.ExitCode))" }
       - uses: actions/upload-artifact@v4
         with:
           name: TinhLuongHAK-Setup

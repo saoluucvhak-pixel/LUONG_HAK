@@ -502,6 +502,72 @@ async function launch(dataDir, opt) {
     await app.close();
   }
 
+  // α20: Đọc ảnh / PDF chấm công bằng OCR (offline) — ảnh mẫu GIẢ LẬP tests/fixtures/ocr; chỉ ghi qua màn hình xem trước
+  {
+    const f = path.join(DATA, "data.json"), d0 = JSON.parse(fs.readFileSync(f, "utf8")), FX = path.join(APP, "tests/fixtures/ocr");
+    d0.nhanvien.push({ _id: "ocn1", "Mã NV": "OC1", "Họ và tên": "Phạm Minh Khoa", "Trạng thái": "Đang làm việc" });
+    fs.writeFileSync(f, JSON.stringify(d0));
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=ocr]");
+    const [fc] = await Promise.all([w.waitForEvent("filechooser"), w.locator('#main button:has-text("Chọn ảnh / PDF")').click()]);
+    await fc.setFiles([path.join(FX, "bang-cham-cong-mau.png"), path.join(FX, "bang-cham-cong-mau.pdf")]);
+    let done = false;
+    for (let i = 0; i < 300 && !done; i++) { await w.waitForTimeout(500); done = await w.evaluate(() => { const n = [...document.querySelectorAll(".subtabs button .n")].map((e) => e.textContent); return n.length === 2 && n.every((x) => /^\d+$/.test(x)); }); }
+    const grid = () => w.evaluate(() => [...document.querySelectorAll(".ocrgrid tbody tr")].map((tr) => ({ nv: tr.querySelector("select").value, cls: tr.className, d27: tr.querySelector("input[data-day='27']").value, d3: tr.querySelector("input[data-day='3']").value, sum: tr.children[tr.children.length - 2].textContent, tot: tr.children[tr.children.length - 1].textContent })));
+    const g1 = done ? await grid() : [];
+    ok("OCR ảnh PNG: 3 dòng, tự ghép NV theo tên (NV001, OC1), người chưa có trong app để trống; đọc đúng 0,5 và cột Tổng công",
+      g1.length === 3 && g1[0].nv === "NV001" && g1[1].nv === "OC1" && g1[2].nv === "" && /nomatch/.test(g1[2].cls) && g1[0].d27 === "0,5" && g1[0].sum === "28,5" && g1[0].tot === "28,5" && !g1.some((r) => /mismatch/.test(r.cls)), JSON.stringify(g1));
+    // sửa tay 1 ô → tổng tính đổi, lệch tổng giấy → tô đỏ; sửa lại đúng thì hết đỏ
+    const c3 = w.locator(".ocrgrid tbody tr").nth(1).locator("input[data-day='3']");
+    await c3.fill("1"); await c3.dispatchEvent("change");
+    const mm = await w.locator(".ocrgrid tbody tr").nth(1).getAttribute("class");
+    await c3.fill(""); await c3.dispatchEvent("change");
+    const mm2 = await w.locator(".ocrgrid tbody tr").nth(1).getAttribute("class");
+    ok("Sửa ô trên lưới: lệch Tổng công trên giấy thì dòng tô đỏ, sửa lại thì hết", /mismatch/.test(mm) && !/mismatch/.test(mm2), mm + " → " + mm2);
+    await w.fill('input[aria-label="Kỳ của trang"]', "2026-11"); await w.dispatchEvent('input[aria-label="Kỳ của trang"]', "change");
+    await w.locator(".subtabs button").nth(1).click(); await w.waitForTimeout(200);
+    const g2 = await grid();
+    ok("OCR file PDF (pdf.js nạp offline, CSP không eval): đọc ra cùng bảng", g2.length === 3 && g2[0].nv === "NV001" && g2[0].sum === "28,5", JSON.stringify(g2.map((r) => r.sum)));
+    await w.fill('input[aria-label="Kỳ của trang"]', "2026-12"); await w.dispatchEvent('input[aria-label="Kỳ của trang"]', "change");
+    const before = JSON.parse(fs.readFileSync(f, "utf8")).chamcong.length;
+    dialogs = [];
+    await w.click('#main button:has-text("Đưa vào Chấm công")'); await w.waitForSelector(".dlg footer button.pri");
+    const pv = await w.locator(".dlg").innerText();
+    await w.click(".dlg footer button.pri"); await w.waitForTimeout(600);
+    const cc = JSON.parse(fs.readFileSync(f, "utf8")).chamcong, n11 = cc.filter((r) => r["Kỳ"] === "2026-11"), n12 = cc.filter((r) => r["Kỳ"] === "2026-12");
+    const a11 = n11.find((r) => r["Mã NV"] === "NV001") || {}, k11 = n11.find((r) => r["Mã NV"] === "OC1") || {};
+    ok("Ghi vào Chấm công qua màn hình xem trước: mỗi trang đúng kỳ đã chọn, người chưa chọn NV bị bỏ qua (có báo)",
+      cc.length === before + 4 && n11.length === 2 && n12.length === 2 && a11["Hình thức công"] === "BT" && a11["27"] === "0,5" && a11["30"] === undefined && k11["03"] === undefined && k11["01"] === "1" && dialogs.some((m) => /chưa chọn nhân viên/.test(m)) && /Xem trước|xem trước|thêm/i.test(pv),
+      JSON.stringify({ n11: n11.length, n12: n12.length, a27: a11["27"], dlg: dialogs.length }));
+    await w.click('#main button:has-text("Xuất Excel")');
+    let xf = null; for (let i = 0; i < 30 && !xf; i++) { await w.waitForTimeout(200); xf = fs.readdirSync(DL).filter((x) => /^OCR_ChamCong_.*\.xlsx$/.test(x))[0]; }
+    let xs = "";
+    if (xf) { await w.waitForTimeout(300); const XLSX = require(path.join(APP, "xlsx.full.min.js")), wb = XLSX.read(fs.readFileSync(path.join(DL, xf)), { type: "buffer" }); const r0 = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])[0] || {}; xs = wb.SheetNames.length + "|" + r0["Mã NV"] + "|" + r0["27"] + "|" + r0["Tổng tính"]; }
+    ok("Xuất Excel kết quả OCR: mỗi trang 1 sheet, có Mã NV, ngày, tổng", xs === "2|NV001|0.5|28.5", xs);
+    dialogs = []; await w.click('#main button:has-text("Kiểm tra OCR")');
+    for (let i = 0; i < 40 && !dialogs.length; i++) await w.waitForTimeout(250);
+    ok("Kiểm tra OCR trên máy: đọc thử được số", dialogs.some((m) => /OCR hoạt động/.test(m)), dialogs.join(" | "));
+    // Dừng đọc: chọn thêm 3 trang, bấm Dừng khi trang đầu đang đọc → trang sau không đọc (■), trang đã đọc giữ nguyên; Đọc lại từng trang được
+    {
+      const [fc2] = await Promise.all([w.waitForEvent("filechooser"), w.locator('#main button:has-text("Chọn ảnh / PDF")').click()]);
+      await fc2.setFiles([path.join(FX, "lich-lam-doc-mau.png"), path.join(FX, "bang-cham-cong-mau.png"), path.join(FX, "bang-cham-cong-mau-pdfjs.png")]);
+      await w.waitForSelector('#main button:has-text("Dừng đọc")', { timeout: 20000 });
+      await w.click('#main button:has-text("Dừng đọc")');
+      let ended = false;
+      for (let i = 0; i < 120 && !ended; i++) { await w.waitForTimeout(500); ended = (await w.locator('#main button:has-text("Dừng đọc"), #main button:has-text("Đang dừng")').count()) === 0; }
+      const marks = await w.evaluate(() => [...document.querySelectorAll(".subtabs button .n")].map((e) => e.textContent));
+      const kept = marks.slice(0, 2).every((x) => /^\d+$/.test(x)), stopped = marks.slice(2).filter((x) => x === "■").length;
+      ok("Dừng đọc: dừng ngay, các trang chưa đọc đánh dấu ■, trang đã đọc trước đó giữ nguyên", ended && marks.length === 5 && kept && stopped >= 2 && !marks.includes("…"), JSON.stringify(marks));
+      await w.locator(".subtabs button").nth(4).click(); await w.waitForTimeout(200);
+      await w.click('#main .ocrpage button:has-text("Đọc lại")');
+      let n4 = ""; for (let i = 0; i < 120 && !/^\d+$/.test(n4); i++) { await w.waitForTimeout(500); n4 = await w.locator(".subtabs button .n").nth(4).innerText(); }
+      const s4 = n4 === "3" ? await w.evaluate(() => [...document.querySelectorAll(".ocrgrid tbody tr")].map((tr) => tr.children[tr.children.length - 2].textContent)) : [];
+      ok("Trang đã dừng: bấm Đọc lại thì đọc được (3 dòng, đúng tổng)", n4 === "3" && s4.join("|") === "28,5|20|15", n4 + " " + s4.join("|"));
+    }
+    ok("Không lỗi JavaScript ở Đọc ảnh chấm công", errs.length === 0, errs.join(" | "));
+    await app.close();
+  }
+
   // α17: Lịch sao lưu — Admin đổi chu kỳ / số ngày giữ / khi đóng app; lưu vào settings.json của máy; đóng app → bản "khi-dong"
   {
     ({ app, w, errs } = await launch());

@@ -1,6 +1,6 @@
 # THIẾT KẾ HỆ THỐNG — Tính Lương HAK (bản offline cho Windows)
 
-> Phiên bản: **2.0.0-alpha.19** (cập nhật phân bổ khối lượng; nội dung khác như alpha.18), ngày 11/10/2026, nhánh `claude/v2-phan-bo-khoi-luong`.
+> Phiên bản: **2.0.0-alpha.20** (thêm đọc ảnh / PDF chấm công bằng OCR; alpha.19 phân bổ khối lượng; nội dung khác như alpha.18), ngày 11/10/2026, nhánh `claude/v2-ocr-cham-cong`.
 > File này tổng hợp các tài liệu chi tiết sau, mỗi chủ đề xem thêm ở file tương ứng:
 > - Kiến trúc: `ARCHITECTURE.md`
 > - Cấu trúc dữ liệu: `DATABASE_SCHEMA.md`
@@ -60,8 +60,8 @@ Các module dùng dạng **UMD**: trong trình duyệt gắn vào `window.HAKCor
 
 ```
 LuongHAK_Offline/
-├─ main.js            tiến trình chính: cửa sổ, IPC, tải file, lịch sao lưu, đóng app
-├─ preload.js         cầu nối an toàn: hakStore (dữ liệu, sao lưu, đăng nhập), hakFiles (file xuất)
+├─ main.js            tiến trình chính: cửa sổ, IPC, tải file, lịch sao lưu, OCR, đóng app
+├─ preload.js         cầu nối an toàn: hakStore (dữ liệu, sao lưu, đăng nhập), hakFiles (file xuất), hakOcr (đọc ảnh ô)
 ├─ index.html         khung trang + CSP + thứ tự nạp script
 ├─ style.css          giao diện 2.0: biến màu, sáng / tối, in ấn
 ├─ app.js             toàn bộ màn hình
@@ -69,8 +69,10 @@ LuongHAK_Offline/
 ├─ engine.js          công thức lương (KHÔNG sửa nếu chưa được chủ sở hữu duyệt)
 ├─ xlsx.full.min.js   SheetJS: đọc / ghi Excel
 ├─ exceljs.min.js     ExcelJS 4.4.0 (MIT): biểu mẫu Excel có định dạng như công cụ phân bổ khối lượng (α19)
-├─ core/              nghiệp vụ dùng chung (mục 2)
-├─ main/              storage.js, exports.js (chạy ở tiến trình chính)
+├─ core/              nghiệp vụ dùng chung (mục 2); α20: table-grid.js (tìm ô theo đường kẻ), timesheet-parse.js (dựng bảng chấm công), timesheet-ocr.js (điều phối OCR)
+├─ main/              storage.js, exports.js, ocr-service.js (Tesseract offline) — chạy ở tiến trình chính
+├─ vendor/pdfjs/      pdf.js 3.11.174 (Apache-2.0) — đọc PDF quét, nạp khi cần
+├─ ocr/lang/          dữ liệu ngôn ngữ Tesseract vie + eng (tessdata_best_int)
 ├─ ui/                icons.js, guide.js, pbkl-xlsx.js (biểu mẫu phân bổ khối lượng), fonts/, icon.png
 ├─ build/             icon.ico / icon.png cho bộ cài
 ├─ tests/             unit · integration · regression · perf · e2e · fixtures (dữ liệu giả)
@@ -138,6 +140,7 @@ Chấm công · Sản lượng · Thưởng ────┘        │ cảnh b�
 2. **Tăng lương / biến động:** lập **phụ lục mới**, không sửa phụ lục cũ. Báo cáo Biến động tự nhận biết các loại: tăng mới, nghỉ việc, tăng / giảm lương, điều chuyển, đổi chức vụ, mức đóng BH.
 3. **Nghỉ việc:** ghi Ngày chấm dứt và lý do. Từ tháng sau người đó không còn được tính lương. Tháng nghỉ việc tính BH theo R-57 (Q-26, phương án A).
 4. **Nhập Excel:** lập kế hoạch → xem trước (thêm / cập nhật / gộp / trùng / xung đột / lỗi / kỳ đã chốt) → người dùng duyệt → áp dụng. App sao lưu `truoc-nhap-excel` trước khi áp dụng.
+6. **Đọc ảnh / PDF chấm công (α20, R-67):** ảnh / trang PDF → xám → phóng ~2400 điểm → đoán chiều (OCR cả trang ở 4 hướng, đếm từ nằm ngang đọc chắc) → nhị phân hóa thích ứng → bám đường kẻ (chịu nghiêng nhẹ) → ô = vùng nền giữa các đường kẻ → xóa đường kẻ → cắt từng ô có mực → OCR theo lô (ô hẹp đọc số, ô rộng đọc chữ, ô không chắc đọc lại dạng khối) → nét "1" viết tay nhận theo hình → dựng bảng kiểu A (người × ngày) hoặc B (ngày × Công / Cơm) → so tổng trên giấy → **bảng xem trước** sửa được → ghi qua màn hình xem trước nhập liệu (mục 4).
 5. **Sửa dữ liệu thuộc kỳ đã chốt:** bị chặn hoặc cảnh báo "hồi tố" (period-guard). Muốn sửa phải *mở chốt* có lý do, và mở chốt sẽ tạo phiên bản mới.
 
 ## 6. Phân quyền
@@ -166,10 +169,12 @@ Chấm công · Sản lượng · Thưởng ────┘        │ cảnh b�
 | Sao lưu | `store-backup`, `store-list`, `store-verify`, `store-read`, `backup-status`, `backup-note-external`, `backup-mirror-choose / clear / sync`, `backup-schedule-get / set` |
 | File xuất | `files-info`, `files-open`, `files-show`, `files-open-dir`, `files-choose-dir`, `files-reset-dir`, `files-open-after`; sự kiện `download-done` |
 | Đăng nhập | `auth-salt`, `auth-hash`, `auth-verify`, `app-user` |
+| OCR (α20) | `ocr-batch` (ảnh xám từng ô đã cắt, ≤ 5000 ô / lô, chế độ digit / text / block / page), `ocr-selftest` |
 
 - Giao diện **chỉ gửi tên file** để mở. Đường dẫn do tiến trình chính ghép trong thư mục xuất.
 - Chỉ mở các loại file app tự xuất: xlsx, xls, csv, pdf, doc, docx, json, txt.
 - Thư mục (sao lưu thứ hai, file xuất) chỉ chọn bằng hộp thoại Windows của tiến trình chính.
+- OCR: giao diện chỉ gửi **mảng điểm ảnh xám** của từng ô (không gửi đường dẫn file); tiến trình chính kiểm tra kích thước từng ô, ô sai trả kết quả rỗng đúng vị trí. Ảnh không gửi ra mạng, không ghi xuống đĩa.
 
 ## 8. Báo cáo
 
@@ -193,6 +198,7 @@ Chấm công · Sản lượng · Thưởng ────┘        │ cảnh b�
   - shortcut "Tính Lương HAK" ngoài Desktop và trong Start Menu → HAK;
   - cho chọn thư mục cài; app tự chạy sau khi cài;
   - `deleteAppDataOnUninstall: false`.
+  - α20: `node_modules/**` và `ocr/**` để ngoài asar (`asarUnpack`) vì luồng phụ của Tesseract không đọc được file trong asar; đường dẫn worker / core / dữ liệu ngôn ngữ ghép rõ ràng (main/ocr-service.js `unpacked()`). **Chưa kiểm trên Windows thật.**
   - `productName` cố ý giữ "Tinh Luong HAK" để thư mục dữ liệu `%APPDATA%` không đổi qua các bản.
 - **Phát triển:** mỗi tính năng là 1 nhánh và 1 PR, các PR xếp chồng nối tiếp nhau. Không sửa trực tiếp `main`, không tự merge. Mỗi PR ghi phương án rollback (revert commit; dữ liệu cũ vẫn đọc được).
 

@@ -1,5 +1,16 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.20 — Đọc ảnh / PDF chấm công bằng OCR offline (11/10/2026, nhánh `claude/v2-ocr-cham-cong`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **182/182** (+8 U-OCR, +4 I-OCR — Tesseract thật trên ảnh mẫu giả lập `tests/fixtures/ocr`) |
+| Hồi quy công thức (v1.3.0, alpha.4) | ✅ trùng 100% — không đổi công thức |
+| E2E Electron (xvfb, Linux) | ✅ **91/91** (+9: ảnh PNG, PDF qua pdf.js, Dừng đọc + Đọc lại trang đã dừng, sửa ô → lệch tổng, ghi qua xem trước đúng kỳ từng trang, xuất Excel, Kiểm tra OCR, không lỗi JS) |
+| Thử trên ảnh thật của chủ sở hữu (chỉ trên máy kiểm thử, **không** đưa vào repo / log) | Bảng in quét (PDF trang 1): tên + ô ngày + cột Tổng công / Tổng cơm đọc được; 8/9 dòng khớp tổng, 1 dòng lệch ("0.5" đọc thành "5") được tô đỏ để sửa. Lịch làm viết tay (ảnh rõ): Công 30/30, Cơm 29/29 khớp dòng TC. Ảnh chụp nhỏ 587×1280 (tài xế, NV tăng cường): nhận đúng chiều + khung bảng nhưng nhiều ô viết tay "?" → phải sửa tay / chụp lại rõ hơn. Trang viết tay không kẻ ô: không đọc (đúng thiết kế). |
+| OCR trong Electron (tiến trình chính) | ✅ sau khi sửa: tesseract.js tự nhận môi trường "electron" và coi thư mục ngôn ngữ là URL → treo; bọc worker (`ocr/worker.js`) để đọc từ đĩa. E2E bắt được lỗi này |
+| Bản cài Windows (asarUnpack Tesseract, worker) | CI chạy bước tự kiểm OCR trên `win-unpacked` (kết quả xem CI). ⏳ **chưa kiểm trên máy Windows thật** |
+
 ## 2.0.0-alpha.19 — Phân bổ khối lượng như công cụ HAK (11/10/2026, nhánh `claude/v2-phan-bo-khoi-luong`)
 | Nhóm | Kết quả |
 |---|---|

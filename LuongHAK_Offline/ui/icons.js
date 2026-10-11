@@ -19,6 +19,7 @@
     gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13M12 8S10.5 3 8 4.5 9.5 8 12 8zM12 8s1.5-5 4-3.5S14.5 8 12 8z"/>',
     card: '<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/>',
     bowl: '<path d="M3 12h18a9 9 0 0 1-18 0zM8 8c0-2 2-2 2-4M14 8c0-2 2-2 2-4"/>',
+    camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
     users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     pie: '<path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
@@ -73,7 +74,7 @@
   // Emoji/ký hiệu đứng đầu nhãn → icon
   var MAP = {
     "🏠": "home", "▶": "play", "🔒": "lock", "🔓": "unlock", "📈": "chart", "🗓": "calendar", "📅": "calendar", "⚖": "scale",
-    "🚛": "truck", "🎁": "gift", "💵": "card", "🍚": "bowl", "👥": "users", "👤": "user", "📊": "pie", "📚": "grid", "⚙": "db",
+    "🚛": "truck", "🎁": "gift", "💵": "card", "🍚": "bowl", "📷": "camera", "👥": "users", "👤": "user", "📊": "pie", "📚": "grid", "⚙": "db",
     "⬇": "down", "⬆": "up", "📄": "file", "📑": "files", "💾": "save", "🔍": "search", "✎": "edit", "🕘": "clock", "⏰": "alarm",
     "⚠": "warn", "✔": "check", "✓": "check", "🖨": "printer", "📂": "folder", "📁": "folder", "🗂": "folder", "🛡": "shield", "🚑": "medical", "🗑": "trash", "🏢": "building",
     "📋": "clipboard", "📒": "book", "↔": "swap", "🧾": "receipt", "🌴": "leaf", "🏖": "sun", "🤒": "thermo", "🎂": "cake",

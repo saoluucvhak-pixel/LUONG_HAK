@@ -1,6 +1,6 @@
 {
   "name": "luong-hak",
-  "version": "2.0.0-alpha.19",
+  "version": "2.0.0-alpha.20",
   "description": "Tính lương HAK - chạy offline",
   "main": "main.js",
   "author": "HAK",
@@ -28,7 +28,9 @@
       "engine.js",
       "hr.js",
       "xlsx.full.min.js",
-      "exceljs.min.js"
+      "exceljs.min.js",
+      "vendor/**",
+      "ocr/**"
     ],
     "win": {
       "target": "nsis",
@@ -52,6 +54,13 @@
     "artifactName": "TinhLuongHAK-Setup-${version}.${ext}",
     "directories": {
       "buildResources": "build"
-    }
+    },
+    "asarUnpack": [
+      "node_modules/**",
+      "ocr/**"
+    ]
+  },
+  "dependencies": {
+    "tesseract.js": "5.1.1"
   }
 }
