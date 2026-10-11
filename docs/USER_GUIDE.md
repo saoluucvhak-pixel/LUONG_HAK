@@ -157,6 +157,18 @@ Làm thêm lấy từ chấm công (dòng Hình thức có TC), tính bằng **c
 - Vẫn nên **Sao lưu ra file** định kỳ và cất sang USB/Drive. Đổi máy: cài app → **Khôi phục từ file**.
 - Nâng cấp từ bản 1.0: dữ liệu cũ (bảng Nhân sự phẳng) tự chuyển sang hồ sơ mới, mỗi người có 1 hợp đồng "HD-<mã>" và 1 phụ lục lương.
 
+## Lịch sao lưu (từ 2.0-alpha.17)
+**Công ty & Sao lưu → 🕘 Lịch sao lưu tự động** (Admin):
+- *Sao lưu định kỳ khi app đang mở*: Tắt / mỗi 1, 2, 4, 8 giờ (mặc định 2 giờ).
+- *Giữ bản sao lưu đầu ngày*: 30 – 365 ngày (mặc định 60).
+- *Sao lưu khi đóng app* (mặc định bật).
+App chỉ tạo bản mới khi dữ liệu đã thay đổi. App offline nên chỉ sao lưu khi đang mở — nên chọn thêm **thư mục thứ hai** (USB / Drive) để bản sao lưu ra khỏi máy.
+
+## Nghỉ phép / nghỉ ốm (đối chiếu với chấm công từ 2.0-alpha.17)
+- Nhập đơn: **Nhân sự → nhân viên → Hợp đồng lao động → chọn hợp đồng → tab Quyền lợi phép / Nghỉ phép / Nghỉ ốm** (hoặc file mẫu Excel). Theo dõi: **Báo cáo nhân sự → Nghỉ phép / ốm** (phép được cấp, đã nghỉ, còn lại — chỉ đơn *Đã duyệt*).
+- Lương **vẫn lấy từ Chấm công**: phép có lương chấm dòng **PN**; nghỉ không lương / nghỉ ốm không chấm công.
+- Khi tính lương, khung *Hồ sơ cần bổ sung* báo **[Nghỉ phép/ốm]** nếu đơn và chấm công lệch nhau (ngày cụ thể) hoặc còn đơn *Chờ duyệt* — sửa chấm công hoặc đơn rồi tính lại. App không tự sửa chấm công.
+
 ## Sao lưu ra ngoài máy (từ 2.0-alpha.13)
 - **Thư mục sao lưu thứ hai** (Admin): vào *Công ty & Sao lưu → Sao lưu ra ngoài máy → Chọn thư mục sao lưu thứ hai…*. Chọn USB / ổ cứng ngoài / ổ mạng / thư mục Google Drive đã đồng bộ trên máy.
   - Từ đó mọi bản sao lưu tự chép sang thư mục `TinhLuongHAK-SaoLuu` và được kiểm tra.

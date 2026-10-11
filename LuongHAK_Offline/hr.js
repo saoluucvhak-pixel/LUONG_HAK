@@ -181,6 +181,58 @@
   }
 
   /** Dựng danh sách nhân sự tính lương của kỳ (dạng cột mà engine.js dùng) từ hồ sơ + hợp đồng. */
+  /** Ô chấm công có công (> 0) không — "1", "0,5", "1QC"… */
+  function coCong(v) { var x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return x > 0; }
+  var LEAVE_TAG = "[Nghỉ phép/ốm]";
+  /**
+   * Đối chiếu đơn nghỉ (hồ sơ) với chấm công của 1 người trong kỳ (Q-27 phương án A). Không đổi số tiền.
+   * - Đơn phép CÓ lương đã duyệt mà ngày đó chưa chấm PN (trừ Chủ nhật / ngày lễ CL) · hoặc vẫn chấm công thường.
+   * - Đơn nghỉ không lương / nghỉ ốm đã duyệt mà ngày đó vẫn có công thường hoặc PN.
+   * - Chấm PN vào ngày không có đơn phép có lương đã duyệt (chỉ khi người này có theo dõi đơn nghỉ trong app).
+   * - Đơn còn "Chờ duyệt" trong kỳ.
+   */
+  function leaveCheck(db, b, ma, ten, ix) {
+    var np = rowsOf(db, "nghiphep", ma, ix), no = rowsOf(db, "nghiom", ma, ix);
+    if (!np.length && !no.length) return [];
+    var ky = b.dau.slice(0, 7), last = +b.cuoi.slice(8, 10), thuong = {}, pn = {}, cl = {};
+    rowsOf(db, "chamcong", ma, ix).forEach(function (r) {
+      if (String(r["Kỳ"] || "").slice(0, 7) !== ky) return;
+      var ht = String(r["Hình thức công"] || "BT").trim().toUpperCase();
+      if (ht === "CC" || /TC/.test(ht)) return;
+      var to = ht === "PN" ? pn : ht === "CL" ? cl : thuong;
+      for (var d = 1; d <= last; d++) if (coCong(r[("0" + d).slice(-2)])) to[d] = 1;
+    });
+    var ngayCua = function (r) { var tu = d10(r["Từ ngày"]), den = d10(r["Đến ngày"]) || tu, out = []; if (!tu) return out; for (var d = 1; d <= last; d++) { var ds = ky + "-" + ("0" + d).slice(-2); if (ds >= tu && ds <= den) out.push(d); } return out; };
+    var chuNhat = function (d) { return new Date(+ky.slice(0, 4), +ky.slice(5, 7) - 1, d).getDay() === 0; };
+    var coLuong = function (r) { return laNghiNam(r) || r["Loại nghỉ"] === "Nghỉ việc riêng có hưởng lương"; };
+    var thieuPN = [], trungCong = [], khongLuong = [], om = [], phuPN = {}, cho = 0;
+    np.forEach(function (r) {
+      var ds = ngayCua(r); if (!ds.length) return;
+      if (r["Trạng thái duyệt"] === "Chờ duyệt") { cho++; return; }
+      if (r["Trạng thái duyệt"] !== "Đã duyệt") return;
+      ds.forEach(function (d) {
+        if (coLuong(r)) { phuPN[d] = 1; if (thuong[d]) trungCong.push(d); else if (!pn[d] && !cl[d] && !chuNhat(d)) thieuPN.push(d); }
+        else if (thuong[d] || pn[d]) khongLuong.push(d);
+      });
+    });
+    no.forEach(function (r) {
+      var ds = ngayCua(r); if (!ds.length) return;
+      if (r["Trạng thái duyệt"] === "Chờ duyệt") { cho++; return; }
+      if (r["Trạng thái duyệt"] !== "Đã duyệt") return;
+      ds.forEach(function (d) { if (thuong[d] || pn[d]) om.push(d); });
+    });
+    var pnLe = np.length ? Object.keys(pn).map(Number).filter(function (d) { return !phuPN[d]; }) : [];
+    var uniq = function (a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }).sort(function (x, y) { return x - y; }); };
+    var ng = function (a) { a = uniq(a); return "ngày " + a.join(", ") + "/" + ky.slice(5, 7); };
+    var head = ma + " (" + ten + "): " + LEAVE_TAG + " ", tail = " — chỉ cảnh báo, lương vẫn tính theo chấm công", out = [];
+    if (thieuPN.length) out.push(head + "đơn phép có lương đã duyệt nhưng chưa chấm PN " + ng(thieuPN) + tail);
+    if (trungCong.length) out.push(head + "đơn phép có lương đã duyệt nhưng vẫn chấm công thường " + ng(trungCong) + tail);
+    if (khongLuong.length) out.push(head + "đơn nghỉ không hưởng lương đã duyệt nhưng vẫn có công " + ng(khongLuong) + tail);
+    if (om.length) out.push(head + "đơn nghỉ ốm đã duyệt (BHXH chi trả) nhưng vẫn có công " + ng(om) + tail);
+    if (pnLe.length) out.push(head + "chấm PN " + ng(pnLe) + " nhưng không có đơn phép có lương đã duyệt" + tail);
+    if (cho) out.push(head + cho + " đơn nghỉ trong kỳ còn 'Chờ duyệt' — duyệt hoặc từ chối trước khi chốt kỳ");
+    return out;
+  }
   function staffForPayroll(db, nam, thang) {
     var b = kyBounds(nam, thang), out = [], warn = [], ix = buildIndex(db);
     var gtCodes = (db.dm_giamtru || []).map(function (r) { return r["Mã giảm trừ"]; });
@@ -220,6 +272,8 @@
         });
         if (sauCd.length) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): có công sau ngày chấm dứt hợp đồng " + cdt.slice(8, 10) + "/" + cdt.slice(5, 7) + " (ngày " + sauCd.sort(function (x, y) { return x - y; }).join(", ") + ") — kiểm tra lại chấm công; app VẪN tính các công này");
       }
+      // Q-27 (phương án A, chủ sở hữu duyệt): đối chiếu đơn nghỉ phép / ốm với chấm công — CHỈ cảnh báo, lương vẫn tính theo chấm công
+      leaveCheck(db, b, ma, nv["Họ và tên"] || "", ix).forEach(function (m) { warn.push(m); });
       if (nv["Trạng thái"] === "Đã nghỉ việc" && !hd["Ngày chấm dứt"]) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trạng thái 'Đã nghỉ việc' nhưng hợp đồng " + hd["Số HĐLĐ"] + " chưa có Ngày chấm dứt — vẫn đang được tính lương");
       if (ct["HTTT"] === "Chuyển khoản" && !(tk && tk["Số tài khoản"])) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trả lương chuyển khoản nhưng chưa có số tài khoản");
       var cn = latestBy(rowsOf(db, "canhan", ma, ix), "Hiệu lực từ", b.cuoi);
@@ -516,7 +570,7 @@
     };
   }
 
-  var api = { HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll,
+  var api = { HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll, leaveCheck: leaveCheck, LEAVE_TAG: LEAVE_TAG,
     seedDanhMuc: seedDanhMuc, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.HRM = api;
 })(typeof window !== "undefined" ? window : this);

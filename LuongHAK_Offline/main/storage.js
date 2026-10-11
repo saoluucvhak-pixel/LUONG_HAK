@@ -9,13 +9,18 @@
 //  - (2.0-α13) Bản "sau-chot-<kỳ>" (tạo khi chốt kỳ) KHÔNG BAO GIỜ bị dọn.
 //  - (2.0-α13) Thư mục sao lưu THỨ HAI (USB / NAS / thư mục Drive đồng bộ): mỗi bản sao lưu được chép sang, đọc lại kiểm SHA-256;
 //    thư mục không truy cập được → sao lưu trên máy vẫn bình thường, lỗi được ghi lại để app nhắc người dùng.
+//  - (2.0-α17) LỊCH SAO LƯU (settings.json của máy): định kỳ mỗi N giờ khi app đang mở ("dinh-ky"), khi đóng app ("khi-dong"),
+//    số ngày giữ bản đầu ngày. Chỉ sao lưu khi dữ liệu ĐÃ ĐỔI so với bản sao lưu mới nhất (không tạo bản trùng).
 "use strict";
 const realFs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { Buffer } = require("buffer");
 
-const KEEP = { daily: 60, startup: 10, default: 20 };
+const KEEP = { daily: 60, startup: 10, "dinh-ky": 48, "khi-dong": 10, default: 20 };
+const SCHEDULE_HOURS = [0, 1, 2, 4, 8];          // 0 = tắt sao lưu định kỳ
+const KEEP_DAILY = [30, 60, 90, 180, 365];
+const SCHEDULE_DEFAULT = { everyHours: 2, onClose: true, keepDaily: 60 };
 const MIRROR_SUB = "TinhLuongHAK-SaoLuu"; // thư mục con tạo trong thư mục người dùng chọn
 const isPermanent = (tag) => /^sau-chot/.test(tag); // bản sau chốt kỳ: giữ vĩnh viễn
 
@@ -101,9 +106,48 @@ function createStorage(dir, opts) {
     try { fs.unlinkSync(path.join(backupDir, name)); } catch (e) { /* bỏ qua */ }
     try { fs.unlinkSync(path.join(backupDir, name + ".sha256")); } catch (e) { /* bỏ qua */ }
   }
+  /** Lịch sao lưu của máy này (giá trị lạ trong settings.json → dùng mặc định) */
+  function getSchedule() {
+    const st = readSettings().backupSchedule || {};
+    return { everyHours: SCHEDULE_HOURS.indexOf(st.everyHours) >= 0 ? st.everyHours : SCHEDULE_DEFAULT.everyHours,
+      onClose: typeof st.onClose === "boolean" ? st.onClose : SCHEDULE_DEFAULT.onClose,
+      keepDaily: KEEP_DAILY.indexOf(st.keepDaily) >= 0 ? st.keepDaily : SCHEDULE_DEFAULT.keepDaily,
+      lastAuto: readSettings().lastAutoBackup || "" };
+  }
+  function setSchedule(o) {
+    o = o || {};
+    if (o.everyHours !== undefined && SCHEDULE_HOURS.indexOf(o.everyHours) < 0) return { ok: false, error: "Chu kỳ không hợp lệ" };
+    if (o.keepDaily !== undefined && KEEP_DAILY.indexOf(o.keepDaily) < 0) return { ok: false, error: "Số ngày giữ không hợp lệ" };
+    const st = readSettings(), cur = getSchedule();
+    st.backupSchedule = { everyHours: o.everyHours !== undefined ? o.everyHours : cur.everyHours, onClose: o.onClose !== undefined ? !!o.onClose : cur.onClose,
+      keepDaily: o.keepDaily !== undefined ? o.keepDaily : cur.keepDaily };
+    writeSettings(st);
+    return Object.assign({ ok: true }, getSchedule());
+  }
+  function keepOf(tag) { return tag === "daily" ? getSchedule().keepDaily : (KEEP[tag] || KEEP.default); }
+  /** Dữ liệu hiện tại khác bản sao lưu mới nhất? (so mã SHA-256 — không tạo bản trùng y hệt) */
+  function changedSinceBackup() {
+    if (!exists(dataFile)) return false;
+    const last = list()[0]; if (!last) return true;
+    try { return JSON.parse(fs.readFileSync(path.join(backupDir, last.name + ".sha256"), "utf8")).sha256 !== sha256(fs.readFileSync(dataFile, "utf8")); } catch (e) { return true; }
+  }
+  /** Gọi mỗi phút khi app đang mở: đến giờ + dữ liệu đã đổi → sao lưu "dinh-ky". Trả tên file hoặc null. Không ném lỗi. */
+  function tickSchedule() {
+    try {
+      const sc = getSchedule(); if (!sc.everyHours) return null;
+      const last = sc.lastAuto ? new Date(sc.lastAuto) : null;
+      if (last && !isNaN(last) && now() - last < sc.everyHours * 3600e3) return null;
+      const st = readSettings(); st.lastAutoBackup = now().toISOString(); writeSettings(st);
+      return changedSinceBackup() ? backup("dinh-ky") : null;
+    } catch (e) { return null; }
+  }
+  /** Khi đóng app (sau khi giao diện đã lưu lần cuối): bật "khi đóng app" + dữ liệu đã đổi → sao lưu "khi-dong". */
+  function backupOnClose() {
+    try { return getSchedule().onClose && changedSinceBackup() ? backup("khi-dong") : null; } catch (e) { return null; }
+  }
   function prune(tag) {
     if (isPermanent(tag)) return;
-    const keep = KEEP[tag] || KEEP.default;
+    const keep = keepOf(tag);
     const all = list();
     const victims = all.filter((f) => f.tag === tag).slice(keep);
     if (!victims.length) return;
@@ -163,7 +207,7 @@ function createStorage(dir, opts) {
   }
   function pruneMirror(root, tag) {
     if (!tag || isPermanent(tag)) return;
-    const keep = KEEP[tag] || KEEP.default;
+    const keep = keepOf(tag);
     const mine = fs.readdirSync(root).filter((f) => /\.json$/.test(f) && f.indexOf(tag + "_") === 0).sort().reverse(); // tên chứa thời điểm → mới nhất trước
     mine.slice(keep).forEach((f) => { try { fs.unlinkSync(path.join(root, f)); } catch (e) { /* bỏ qua */ } try { fs.unlinkSync(path.join(root, f + ".sha256")); } catch (e) { /* bỏ qua */ } });
   }
@@ -247,7 +291,8 @@ function createStorage(dir, opts) {
     return f;
   }
   return { dataFile, backupDir, load, save, backup, list, readBackup, verifyBackup, verifyAll, quarantineCorrupt, info: () => ({ dataFile, backupDir }),
-    setMirror, syncMirror, noteExternal, backupStatus, readSettings, writeSettings };
+    setMirror, syncMirror, noteExternal, backupStatus, readSettings, writeSettings,
+    getSchedule, setSchedule, tickSchedule, backupOnClose, changedSinceBackup };
 }
 
-module.exports = { createStorage, isValidDataText, sha256 };
+module.exports = { createStorage, isValidDataText, sha256, SCHEDULE_HOURS, KEEP_DAILY, SCHEDULE_DEFAULT };

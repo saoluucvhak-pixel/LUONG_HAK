@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## [2.0.0-alpha.17] — 11/10/2026 — Lịch sao lưu + đối chiếu nghỉ phép / ốm
+- **Lịch sao lưu tự động** (Công ty & Sao lưu, Admin đổi): sao lưu **định kỳ** khi app đang mở (tắt / 1 / 2 / 4 / 8 giờ, mặc định 2 giờ), **sao lưu khi đóng app** (mặc định bật), **số ngày giữ bản đầu ngày** (30 / 60 / 90 / 180 / 365, mặc định 60). Chỉ sao lưu khi dữ liệu đã đổi so với bản gần nhất (không tạo bản trùng); có thư mục thứ hai thì tự chép sang. Cấu hình theo máy (`settings.json`). Bản định kỳ giữ 48, bản khi đóng app giữ 10; bản sau chốt kỳ vẫn giữ vĩnh viễn.
+- **Q-27 = phương án A — đối chiếu đơn nghỉ với chấm công** (R-64): khi tính lương, khung *Hồ sơ cần bổ sung* báo đơn phép có lương đã duyệt mà chưa chấm PN / vẫn chấm công thường, đơn nghỉ không lương / nghỉ ốm đã duyệt mà vẫn có công, chấm PN không có đơn, đơn còn *Chờ duyệt*. **Chỉ cảnh báo — lương vẫn tính theo chấm công, không đổi công thức.**
+- Test: 158 (+5 U-SCH, +5 U-LV), E2E 72/72 (+3).
+
 ## [2.0.0-alpha.16] — 11/10/2026 — Shortcut chuyên nghiệp + File đã tải
 - **Bộ cài**: icon riêng của app (HAK · LƯƠNG), shortcut **"Tính Lương HAK"** ngoài Desktop và trong Start Menu (thư mục *HAK*), cho chọn thư mục cài, tự chạy app sau khi cài, tên trong *Apps & features* là "Tính Lương HAK <phiên bản>". Gỡ cài đặt **vẫn không xóa dữ liệu**. Tên sản phẩm nội bộ giữ nguyên nên thư mục dữ liệu `%APPDATA%\Tinh Luong HAK` không đổi.
 - **Tải file (Excel, báo cáo, phiếu lương, file Word, sao lưu ra file)**: lưu thẳng vào thư mục **Tài liệu\Tinh Luong HAK\File xuat** (không hỏi nơi lưu, **không ghi đè** — trùng tên thêm "(1)", "(2)"). Tải xong app **mở thư mục, chọn sẵn file** và hiện thẻ báo có nút **Mở file** / **Mở thư mục**.

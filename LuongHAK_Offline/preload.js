@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("hakStore", {
   mirrorClear: () => ipcRenderer.sendSync("backup-mirror-clear"),
   mirrorSync: () => ipcRenderer.sendSync("backup-mirror-sync"),
   backupStatus: () => ipcRenderer.sendSync("backup-status"),       // { mirrorDir, lastMirrorOk, lastMirrorError, lastExternal, daysSinceExternal, permanent }
+  scheduleGet: () => ipcRenderer.sendSync("backup-schedule-get"),     // { ok, everyHours, onClose, keepDaily, lastAuto }
+  scheduleSet: (o) => ipcRenderer.sendSync("backup-schedule-set", o),  // { everyHours?, onClose?, keepDaily? }
   noteExternal: () => ipcRenderer.sendSync("backup-note-external"),
   whoami: () => ipcRenderer.sendSync("app-user"),            // { user, host } — tài khoản Windows đang dùng
   authSalt: () => ipcRenderer.sendSync("auth-salt"),

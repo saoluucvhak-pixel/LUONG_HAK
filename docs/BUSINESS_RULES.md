@@ -110,6 +110,11 @@
 - R-61 (2.0-α15) **Biến động nhân sự**: tăng lương, giảm lương, điều chuyển, đổi chức vụ, đổi mức đóng BH = **lập phụ lục mới** (không sửa phụ lục cũ — Q-15). *Loại biến động* / *Số quyết định* trên phụ lục chỉ để theo dõi, **không dùng trong công thức**; để trống thì báo cáo tự nhận biết bằng cách so với phụ lục liền trước. Tăng mới = hợp đồng đầu tiên vào làm trong kỳ; nghỉ việc = hợp đồng chấm dứt mà không có hợp đồng nào bắt đầu sau đó.
 - R-62 (2.0-α15) **Cập nhật hồ sơ lưu theo hiệu lực** (Thông tin cá nhân, Tài khoản nhận lương): *Thông tin mới* = thêm bản mới, 'Hiệu lực từ' phải sau bản đang có, bản cũ giữ làm lịch sử; *Sửa lỗi nhập sai* = ghi đè bản đó (nhật ký giữ giá trị cũ). Mọi lần sửa hiện trước danh sách thay đổi cũ → mới.
 - R-63 (2.0-α15) Khi tính lương: **có công sau ngày chấm dứt hợp đồng** trong kỳ → cảnh báo (nêu ngày); app vẫn tính đúng công đã nhập, không tự xóa / trừ (test I-23).
+- R-64 (2.0-α17, Q-27 = phương án A) **Đối chiếu đơn nghỉ phép / ốm với chấm công** khi tính lương — CHỈ cảnh báo, lương vẫn tính theo chấm công (không tự thêm / bớt công):
+  - đơn phép có lương (hằng năm / việc riêng có lương) **đã duyệt** mà ngày đó chưa chấm PN (trừ Chủ nhật, ngày có CL) hoặc vẫn chấm công thường;
+  - đơn nghỉ không hưởng lương / nghỉ ốm **đã duyệt** mà ngày đó vẫn có công thường hoặc PN;
+  - chấm PN vào ngày không có đơn phép có lương đã duyệt — chỉ với người **có** theo dõi đơn nghỉ trong app (chưa nhập đơn nào thì không cảnh báo);
+  - đơn trong kỳ còn *Chờ duyệt*. Đơn *Từ chối* bỏ qua. Không tính dòng TC / CC. (test U-LV-01…05)
 
 ## 2. Câu hỏi mở — cần chủ sở hữu / kế toán xác nhận
 Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
@@ -142,3 +147,4 @@ Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 | Q-24 | **Bảo mật lương:** Trưởng bộ phận (không có quyền xem bảng lương) có được thấy lương thỏa thuận / lương cơ bản của nhân viên ở hồ sơ không? | ✅ **Đã trả lời (11/10/2026): ẩn theo đề xuất** → R-51 |
 | Q-25 | **BH khi đi làm ít ngày (tiếp Q-23):** (a) Ngưỡng công cho từng mã lương là bao nhiêu (theo quy định: nghỉ không lương ≥ 14 ngày làm việc trong tháng thì không đóng — VD TG1 công chuẩn 26 → ngưỡng 13 công)? (b) Khi dưới ngưỡng: **không đóng BH cả 2 bên** (theo quy định) hay **giữ cách hiện tại** (truy thu phần công ty đóng vào lương NLĐ)? Kế toán xác nhận | ✅ **Đã trả lời (11/10/2026): giữ công thức hiện có** — ngưỡng công khai ở cột *Ngưỡng truy thu BH (công)* của Danh mục Mã lương (để trống = đóng đủ); dưới ngưỡng: không trừ BH NLĐ, truy thu phần công ty đóng → R-57 |
 | Q-26 | **BH tháng nghỉ việc:** người nghỉ trong tháng, ít / 0 công — (A) giữ R-57 (truy thu phần công ty, phần thiếu kế toán tự xử lý); (B) không tính BH, báo giảm; (C) tính đủ, phần thiếu ghi công nợ | ✅ **Đã trả lời (11/10/2026): phương án A** — giữ công thức hiện có → R-60 |
+| Q-27 | **Đơn nghỉ phép / ốm không tự vào chấm công:** (A) chỉ cảnh báo khi lệch; (B) tạo sẵn dòng PN từ đơn đã duyệt | ✅ **Đã trả lời (11/10/2026): phương án A** → R-64 |

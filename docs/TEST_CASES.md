@@ -95,6 +95,26 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α17 Lịch sao lưu (`tests/unit/backup-schedule.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-SCH-01 | Mặc định 2 giờ / khi đóng app / 60 ngày; giá trị lạ → mặc định; giá trị không hợp lệ bị từ chối; đổi 1 mục giữ mục khác |
+| U-SCH-02 | Định kỳ chỉ sao lưu khi đến giờ VÀ dữ liệu đã đổi; nội dung = dữ liệu hiện tại; tắt thì không sao lưu |
+| U-SCH-03 | Khi đóng app: bật + đã đổi → `khi-dong`; tắt / không đổi → không tạo |
+| U-SCH-04 | Giữ bản đầu ngày theo lịch (30 → 30 bản); bản sau chốt kỳ không bị dọn |
+| U-SCH-05 | Bản định kỳ giữ 48 bản |
+
+## Unit — 2.0-α17 Đối chiếu nghỉ phép / ốm (`tests/unit/leave-check.test.js`, R-64)
+| ID | Nội dung |
+|---|---|
+| U-LV-01 | Đơn phép đã duyệt + PN đúng ngày → không cảnh báo; Chủ nhật trong đơn không đòi PN |
+| U-LV-02 | Thiếu PN / vẫn chấm công thường → cảnh báo đúng ngày |
+| U-LV-03 | Nghỉ không lương / ốm đã duyệt vẫn có công → cảnh báo; Từ chối bỏ qua; Chờ duyệt nhắc |
+| U-LV-04 | PN không có đơn: chỉ cảnh báo người có theo dõi đơn nghỉ |
+| U-LV-05 | Danh sách tính lương giống hệt khi thêm đơn nghỉ; chỉ thêm cảnh báo |
+
+E2E (α17): đổi lịch sao lưu → `settings.json` · đóng app khi dữ liệu đã đổi → bản `khi-dong` + `.sha256`.
+
 ## Unit — 2.0-α16 Thư mục file xuất (`tests/unit/exports.test.js`)
 | ID | Nội dung |
 |---|---|

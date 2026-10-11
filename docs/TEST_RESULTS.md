@@ -1,5 +1,15 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.17 — Lịch sao lưu + đối chiếu nghỉ phép / ốm (11/10/2026, nhánh `claude/v2-backup-schedule-leave`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **158/158** (+5 U-SCH, +5 U-LV; R-PERF-01: danh sách giống hệt, chỉ thêm cảnh báo [Nghỉ phép/ốm]) |
+| Hồi quy công thức (v1.3.0, alpha.4) | ✅ trùng 100% — không đổi công thức |
+| E2E Electron (xvfb, Linux) | ✅ **72/72** (+3 lịch sao lưu) |
+| Ảnh chụp thẻ Lịch sao lưu (1366px) | ✅ đã xem, không lỗi JavaScript |
+| Windows thực tế (sao lưu định kỳ chạy nhiều giờ, khi tắt máy) | ⏳ chưa |
+
 ## 2.0.0-alpha.16 — Shortcut + File đã tải (11/10/2026, nhánh `claude/v2-shortcut-downloads`)
 | Nhóm | Kết quả |
 |---|---|

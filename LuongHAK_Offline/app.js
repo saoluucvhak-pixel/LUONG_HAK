@@ -1674,7 +1674,7 @@
     bar.appendChild(btn("🗑 Xóa toàn bộ dữ liệu", "red", function () { if (!need("system.admin")) return; if (confirm("XÓA TOÀN BỘ dữ liệu? Không thể hoàn tác!\n(Tài khoản người dùng được giữ lại.)") && confirm("Chắc chắn chứ?")) { backupNow("truoc-xoa-toan-bo"); db = { nguoidung: db.nguoidung, baomat: db.baomat, auditlog: db.auditlog }; ensureTables(); audit("Xóa toàn bộ dữ liệu", "đã sao lưu trước khi xóa"); saveNow(); st.kq = null; render(); } }));
     c.appendChild(bar);
     c.appendChild(h("div", { class: "hint", text: "Hiện có — " + Object.keys(ALL).map(function (k) { return ALL[k].ten + ": " + countOf(k); }).join(" · ") }));
-    var w = h("div"); w.appendChild(cardCongTy()); if (can("system.admin")) w.appendChild(cardUsers()); w.appendChild(c); w.appendChild(cardOffsite()); w.appendChild(cardBackups()); w.appendChild(cardIntegrity()); w.appendChild(cardAudit());
+    var w = h("div"); w.appendChild(cardCongTy()); if (can("system.admin")) w.appendChild(cardUsers()); w.appendChild(c); w.appendChild(cardSchedule()); w.appendChild(cardOffsite()); w.appendChild(cardBackups()); w.appendChild(cardIntegrity()); w.appendChild(cardAudit());
     return w;
   }
   // ---------- Khôi phục / sao lưu / kiểm tra dữ liệu ----------
@@ -1711,6 +1711,28 @@
     if (!saveNow()) { alert("Đã nạp dữ liệu nhưng CHƯA lưu được xuống đĩa!"); }
     st.kq = null; st.tab = "home"; render(); toast("Đã khôi phục từ " + label); if (mm.length) alert(mm.join("\n"));
   }
+  /** Lịch sao lưu tự động (α17) — cấu hình theo máy; chỉ Admin đổi được */
+  function cardSchedule() {
+    var c = h("div", { class: "card", "data-schedule": "1" });
+    c.appendChild(h("h3", { text: "🕘 Lịch sao lưu tự động" }));
+    if (!store || !store.scheduleGet) { c.appendChild(h("div", { class: "hint", text: "Chỉ có trong bản cài (.exe). Bản chạy trình duyệt: dùng 'Sao lưu ra file'." })); return c; }
+    var sc = store.scheduleGet() || {}, admin = can("system.admin");
+    c.appendChild(h("div", { class: "hint", text: "Luôn có: sao lưu mỗi lần mở app, đầu mỗi ngày, trước thao tác lớn, sau chốt kỳ. Thêm dưới đây (chỉ khi dữ liệu ĐÃ THAY ĐỔI so với bản sao lưu gần nhất, không tạo bản trùng). App chạy offline nên chỉ sao lưu được khi app đang mở. Có thư mục thứ hai thì bản mới cũng tự chép sang." }));
+    var set = function (o, msg) { var r = store.scheduleSet(o); if (r && r.ok) { audit("Đổi lịch sao lưu", msg); toast("Đã lưu lịch sao lưu: " + msg); } else alert("⚠ " + ((r && r.error) || "Không lưu được")); render(); };
+    var sel = function (vals, cur, lab, on) { var s0 = h("select", { class: "i" }); vals.forEach(function (v) { var o = h("option", { value: String(v), text: lab(v) }); if (v === cur) o.selected = true; s0.appendChild(o); }); s0.disabled = !admin; s0.addEventListener("change", function () { on(+s0.value); }); return s0; };
+    var hLab = function (v) { return v ? "Mỗi " + v + " giờ" : "Tắt"; }, dLab = function (v) { return v + " ngày"; };
+    var every = sel([0, 1, 2, 4, 8], sc.everyHours, hLab, function (v) { set({ everyHours: v }, "định kỳ " + hLab(v).toLowerCase()); });
+    var keep = sel([30, 60, 90, 180, 365], sc.keepDaily, dLab, function (v) { set({ keepDaily: v }, "giữ bản đầu ngày " + dLab(v)); });
+    var cb = h("input", { type: "checkbox" }); cb.checked = !!sc.onClose; cb.disabled = !admin;
+    cb.addEventListener("change", function () { set({ onClose: cb.checked }, cb.checked ? "sao lưu khi đóng app" : "không sao lưu khi đóng app"); });
+    var g = h("div", { class: "schedg" }, [
+      h("div", { class: "fld" }, [h("label", { text: "Sao lưu định kỳ khi app đang mở" }), every]),
+      h("div", { class: "fld" }, [h("label", { text: "Giữ bản sao lưu đầu ngày" }), keep]),
+      h("div", { class: "fld" }, [h("label", { text: "Khi đóng app" }), h("label", { class: "schk" }, [cb, h("span", { text: "Sao lưu khi đóng app" })])])]);
+    c.appendChild(g);
+    c.appendChild(h("div", { class: "hint", text: "Lần kiểm tra định kỳ gần nhất: " + (sc.lastAuto ? fmtTime(sc.lastAuto) : "chưa có") + " · Bản định kỳ giữ 48 bản, bản khi đóng app giữ 10 bản gần nhất." + (admin ? "" : " Chỉ Admin đổi được lịch.") }));
+    return c;
+  }
   function cardOffsite() {
     var c = h("div", { class: "card" });
     c.appendChild(h("h3", { text: "🛡 Sao lưu ra ngoài máy (thư mục thứ hai)" }));
@@ -1741,7 +1763,7 @@
     var c = h("div", { class: "card" });
     c.appendChild(h("h3", { text: "🗂 Các bản sao lưu tự động trên máy" }));
     if (!store || !store.listBackups) { c.appendChild(h("div", { class: "hint", text: "Chỉ có trong bản cài (.exe). Bản chạy trình duyệt: dùng 'Sao lưu ra file'." })); return c; }
-    c.appendChild(h("div", { class: "hint", text: "daily = đầu mỗi ngày (giữ 60) · startup = mỗi lần mở app (giữ 10) · truoc-… = tự sao lưu trước thao tác lớn (nhập Excel, mở chốt, khôi phục, xóa) · sau-chot-… = ngay sau khi chốt kỳ (giữ VĨNH VIỄN)." }));
+    c.appendChild(h("div", { class: "hint", text: "daily = đầu mỗi ngày (giữ theo Lịch sao lưu) · startup = mỗi lần mở app (giữ 10) · dinh-ky = định kỳ (giữ 48) · khi-dong = khi đóng app (giữ 10) · truoc-… = tự sao lưu trước thao tác lớn (nhập Excel, mở chốt, khôi phục, xóa) · sau-chot-… = ngay sau khi chốt kỳ (giữ VĨNH VIỄN)." }));
     var STATUS = { ok: "✓ Nguyên vẹn (SHA-256)", unverified: "Bản cũ — chưa có mã kiểm tra", mismatch: "✕ HỎNG / bị sửa", invalid: "✕ Không đọc được" };
     c.appendChild(h("div", { class: "bar" }, [btn("💾 Tạo bản sao lưu ngay", "pri", function () { if (!need("backup.restore", "tạo bản sao lưu")) return; var n = backupNow("thu-cong"); toast(n ? "Đã tạo " + n : "Chưa có dữ liệu để sao lưu"); render(); }),
       store.verifyBackups ? btn("🩺 Kiểm tra tất cả bản sao lưu", "", function () { st.bkVerify = true; render(); }) : null]));
@@ -2113,7 +2135,7 @@
       $("#nav").innerHTML = ""; var t0 = $("#top"); t0.innerHTML = ""; t0.appendChild(h("h2", { text: !(db.nguoidung || []).length ? "Thiết lập ban đầu" : "Đăng nhập" }));
       var m0 = $("#main"); m0.innerHTML = "";
       m0.appendChild(!(db.nguoidung || []).length ? setupAdminScreen() : st.authView === "recover" ? recoverAdminScreen() : loginScreen());
-      sideFoot("v2.0.0-alpha.16"); return;
+      sideFoot("v2.0.0-alpha.17"); return;
     }
     if (!tabAllowed(st.tab)) st.tab = "home";
     var nav = $("#nav"); nav.innerHTML = "";
@@ -2131,7 +2153,7 @@
       if (n[0] === "nhansu") b.appendChild(h("span", { class: "n", text: db.nhanvien.filter(function (r) { return r["Trạng thái"] !== "Đã nghỉ việc"; }).length }));
       nav.appendChild(b);
     });
-    sideFoot("v2.0.0-alpha.16 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt"));
+    sideFoot("v2.0.0-alpha.17 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt"));
     var bb = $(".brand small"); if (bb) bb.textContent = congTy()["Tên công ty"] || "Chạy offline";
     var top = $("#top"); top.innerHTML = "";
     var title = TITLES[st.tab] || (S[st.tab] && S[st.tab].ten) || "";

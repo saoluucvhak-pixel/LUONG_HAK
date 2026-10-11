@@ -316,3 +316,8 @@ td input:disabled{color:var(--ink);background:transparent}
 [data-theme="dark"] .flist .fx.x-xlsx,[data-theme="dark"] .flist .fx.x-xls,[data-theme="dark"] .flist .fx.x-csv{background:rgba(52,168,100,.18);color:#8fe0b0}
 [data-theme="dark"] .flist .fx.x-doc,[data-theme="dark"] .flist .fx.x-docx{background:#1e2c45;color:#a9c3ef}
 @media print{#dlcard{display:none}}
+/* Lịch sao lưu (α17) */
+.schedg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:10px 0 6px}
+.schedg .fld select{width:100%}
+.schedg .fld label.schk{display:flex;flex-direction:row;align-items:center;gap:8px;min-height:38px;margin:0;font-weight:500;color:var(--ink);cursor:pointer}
+.schedg label.schk input{width:18px;height:18px;margin:0;accent-color:var(--brand)}

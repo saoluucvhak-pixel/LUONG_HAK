@@ -31,6 +31,9 @@ function registerIpc() {
   ipcMain.on("store-quarantine", (e) => { try { e.returnValue = storage.quarantineCorrupt(); } catch (err) { e.returnValue = null; } });
   ipcMain.on("open-data-folder", () => { shell.openPath(path.dirname(storage.dataFile)); });
   // File xuất (2.0-α16): giao diện chỉ gửi TÊN file — đường dẫn ghép trong thư mục xuất (main/exports.js)
+  // Lịch sao lưu (α17) — cấu hình của máy này (settings.json)
+  ipcMain.on("backup-schedule-get", (e) => { try { e.returnValue = Object.assign({ ok: true }, storage.getSchedule()); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
+  ipcMain.on("backup-schedule-set", (e, o) => { try { e.returnValue = storage.setSchedule(o && typeof o === "object" ? { everyHours: o.everyHours, onClose: o.onClose, keepDaily: o.keepDaily } : {}); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
   ipcMain.on("files-info", (e) => { try { e.returnValue = { ok: true, dir: exportsDir.dir(), openAfterDownload: exportsDir.openAfter(), files: exportsDir.list(100), lastShell }; } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
   ipcMain.on("files-open", (e, name) => { const f = exportsDir.resolve(name); if (f) shellDo("open", f); e.returnValue = !!f; });
   ipcMain.on("files-show", (e, name) => { const f = exportsDir.resolve(name); if (f) shellDo("show", f); e.returnValue = !!f; });
@@ -102,5 +105,10 @@ app.whenReady().then(() => {
   try { storage.backup("startup"); } catch (e) { /* lần đầu chưa có dữ liệu */ }
   registerIpc();
   createWindow();
+  // Sao lưu định kỳ khi app đang mở (kiểm tra mỗi phút; chỉ sao lưu khi đến giờ VÀ dữ liệu đã đổi). HAK_SCHEDULE_TICK_MS: kiểm thử tự động
+  require("timers").setInterval(() => { storage.tickSchedule(); }, Number(process.env.HAK_SCHEDULE_TICK_MS) || 60000).unref();
 });
 app.on("window-all-closed", () => app.quit());
+// Lịch sao lưu (α17): cửa sổ đã đóng (giao diện đã lưu lần cuối ở beforeunload) → sao lưu "khi-dong" nếu dữ liệu đã đổi.
+// will-quit chạy cả khi bấm ✕ lẫn khi app.quit() (tắt máy / cài bản mới).
+app.on("will-quit", () => { if (storage) storage.backupOnClose(); });

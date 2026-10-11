@@ -413,6 +413,22 @@ async function launch(dataDir, opt) {
     await app.close();
   }
 
+  // α17: Lịch sao lưu — Admin đổi chu kỳ / số ngày giữ / khi đóng app; lưu vào settings.json của máy; đóng app → bản "khi-dong"
+  {
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=backup]"); await w.waitForSelector("[data-schedule] select");
+    const before = fs.readdirSync(path.join(DATA, "backups")).filter((f) => /^khi-dong_.*\.json$/.test(f)).length;
+    await w.locator("[data-schedule] select").first().selectOption("1"); await w.waitForTimeout(200);
+    await w.locator("[data-schedule] select").nth(1).selectOption("90"); await w.waitForTimeout(200);
+    const sc = JSON.parse(fs.readFileSync(path.join(DATA, "settings.json"), "utf8")).backupSchedule;
+    const cardS = await w.locator("[data-schedule]").innerText();
+    ok("Lịch sao lưu: chọn mỗi 1 giờ + giữ bản đầu ngày 90 ngày → lưu cấu hình máy", sc && sc.everyHours === 1 && sc.keepDaily === 90 && sc.onClose === true && /Lịch sao lưu tự động/.test(cardS), JSON.stringify(sc));
+    ok("Không lỗi JavaScript ở lịch sao lưu", errs.length === 0, errs.join(" | "));
+    await app.close(); // dữ liệu đã đổi (nhật ký "Đổi lịch sao lưu") → khi đóng app có bản khi-dong
+    const after = fs.readdirSync(path.join(DATA, "backups")).filter((f) => /^khi-dong_.*\.json$/.test(f)).length;
+    ok("Đóng app khi dữ liệu đã đổi → tự sao lưu 'khi-dong' (kèm file kiểm tra)", after === before + 1 && fs.readdirSync(path.join(DATA, "backups")).some((f) => /^khi-dong_.*\.json\.sha256$/.test(f)), before + " → " + after);
+  }
+
   // Quên mật khẩu Admin → mã khôi phục (mã sai bị từ chối; dùng xong cấp mã mới)
   ({ app, w, errs } = await launch(null, { noAuth: true }));
   await w.click('button:has-text("Quên mật khẩu Admin")');
