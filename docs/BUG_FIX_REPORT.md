@@ -166,3 +166,10 @@ Bằng chứng: `HR_IMPL=tests/regression/baseline_2.0.0-alpha.4/hr.js node test
 
 Rollback: cài lại alpha.5 (không đổi cấu trúc dữ liệu, không đổi engine).
 
+## 2.0.0-alpha.7 — PERF-02 (nhánh `claude/v2-storage-perf`)
+| Vấn đề | Thay đổi | File | Test |
+|---|---|---|---|
+| PERF-02 lưu 5.000 NV mất ~243 ms ở tiến trình chính (đo: đọc lại + 2×SHA-256 chiếm 115–231 ms) | Mã hóa 1 lần, ghi bộ đệm, đọc lại và so từng byte | `main/storage.js` | U-STO-14, U-STO-17; đo `PERFORMANCE_REPORT.md` §6 |
+
+Rollback: cài lại alpha.6 (định dạng file không đổi).
+

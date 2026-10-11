@@ -92,6 +92,7 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-13 | Mất điện giữa ghi và đổi tên → file cũ nguyên; file tạm sót được dọn khi mở |
 | U-STO-14 | Đọc lại sau ghi không khớp → không báo thành công |
 | U-STO-15 | Cất file hỏng 3 lần cùng thời điểm → 3 tên, không mất file hỏng nào |
+| U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
 ## Unit — 2.0-α6 repository (`tests/unit/repository.test.js`)

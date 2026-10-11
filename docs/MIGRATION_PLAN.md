@@ -19,6 +19,8 @@ Số tiền đã bị **hỏng bởi BUG-001** (bản 1.1–1.3, VD đơn giá 3
 
 > **Kết quả khảo sát (10/10/2026):** Electron 43.7.9 chạy Node 24.21.0, có sẵn `node:sqlite` (`DatabaseSync`) — đã chạy thử tạo bảng, ghi, đọc. Nhờ vậy **không cần module native** như better-sqlite3 (vốn phải build lại cho từng phiên bản Electron trên Windows) → bộ cài vẫn thuần JS. `node:sqlite` còn gắn nhãn *experimental* ở Node 24 → bọc sau tầng repository để có thể thay thế.
 
+**Cập nhật 11/10/2026 (PR4):** đo cho thấy ở 5.000 NV, 120–260 ms của mỗi lần lưu nằm ở bước giao diện chuyển **toàn bộ** dữ liệu thành JSON (`PERFORMANCE_REPORT.md` §6). SQLite chỉ giúp được nếu app gửi **dòng thay đổi**. Vì vậy thêm điều kiện: (a) **mọi** đường ghi đi qua `core/repository` (kể cả nhập Excel, gộp chấm công, trợ lý thêm NV, xóa NV); (b) repository ghi nhận dòng thay đổi, và test chứng minh không có thay đổi nào bị bỏ sót (so toàn bộ dữ liệu JSON và SQLite sau mỗi kịch bản E2E). Bước 1 dùng `node:sqlite` thay `better-sqlite3`.
+
 **Điều kiện bắt đầu:** bộ kiểm thử hồi quy xanh; có tầng repository (`src/database/repositories`) để giao diện/module không còn đọc `db.<bảng>` trực tiếp.
 
 | Bước | Nội dung | Kiểm tra | Rollback |

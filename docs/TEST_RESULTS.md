@@ -1,5 +1,14 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.7 — PR4 lưu dữ liệu (11/10/2026, nhánh `claude/v2-storage-perf`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **113/113** (+1 U-STO-17: lệch 1 bit khi đọc lại → không báo thành công) |
+| E2E Electron (xvfb, Linux) | ✅ **43/43** |
+| Lưu 5.000 NV (tiến trình chính, trung vị 5 lần) | 243 → **110 ms** |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.6 — PR3 tầng repository (10/10/2026, nhánh `claude/v2-repository`)
 | Nhóm | Kết quả |
 |---|---|

@@ -47,7 +47,9 @@ function createStorage(dir, opts) {
     let fd = null;
     try {
       fd = fs.openSync(tmp, "wx");
-      fs.writeSync(fd, text, 0, "utf8"); fs.fsyncSync(fd); fs.closeSync(fd); fd = null;
+      if (Buffer.isBuffer(text)) { let off = 0; while (off < text.length) off += fs.writeSync(fd, text, off, text.length - off); }
+      else fs.writeSync(fd, text, 0, "utf8");
+      fs.fsyncSync(fd); fs.closeSync(fd); fd = null;
       if (exclusive && exists(file)) { const e = new Error("Tên file đã tồn tại: " + path.basename(file)); e.code = "EEXIST"; throw e; }
       fs.renameSync(tmp, file);
       fsyncDir(path.dirname(file));
@@ -144,17 +146,18 @@ function createStorage(dir, opts) {
     try {
       if (typeof text !== "string" || !isValidDataText(text)) return "Dữ liệu cần lưu không hợp lệ — đã hủy ghi để bảo vệ file hiện tại";
       ensure();
+      const buf = Buffer.from(text, "utf8"); // mã hóa 1 lần: dùng cho cỡ file, ghi, và so sánh khi đọc lại
       if (exists(dataFile)) {
         // Bản sao lưu ĐẦU NGÀY: giữ trạng thái trước mọi thay đổi trong ngày, không bị ghi đè trong ngày
         const daily = "daily_" + today(now()) + ".json";
         if (!exists(path.join(backupDir, daily))) backup("daily", daily);
         // Dữ liệu giảm đột ngột > 50% (xóa nhầm hàng loạt) → sao lưu bản trước đó
         const oldSize = fs.statSync(dataFile).size;
-        if (oldSize > 2048 && Buffer.byteLength(text, "utf8") < oldSize * 0.5) backup("truoc-giam-du-lieu");
+        if (oldSize > 2048 && buf.length < oldSize * 0.5) backup("truoc-giam-du-lieu");
       }
-      writeAtomic(dataFile, text, false);
-      // Đọc lại để chắc chắn đĩa đã ghi đúng
-      if (sha256(fs.readFileSync(dataFile, "utf8")) !== sha256(text)) return "Ghi file xong nhưng đọc lại không khớp — hãy kiểm tra ổ đĩa và sao lưu ra file ngay";
+      writeAtomic(dataFile, buf, false);
+      // Đọc lại để chắc chắn đĩa đã ghi đúng: so sánh TỪNG BYTE với dữ liệu vừa ghi (chặt như so SHA-256, nhanh hơn ~5 lần — PERF-02)
+      if (!Buffer.from(fs.readFileSync(dataFile)).equals(buf)) return "Ghi file xong nhưng đọc lại không khớp — hãy kiểm tra ổ đĩa và sao lưu ra file ngay";
       return true;
     } catch (e) { return errText(e); }
   }

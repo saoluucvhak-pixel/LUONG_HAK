@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { createStorage, sha256 } = require("../../main/storage.js");
+const { Buffer } = require("buffer");
 
 function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), "hak-fail-")); }
 const fixed = () => new Date("2026-10-10T09:00:00.000"); // đồng hồ đứng yên: mọi thao tác "cùng 1 thời điểm"
@@ -114,4 +115,20 @@ test("U-STO-16 sao lưu thất bại giữa chừng (đầy đĩa) → không đ
   const s = createStorage(dir, { fs: failingFs((fn, a) => (fn === "writeSync" && ++n === 1 ? err("ENOSPC") : null)) });
   assert.throws(() => s.backup("thu-cong"), /ENOSPC/);
   assert.equal(s.list().length, 0); assert.deepEqual(noTmp(dir), []);
+});
+
+test("U-STO-17 đọc lại khác đúng 1 byte (cùng cỡ file) → KHÔNG báo thành công; dữ liệu tiếng Việt nhiều byte ghi/đọc đúng (PERF-02 so sánh từng byte)", () => {
+  const dir = tmp(), ok = createStorage(dir);
+  const vi = JSON.stringify({ nhanvien: [{ "Mã NV": "NV001", "Họ và tên": "Nguyễn Thị Ánh Tuyết — Đắk Lắk ✓" }] });
+  assert.equal(ok.save(vi), true);
+  assert.equal(fs.readFileSync(path.join(dir, "data.json"), "utf8"), vi);
+  assert.equal(ok.load().text, vi);
+  const bad = failingFs(() => null);
+  bad.readFileSync = (f, enc) => {
+    const t = fs.readFileSync(f, enc);
+    if (!String(f).endsWith("data.json") || enc) return t;
+    const b = Buffer.from(t); b[b.length - 3] ^= 1; return b; // lật 1 bit gần cuối file
+  };
+  const r = createStorage(dir, { fs: bad }).save(JSON.stringify({ nhanvien: [{ "Mã NV": "NV002", "Họ và tên": "Trần Văn Bình" }] }));
+  assert.notEqual(r, true); assert.match(r, /không khớp/);
 });

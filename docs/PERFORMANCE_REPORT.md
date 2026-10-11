@@ -59,7 +59,36 @@ Các thao tác khác ở 5.000 NV (chưa tối ưu trong PR này):
 
 Chỉ đổi `hr.js` (thêm chỉ mục) và 1 dòng `app.js`. Không đổi dữ liệu, không đổi engine. Quay lại alpha.4 bằng cách cài lại bản cũ.
 
-## 6. Việc tiếp theo
+## 6. PR4 (2.0.0-alpha.7) — lưu dữ liệu (PERF-02)
 
-- **PR4 (SQLite):** ghi theo dòng thay vì ghi lại cả file (lưu ~250 ms → mục tiêu < 50 ms).
+**Đo chi tiết 1 lần lưu ở 5.000 NV (file 9,1 MB), bản alpha.6:**
+
+| Bước | ms | Ghi chú |
+|---|---|---|
+| Giao diện: `JSON.stringify` toàn bộ dữ liệu | 120–260 | Ở tiến trình giao diện, trước khi gửi IPC |
+| Tiến trình chính: `JSON.parse` kiểm tra hợp lệ | ~59 | Bắt buộc: không ghi đè file tốt bằng dữ liệu hỏng |
+| Ghi file tạm + fsync + đổi tên + fsync thư mục | ~50–90 | Bắt buộc: chống mất điện |
+| **Đọc lại + 2 × SHA-256 (chuỗi UTF-8)** | **115–231** | Kiểm tra đĩa đã ghi đúng |
+
+**Sửa:** mã hóa dữ liệu 1 lần (`Buffer`), ghi đúng bộ đệm đó, đọc lại và **so sánh từng byte** (`Buffer.equals`).
+- Mức kiểm tra **chặt hơn hoặc bằng** so SHA-256: hai bên phải giống nhau đến từng byte.
+- Các kiểm tra khác giữ nguyên: JSON hợp lệ, file tạm + fsync + đổi tên nguyên tử, sao lưu đầu ngày, sao lưu khi dữ liệu giảm > 50%.
+
+| Lưu (tiến trình chính), trung vị 5 lần | alpha.6 | alpha.7 |
+|---|---|---|
+| 1.000 NV | 50 ms | **24 ms** |
+| 5.000 NV | 243 ms | **110 ms** |
+
+Test:
+- U-STO-14 (đọc lại thiếu byte) vẫn bắt được lỗi.
+- U-STO-17 (mới): đọc lại sai đúng **1 bit**, cùng cỡ file → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng.
+
+**Vì sao chưa chuyển sang SQLite ở PR này:**
+- App vẫn gửi **toàn bộ** dữ liệu mỗi lần lưu, nên bước `JSON.stringify` ở giao diện (120–260 ms) không giảm được.
+- Muốn SQLite thực sự nhanh hơn thì phải chỉ gửi **các dòng thay đổi**. Việc đó đòi hỏi **mọi** thao tác ghi đều đi qua repository (còn ngoại lệ: nhập Excel, gộp chấm công, trợ lý thêm NV, xóa NV… — U-REPO-08).
+- Nếu sót một chỗ ghi thì dòng thay đổi không được lưu, tức là **mất dữ liệu**. Vì vậy cần gom hết các đường ghi trước (`MIGRATION_PLAN.md` §2).
+
+## 7. Việc tiếp theo
+
+- Gom các đường ghi còn lại vào repository + theo dõi dòng thay đổi → SQLite ghi theo dòng (mục tiêu lưu < 50 ms ở 5.000 NV). Cần chủ sở hữu duyệt (`MIGRATION_PLAN.md` §2).
 - **Cần chủ sở hữu duyệt ngưỡng:** thời gian lưu chấp nhận được và cỡ dữ liệu thực tế (số NV, số năm lưu).

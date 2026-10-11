@@ -51,7 +51,8 @@
 - [ ] Chờ chủ sở hữu: Q-18…Q-23; mở mạng `cdn.sheetjs.com` (SEC-03)
 - [x] **PR2 hiệu năng** (nhánh `claude/v2-perf`, alpha.5): chỉ mục Mã NV, 5.000 NV dựng DS lương 22 ms — `PERFORMANCE_REPORT.md`
 - [x] **PR3 repository** (nhánh `claude/v2-repository`, alpha.6): `core/repository.js`, sửa A3-01; ngoại lệ còn lại khóa bằng U-REPO-08
-- Tiếp theo: PR4 SQLite (lưu ~250 ms ở 5.000 NV) → PR5 UI/HRM
+- [x] **PR4 lưu dữ liệu** (nhánh `claude/v2-storage-perf`, alpha.7): lưu 5.000 NV 243 → 110 ms; SQLite hoãn tới khi mọi đường ghi qua repository (`MIGRATION_PLAN.md` §2)
+- Tiếp theo: PR5 UI/HRM; gom đường ghi còn lại vào repository → SQLite
 
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)
 0. (Đã khảo sát) SQLite qua `node:sqlite` có sẵn trong Electron 43 / Node 24.21 — không cần module native.

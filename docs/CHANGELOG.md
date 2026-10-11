@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [2.0.0-alpha.7] — 11/10/2026 — PR4 lưu dữ liệu nhanh hơn (PERF-02)
+- Lưu dữ liệu: bước đọc lại để xác nhận đĩa ghi đúng nay **so sánh từng byte** thay vì giải mã UTF-8 + 2 lần SHA-256. Mức kiểm tra chặt như cũ.
+- 5.000 NV: lưu **243 → 110 ms**; 1.000 NV: 50 → 24 ms. Mọi kiểm tra an toàn khác giữ nguyên.
+- Chưa chuyển sang SQLite: đo cho thấy phần lớn thời gian còn lại nằm ở giao diện. Điều kiện chuyển đổi được cập nhật trong `MIGRATION_PLAN.md` §2; chi tiết ở `PERFORMANCE_REPORT.md` §6.
+- Test: 113 (+1 U-STO-17), E2E 43/43.
+
 ## [2.0.0-alpha.6] — 10/10/2026 — PR3 tầng repository
 ### Sửa lỗi
 - **A3-01 (High)**: sửa *Số HĐLĐ* của hợp đồng có hiệu lực trong kỳ đã chốt, rồi bị chặn (không phải Admin) hoặc bấm **Hủy** ở hộp xác nhận → phụ lục lương, nghỉ phép… của hợp đồng **đã bị đổi sang số mới** trong khi hợp đồng giữ số cũ → phụ lục "mồ côi", không được tính lương. Nguyên nhân: đổi bảng con **trước** khi kiểm tra hồi tố. Nay chỉ đổi sau khi mọi kiểm tra đã qua và người dùng đồng ý.

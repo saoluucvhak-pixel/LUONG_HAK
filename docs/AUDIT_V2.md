@@ -57,7 +57,7 @@ Mức độ: Critical / High / Medium / Low.
 | A2-11 | Low | `app.js` xóa nhân viên | Theo thiết kế, xóa hồ sơ không xóa chấm công / sản lượng | Đọc code + thông báo xác nhận | Còn dòng mồ côi; *Kiểm tra dữ liệu* báo "Mã NV không có trong Nhân sự" | Giữ nguyên (không xóa dữ liệu không nhận diện) | U-SCH-02 | Ghi nhận |
 | A3-01 | High | `app.js` `hrForm` (hợp đồng) | Đổi Số HĐLĐ: bảng con (phụ lục, nghỉ phép…) bị đổi **trước** `guardChange` | E2E alpha.5: hợp đồng có hiệu lực trong kỳ đã chốt, đổi số rồi bấm Hủy → phụ lục 1 → 0 | Phụ lục mồ côi, không được tính lương; người không phải Admin bị chặn cũng gây ra | PR3: `core/repository.js` kiểm tra hết rồi mới sửa | U-REPO-02, E2E A3-01 | ✅ Đã sửa (PR3) |
 | SEC-03 | Medium | `xlsx.full.min.js` (SheetJS 0.18.5) | Bản npm cuối cùng có CVE-2023-30533 và CVE-2024-22363 khi đọc file độc hại | — | Đọc file Excel độc hại có thể treo app | Giữ giới hạn 20 MB + sandbox/CSP; thay bằng 0.20.3 khi mạng cho phép `cdn.sheetjs.com` (kiểm lại 10/10/2026: **403**). Xem §4 | — | ⏳ Chờ mạng |
-| RISK-01 | Medium | `main/storage.js` | Mỗi lần lưu ghi lại toàn bộ JSON | 5.000 NV: lưu 169 ms, sao lưu ~250 ms | Chậm khi dữ liệu lớn | PR2 (chỉ mục) + PR4 (SQLite) | Benchmark PR2 | ⏳ PR2/PR4 |
+| RISK-01 | Medium | `main/storage.js` | Mỗi lần lưu ghi lại toàn bộ JSON | 5.000 NV: lưu 169 ms, sao lưu ~250 ms | Chậm khi dữ liệu lớn | PR4 (alpha.7): so từng byte khi đọc lại → 110 ms; SQLite sau khi gom hết đường ghi | U-STO-17, `PERFORMANCE_REPORT.md` §6 | ✅ một phần |
 
 **Bằng chứng tái hiện:**
 - Script tái hiện chạy trên alpha.3; kết quả được dán nguyên văn ở `BUG_FIX_REPORT.md` (mục alpha.4).
