@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [2.0.0-alpha.16] — 11/10/2026 — Shortcut chuyên nghiệp + File đã tải
+- **Bộ cài**: icon riêng của app (HAK · LƯƠNG), shortcut **"Tính Lương HAK"** ngoài Desktop và trong Start Menu (thư mục *HAK*), cho chọn thư mục cài, tự chạy app sau khi cài, tên trong *Apps & features* là "Tính Lương HAK <phiên bản>". Gỡ cài đặt **vẫn không xóa dữ liệu**. Tên sản phẩm nội bộ giữ nguyên nên thư mục dữ liệu `%APPDATA%\Tinh Luong HAK` không đổi.
+- **Tải file (Excel, báo cáo, phiếu lương, file Word, sao lưu ra file)**: lưu thẳng vào thư mục **Tài liệu\Tinh Luong HAK\File xuat** (không hỏi nơi lưu, **không ghi đè** — trùng tên thêm "(1)", "(2)"). Tải xong app **mở thư mục, chọn sẵn file** và hiện thẻ báo có nút **Mở file** / **Mở thư mục**.
+- Nút **📂 File đã tải** (thanh trên, Ctrl+K): danh sách file mới nhất, mở file / mở thư mục từng file, **Đổi thư mục lưu…** (hộp chọn thư mục của Windows), *Dùng thư mục mặc định*, bật / tắt *Tự mở thư mục sau mỗi lần tải*. Cấu hình theo máy (`settings.json`).
+- An toàn: giao diện chỉ gửi **tên file**; app chỉ mở file nằm trong thư mục lưu và đúng loại app xuất ra (xlsx, xls, csv, pdf, doc, docx, json, txt) — không mở .exe / file ngoài thư mục.
+- Thanh trên cùng gọn hơn trên laptop 1366px (Tìm kiếm và Đổi mật khẩu thành nút icon).
+- **Không đổi công thức lương / dữ liệu.** Test: 148 (+5 U-EX), E2E 69/69 (+5).
+
 ## [2.0.0-alpha.15] — 11/10/2026 — Giao diện 2.0 + tăng lương / biến động nhân sự
 - **Giao diện mới** cùng bộ màu với app *Quản lý xuất hàng* (xanh ngọc #0e7c86, menu xanh than, nền #f3f6fa) — chủ sở hữu duyệt bản mẫu. **Chế độ sáng / tối** (nhớ theo máy).
 - Thanh trên cùng: **Tìm kiếm Ctrl+K** (màn hình, nhân viên, báo cáo; gõ không dấu), kỳ lương, vai trò, đăng xuất, nút sáng / tối. Menu nhóm lại.

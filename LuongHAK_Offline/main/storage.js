@@ -247,7 +247,7 @@ function createStorage(dir, opts) {
     return f;
   }
   return { dataFile, backupDir, load, save, backup, list, readBackup, verifyBackup, verifyAll, quarantineCorrupt, info: () => ({ dataFile, backupDir }),
-    setMirror, syncMirror, noteExternal, backupStatus };
+    setMirror, syncMirror, noteExternal, backupStatus, readSettings, writeSettings };
 }
 
 module.exports = { createStorage, isValidDataText, sha256 };

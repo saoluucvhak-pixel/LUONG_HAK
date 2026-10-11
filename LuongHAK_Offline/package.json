@@ -1,6 +1,6 @@
 {
   "name": "luong-hak",
-  "version": "2.0.0-alpha.15",
+  "version": "2.0.0-alpha.16",
   "description": "Tính lương HAK - chạy offline",
   "main": "main.js",
   "author": "HAK",
@@ -30,15 +30,27 @@
       "xlsx.full.min.js"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
-      "createDesktopShortcut": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
+      "shortcutName": "Tính Lương HAK",
+      "menuCategory": "HAK",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "uninstallDisplayName": "Tính Lương HAK ${version}",
+      "runAfterFinish": true,
       "deleteAppDataOnUninstall": false
     },
-    "artifactName": "TinhLuongHAK-Setup-${version}.${ext}"
+    "artifactName": "TinhLuongHAK-Setup-${version}.${ext}",
+    "directories": {
+      "buildResources": "build"
+    }
   }
 }

@@ -1,5 +1,16 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.16 — Shortcut + File đã tải (11/10/2026, nhánh `claude/v2-shortcut-downloads`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **148/148** (+5 U-EX) |
+| Hồi quy công thức (v1.3.0, alpha.4) | ✅ trùng 100% — không đổi công thức |
+| E2E Electron (xvfb, Linux) | ✅ **69/69** (+5 file đã tải) |
+| Ảnh chụp thẻ báo tải xong, ngăn File đã tải (sáng / tối), thanh trên 1366px | ✅ đã xem, không lỗi JavaScript |
+| Bộ cài NSIS (icon, shortcut Desktop / Start Menu) | ⏳ chỉ build trên CI (windows-latest) — **chưa cài thử trên máy Windows thật** |
+| Mở Explorer / Excel thật (shell.showItemInFolder / openPath) | ⏳ chưa kiểm trên Windows thật (E2E chỉ ghi lại thao tác) |
+
 ## 2.0.0-alpha.15 — Giao diện 2.0 + biến động nhân sự (11/10/2026, nhánh `claude/v2-ui-redesign`)
 | Nhóm | Kết quả |
 |---|---|

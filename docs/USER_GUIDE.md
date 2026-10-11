@@ -33,6 +33,10 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
 
 **Quên mật khẩu Admin**: ở màn hình đăng nhập, bấm **Quên mật khẩu Admin…**, nhập mã khôi phục và mật khẩu mới. App cấp mã khôi phục mới — ghi lại lần nữa.
 
+## Cài đặt (từ 2.0-alpha.16)
+- Chạy `TinhLuongHAK-Setup-<phiên bản>.exe` → chọn thư mục cài (để mặc định cũng được) → Cài đặt. Bộ cài tạo shortcut **Tính Lương HAK** ngoài Desktop và trong Start Menu → *HAK*. Có thể chuột phải shortcut → *Pin to taskbar*.
+- Cài bản mới đè bản cũ: dữ liệu giữ nguyên. Gỡ cài đặt cũng **không xóa** dữ liệu (`%APPDATA%\Tinh Luong HAK`) và file đã xuất.
+
 ## Bắt đầu
 1. **Công ty & Sao lưu** → nhập Hồ sơ công ty → bấm **Nạp danh mục chuẩn HAK** (phòng ban, chức vụ, mã lương, phụ cấp, tăng ca, hỗ trợ, bảo hiểm, thuế TNCN, biểu thuế 5 bậc 2026, giảm trừ 15,5tr/6,2tr — lấy từ hệ thống QL_NHANSU).
 2. **Nhân sự** → **＋ Thêm nhân viên**: 1 form gồm thông tin cơ bản, cá nhân, hợp đồng, lương/BH/thuế, tài khoản.
@@ -120,6 +124,12 @@ Mọi báo cáo xuất được Excel.
 - **Sửa hồ sơ:** mở ở ngăn bên phải, khung *Sẽ lưu N thay đổi* cho thấy cũ → mới trước khi bấm Lưu. Thông tin cá nhân / tài khoản: *Thông tin mới* (đổi CCCD, địa chỉ, tài khoản — bản cũ giữ làm lịch sử) hoặc *Sửa lỗi nhập sai*.
 - **Tăng lương / biến động** (nút xanh trên hồ sơ): chọn loại, ngày hiệu lực, số quyết định, mức mới → app lập phụ lục mới, hiện % thay đổi. Không sửa phụ lục cũ.
 - **Lịch sử** (trên hồ sơ): quá trình lương + mọi thay đổi (ai, lúc nào, cũ → mới).
+
+## File đã tải (từ 2.0-alpha.16)
+- Mọi file xuất (Excel bảng lương, báo cáo, phiếu lương, file Word quy chế, sao lưu ra file) lưu vào **Tài liệu\Tinh Luong HAK\File xuat**. Không ghi đè: xuất lại cùng tên → thêm "(1)", "(2)".
+- Tải xong: app mở thư mục và chọn sẵn file; góc phải dưới hiện thẻ **Mở file** / **Mở thư mục**.
+- Nút **📂 File đã tải** ở thanh trên (hoặc Ctrl+K gõ "file"): xem các file đã tải, mở từng file, đổi thư mục lưu (ví dụ thư mục Drive / ổ mạng), tắt *Tự mở thư mục* nếu không muốn cửa sổ thư mục bật lên.
+- **Sao lưu ra file** cũng lưu vào thư mục này — nhớ chép file `.json` sang USB / Drive.
 
 ## Báo cáo nhân sự
 **Biến động nhân sự** (chọn từ tháng – đến tháng; bấm ô số để lọc theo loại) · HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/ốm theo năm · Vi phạm chưa xử lý · Sinh nhật trong tháng · Sổ quản lý lao động · Lịch sử hồ sơ từng người. Tất cả xuất được Excel.

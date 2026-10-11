@@ -20,3 +20,14 @@ contextBridge.exposeInMainWorld("hakStore", {
   authHash: (pw, salt, iter) => ipcRenderer.sendSync("auth-hash", pw, salt, iter),
   authVerify: (pw, salt, iter, hash) => ipcRenderer.sendSync("auth-verify", pw, salt, iter, hash)
 });
+// File xuất (Excel, báo cáo): chỉ thao tác theo TÊN file trong thư mục xuất — không truyền đường dẫn
+contextBridge.exposeInMainWorld("hakFiles", {
+  info: () => ipcRenderer.sendSync("files-info"),                 // { ok, dir, openAfterDownload, files: [{ name, size, mtime }] }
+  open: (name) => ipcRenderer.sendSync("files-open", name),       // mở file bằng Excel / ứng dụng mặc định
+  show: (name) => ipcRenderer.sendSync("files-show", name),       // mở thư mục, chọn sẵn file
+  openDir: () => ipcRenderer.sendSync("files-open-dir"),
+  chooseDir: () => ipcRenderer.sendSync("files-choose-dir"),      // { ok, dir } | { cancelled }
+  resetDir: () => ipcRenderer.sendSync("files-reset-dir"),
+  setOpenAfter: (on) => ipcRenderer.sendSync("files-open-after", !!on),
+  onDone: (cb) => { ipcRenderer.on("download-done", (e, info) => { try { cb(info); } catch (err) { /* lỗi giao diện không làm hỏng tải file */ } }); }
+});

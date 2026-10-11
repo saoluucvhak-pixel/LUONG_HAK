@@ -2,13 +2,20 @@ const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require("electron")
 const path = require("path");
 const os = require("os");
 const { createStorage } = require("./main/storage");
+const { createExports } = require("./main/exports");
 
 // Dữ liệu: %APPDATA%\Tinh Luong HAK\data.json — sao lưu trong thư mục backups (xem main/storage.js).
 // Gỡ cài đặt KHÔNG xóa thư mục này (electron-builder: deleteAppDataOnUninstall mặc định false).
-let storage = null;
+let storage = null, exportsDir = null;
+const NO_SHELL = !!process.env.HAK_NO_SHELL; // kiểm thử tự động: không mở Explorer thật, chỉ ghi lại thao tác
+let lastShell = null;
+function shellDo(kind, f) { lastShell = { kind, name: path.basename(f) }; if (NO_SHELL) return; if (kind === "show") shell.showItemInFolder(f); else shell.openPath(f); }
 
 // Kiểm thử tự động có thể chỉ định thư mục dữ liệu riêng (không đụng dữ liệu thật)
 if (process.env.HAK_USER_DATA) app.setPath("userData", process.env.HAK_USER_DATA);
+
+// Windows: gom cửa sổ / thông báo / ghim thanh tác vụ đúng với shortcut của bộ cài (cùng appId)
+if (process.platform === "win32") app.setAppUserModelId("vn.hak.luong");
 
 // Chỉ cho chạy 1 cửa sổ app: 2 bản cùng ghi 1 file dữ liệu sẽ ghi đè lẫn nhau.
 if (!app.requestSingleInstanceLock()) { app.quit(); }
@@ -23,6 +30,20 @@ function registerIpc() {
   ipcMain.on("store-read", (e, name) => { try { e.returnValue = storage.readBackup(name); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
   ipcMain.on("store-quarantine", (e) => { try { e.returnValue = storage.quarantineCorrupt(); } catch (err) { e.returnValue = null; } });
   ipcMain.on("open-data-folder", () => { shell.openPath(path.dirname(storage.dataFile)); });
+  // File xuất (2.0-α16): giao diện chỉ gửi TÊN file — đường dẫn ghép trong thư mục xuất (main/exports.js)
+  ipcMain.on("files-info", (e) => { try { e.returnValue = { ok: true, dir: exportsDir.dir(), openAfterDownload: exportsDir.openAfter(), files: exportsDir.list(100), lastShell }; } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
+  ipcMain.on("files-open", (e, name) => { const f = exportsDir.resolve(name); if (f) shellDo("open", f); e.returnValue = !!f; });
+  ipcMain.on("files-show", (e, name) => { const f = exportsDir.resolve(name); if (f) shellDo("show", f); e.returnValue = !!f; });
+  ipcMain.on("files-open-dir", (e) => { try { const d = exportsDir.dir(); require("fs").mkdirSync(d, { recursive: true }); shellDo("open", d); e.returnValue = true; } catch (err) { e.returnValue = false; } });
+  ipcMain.on("files-choose-dir", (e) => {
+    try {
+      const w = BrowserWindow.fromWebContents(e.sender);
+      const r = dialog.showOpenDialogSync(w, { title: "Chọn thư mục lưu file Excel / báo cáo", defaultPath: exportsDir.dir(), properties: ["openDirectory", "createDirectory"] });
+      e.returnValue = r && r[0] ? exportsDir.setDir(r[0]) : { ok: false, cancelled: true };
+    } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; }
+  });
+  ipcMain.on("files-reset-dir", (e) => { try { e.returnValue = exportsDir.setDir(null); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
+  ipcMain.on("files-open-after", (e, on) => { try { e.returnValue = exportsDir.setOpenAfter(on); } catch (err) { e.returnValue = { ok: false }; } });
   // Thư mục sao lưu thứ hai: người dùng CHỌN bằng hộp thoại của Windows ở tiến trình chính (giao diện không gửi đường dẫn tùy ý)
   ipcMain.on("backup-mirror-choose", (e) => {
     try {
@@ -49,15 +70,23 @@ function registerIpc() {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1280, height: 800, title: "Nhân sự - Tiền lương HAK",
+    width: 1280, height: 800, title: "Tính Lương HAK", icon: path.join(__dirname, "ui", "icon.png"), backgroundColor: "#f3f6fa",
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, "preload.js") }
   });
   Menu.setApplicationMenu(null);
   // Bảo mật: không mở cửa sổ mới / không điều hướng ra ngoài app
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("will-navigate", (ev, url) => { if (!url.startsWith("file://")) ev.preventDefault(); });
-  // Tải file (xuất Excel, sao lưu): mặc định Electron hỏi nơi lưu. Kiểm thử tự động có thể chỉ định thư mục.
-  if (process.env.HAK_DOWNLOAD_DIR) win.webContents.session.on("will-download", (ev, item) => { item.setSavePath(path.join(process.env.HAK_DOWNLOAD_DIR, item.getFilename())); });
+  // Tải file (xuất Excel, báo cáo, sao lưu ra file): lưu thẳng vào thư mục xuất, không ghi đè; xong → báo giao diện + (mặc định) mở thư mục chọn sẵn file
+  win.webContents.session.on("will-download", (ev, item) => {
+    const f = exportsDir.target(item.getFilename());
+    item.setSavePath(f);
+    item.once("done", (e2, state) => {
+      const ok = state === "completed";
+      if (ok && exportsDir.openAfter()) shellDo("show", f);
+      if (!win.isDestroyed()) win.webContents.send("download-done", { ok, name: path.basename(f), dir: path.dirname(f), state, opened: ok && exportsDir.openAfter() });
+    });
+  });
   win.loadFile(path.join(__dirname, "index.html"));
   win.maximize();
   return win;
@@ -69,6 +98,7 @@ app.on("second-instance", () => {
 });
 app.whenReady().then(() => {
   storage = createStorage(app.getPath("userData"));
+  exportsDir = createExports({ readSettings: storage.readSettings, writeSettings: storage.writeSettings, defaultDir: path.join(app.getPath("documents"), "Tinh Luong HAK", "File xuat"), fixedDir: process.env.HAK_DOWNLOAD_DIR || "" });
   try { storage.backup("startup"); } catch (e) { /* lần đầu chưa có dữ liệu */ }
   registerIpc();
   createWindow();

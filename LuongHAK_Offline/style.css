@@ -57,6 +57,8 @@ button.b,.subtabs button{display:inline-flex;align-items:center;justify-content:
 .topbtn kbd{font:600 11.5px ui-monospace,Consolas,monospace;color:#fff;background:#1f2a33;border-radius:5px;padding:3px 7px}
 [data-theme="dark"] .topbtn kbd{background:#2c3d4f}
 .topbtn.icon{width:40px;padding:0;justify-content:center}
+/* màn hình laptop (1366–1500px): thu nút Tìm kiếm thành icon để thanh trên không xuống dòng */
+@media (max-width:1500px){#top h2{min-width:120px}.topbtn.srch{font-size:0;width:40px;padding:0;justify-content:center}.topbtn.srch svg.icn{width:18px;height:18px;margin:0}.topbtn.srch kbd{display:none}.who{max-width:170px}}
 .who{display:inline-flex;align-items:center;font-size:12.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--brand);background:var(--brandSoft);border-radius:10px;padding:0 12px;min-height:40px;max-width:280px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .period{display:flex;align-items:center;gap:6px;background:var(--brand);color:var(--onBrand);padding:4px 6px 4px 12px;border-radius:10px;min-height:40px}
 .period label{font-size:13px;font-weight:600}
@@ -288,3 +290,29 @@ td input:disabled{color:var(--ink);background:transparent}
 @media (max-width:900px){#app{flex-direction:column;height:auto;min-height:100vh}#side{width:auto}#nav{max-height:none}main{padding:16px}#top{padding:10px 14px}.hero{padding:22px}}
 @media print{#side,#top,.noprint,.bar{display:none!important}.card,.kpi{box-shadow:none;border:1px solid #ccc}body{background:#fff;color:#000}#app{display:block;height:auto}main{padding:0;overflow:visible}.slip{page-break-after:always}
 .noprint,.subtabs,.g-noprint{display:none!important}.guide{max-width:none;box-shadow:none;border:0;padding:0!important;margin:0;font-family:"Times New Roman",serif;font-size:13pt}#app,#content,main,.guide{display:block!important;width:auto!important;max-width:100%!important;padding:0!important;margin:0!important;overflow:visible!important}.g-tb{width:99%;table-layout:auto;font-size:11pt}.g-tb td,.g-tb th{word-wrap:break-word}.g-tb th{background:#eee}}
+
+/* ---------- File đã tải (α16) ---------- */
+#dlcard{position:fixed;right:20px;bottom:20px;width:min(420px,calc(100vw - 32px));background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:var(--r);box-shadow:var(--shadowH);padding:12px 14px;z-index:98;animation:slidein .2s ease}
+#dlcard.bad{border-left-color:var(--red)}
+#dlcard .t{display:flex;align-items:center;justify-content:space-between;font-weight:700;color:var(--okFg)}
+#dlcard.bad .t{color:var(--red)}
+#dlcard .nm{font-weight:600;margin:4px 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dlcard .hint{overflow-wrap:anywhere}
+#dlcard .bar{margin:10px 0 0}
+.files .fdir{display:flex;flex-direction:column;gap:2px;background:var(--th);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.files .fdir b{overflow-wrap:anywhere;font-weight:600}
+.files .chk{display:flex;align-items:center;gap:6px;margin:0 0 12px;cursor:pointer}
+.files .empty{color:var(--mut);padding:18px 4px}
+.flist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.flist li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--card)}
+.flist li:hover{background:var(--hover)}
+.flist .fm{flex:1;min-width:0;display:flex;flex-direction:column}
+.flist .fm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flist .fm small{color:var(--mut)}
+.flist .fx{flex:none;width:44px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:10.5px;font-weight:700;letter-spacing:.03em;background:var(--infoBg);color:var(--infoFg)}
+.flist .fx.x-xlsx,.flist .fx.x-xls,.flist .fx.x-csv{background:#e3f4ea;color:#1d6b3e}
+.flist .fx.x-doc,.flist .fx.x-docx{background:#e6eefb;color:#23497a}
+.flist .fx.x-pdf{background:var(--redBg);color:var(--red)}
+[data-theme="dark"] .flist .fx.x-xlsx,[data-theme="dark"] .flist .fx.x-xls,[data-theme="dark"] .flist .fx.x-csv{background:rgba(52,168,100,.18);color:#8fe0b0}
+[data-theme="dark"] .flist .fx.x-doc,[data-theme="dark"] .flist .fx.x-docx{background:#1e2c45;color:#a9c3ef}
+@media print{#dlcard{display:none}}

@@ -95,6 +95,17 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α16 Thư mục file xuất (`tests/unit/exports.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-EX-01 | Trùng tên không ghi đè: thêm (1), (2); file cũ giữ nguyên; tự tạo thư mục mặc định |
+| U-EX-02 | Tên file `../`, `..\`, `C:\…`, `/etc/…` không thoát khỏi thư mục xuất; bỏ ký tự Windows không cho |
+| U-EX-03 | Mở file: chỉ tên file có thật trong thư mục xuất, đúng loại app xuất ra — từ chối .exe, thư mục con, `..`, file không còn |
+| U-EX-04 | Danh sách mới nhất trước; đổi thư mục / tự mở thư mục lưu theo máy; thư mục đã chọn mất → về mặc định |
+| U-EX-05 | Kiểm thử tự động: HAK_DOWNLOAD_DIR cố định thư mục |
+
+E2E (α16, HAK_NO_SHELL — ghi lại thao tác thay vì mở Explorer): xuất Excel → thẻ báo tên file + nơi lưu, tự mở thư mục chọn sẵn file · nút Mở file · ngăn File đã tải liệt kê + mở, từ chối file ngoài thư mục · Mở thư mục · xuất lại cùng tên thêm (1).
+
 ## Unit — 2.0-α15 Biến động nhân sự (`tests/unit/bien-dong.test.js`)
 | ID | Nội dung |
 |---|---|

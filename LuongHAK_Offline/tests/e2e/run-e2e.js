@@ -36,7 +36,7 @@ async function auth(w, who) {
 }
 async function launch(dataDir, opt) {
   opt = opt || {};
-  const app = await _electron.launch({ executablePath: ELECTRON, args: ["--no-sandbox", APP], env: Object.assign({}, process.env, { HAK_USER_DATA: dataDir || DATA, HAK_DOWNLOAD_DIR: DL }) });
+  const app = await _electron.launch({ executablePath: ELECTRON, args: ["--no-sandbox", APP], env: Object.assign({}, process.env, { HAK_USER_DATA: dataDir || DATA, HAK_DOWNLOAD_DIR: DL, HAK_NO_SHELL: "1" }) });
   const w = await app.firstWindow(); const errs = [];
   w.on("pageerror", (e) => errs.push(e.message));
   w.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
@@ -107,6 +107,29 @@ async function launch(dataDir, opt) {
     const bl = XLSX.utils.sheet_to_json(wb.Sheets.BangLuong);
     ok("Xuất Excel trọn bộ: đủ 4 sheet, số khớp bảng đã chốt", wb.SheetNames.join(",") === "BangLuong,BHXH,ThueTNCN,ChuyenKhoan" && bl[0]["Thực lĩnh"] === 11370000, wb.SheetNames.join(",") + " · thực lĩnh " + bl[0]["Thực lĩnh"]);
   } else ok("Xuất Excel trọn bộ kỳ đã chốt", false, "không thấy file");
+  // α16: tải xong → thẻ báo [Mở file] [Mở thư mục] + tự mở thư mục chọn sẵn file (HAK_NO_SHELL: chỉ ghi lại thao tác, không mở Explorer thật)
+  await w.waitForSelector("#dlcard");
+  const card = await w.locator("#dlcard").innerText();
+  const sh1 = await w.evaluate(() => window.hakFiles.info().lastShell);
+  ok("Tải Excel xong: báo tên file + nơi lưu, tự mở thư mục chọn sẵn file", /Đã lưu file/.test(card) && card.includes("KyLuong_2026-09.xlsx") && card.includes(DL) && sh1 && sh1.kind === "show" && sh1.name === "KyLuong_2026-09.xlsx", card.replace(/\s+/g, " ") + " · " + JSON.stringify(sh1));
+  await w.click('#dlcard button:has-text("Mở file")');
+  const sh2 = await w.evaluate(() => window.hakFiles.info().lastShell);
+  ok("Nút Mở file mở đúng file vừa tải", sh2 && sh2.kind === "open" && sh2.name === "KyLuong_2026-09.xlsx" && (await w.locator("#dlcard").count()) === 0, JSON.stringify(sh2));
+  await w.click("#top button[data-files]"); await w.waitForSelector("#modal.drawer .flist li");
+  const fl = await w.locator(".flist li").first().innerText();
+  await w.locator(".flist li").first().locator("button", { hasText: "Mở" }).click();
+  const sh3 = await w.evaluate(() => window.hakFiles.info().lastShell);
+  const outside = await w.evaluate(() => [window.hakFiles.open("../data.json"), window.hakFiles.show("..\\data.json"), window.hakFiles.open("khongco.xlsx")]);
+  ok("File đã tải: liệt kê file mới nhất, mở được; không mở file ngoài thư mục xuất", fl.includes("KyLuong_2026-09.xlsx") && sh3.kind === "open" && outside.every((x) => x === false), fl.replace(/\s+/g, " ") + " · " + JSON.stringify(outside));
+  await w.click('.dlg footer button:has-text("Mở thư mục")');
+  const sh4 = await w.evaluate(() => window.hakFiles.info().lastShell);
+  ok("Nút Mở thư mục mở thư mục lưu", sh4.kind === "open" && sh4.name === path.basename(DL), JSON.stringify(sh4));
+  await w.click('.dlg footer button:has-text("Đóng")');
+  const n0 = fs.readdirSync(DL).length;
+  await w.click('button:has-text("Xuất trọn bộ Excel")');
+  let dup = null; for (let i = 0; i < 30 && !dup; i++) { await w.waitForTimeout(200); dup = fs.readdirSync(DL).filter((f) => f === "KyLuong_2026-09 (1).xlsx")[0]; }
+  ok("Xuất lại cùng tên KHÔNG ghi đè file cũ (thêm (1))", !!dup && fs.readdirSync(DL).length === n0 + 1, fs.readdirSync(DL).join(", "));
+  await w.waitForSelector("#dlcard"); await w.click("#dlcard .t button");
   // Hướng dẫn & Quy chế: 5 phần, quy chế sinh từ danh mục, tải Word
   await w.click("#nav button[data-k=huongdan]");
   const gTabs = await w.locator(".subtabs button").count();
