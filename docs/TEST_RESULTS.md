@@ -1,5 +1,13 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.13 — Sao lưu ra ngoài máy (11/10/2026, nhánh `claude/v2-backup-offsite`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **133/133** (+4 U-MIR-01…04: chép + kiểm SHA-256, rút USB, bản sau chốt không bị dọn, đếm ngày) |
+| E2E Electron (xvfb, Linux) | ✅ **55/55** (+4: bản sau chốt ×2, nhắc Trang chủ, chọn thư mục → chép + hết nhắc, không lỗi JS) |
+| Windows thực tế | ⏳ chưa (hộp chọn thư mục Windows + USB thật cần thử trên máy) |
+
 ## 2.0.0-alpha.12 — Q-19 chia chi phí theo phòng ban (11/10/2026, nhánh `claude/v2-q19-phongban`)
 | Nhóm | Kết quả |
 |---|---|

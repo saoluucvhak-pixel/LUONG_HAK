@@ -131,6 +131,14 @@ HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/
 - Vẫn nên **Sao lưu ra file** định kỳ và cất sang USB/Drive. Đổi máy: cài app → **Khôi phục từ file**.
 - Nâng cấp từ bản 1.0: dữ liệu cũ (bảng Nhân sự phẳng) tự chuyển sang hồ sơ mới, mỗi người có 1 hợp đồng "HD-<mã>" và 1 phụ lục lương.
 
+## Sao lưu ra ngoài máy (từ 2.0-alpha.13)
+- **Thư mục sao lưu thứ hai** (Admin): vào *Công ty & Sao lưu → Sao lưu ra ngoài máy → Chọn thư mục sao lưu thứ hai…*. Chọn USB / ổ cứng ngoài / ổ mạng / thư mục Google Drive đã đồng bộ trên máy.
+  - Từ đó mọi bản sao lưu tự chép sang thư mục `TinhLuongHAK-SaoLuu` và được kiểm tra.
+  - Nếu rút USB, app vẫn sao lưu trên máy và báo lỗi. Cắm lại rồi bấm *Chép sang thư mục thứ hai ngay*.
+- **Sau mỗi lần chốt kỳ**, app tạo bản `sau-chot-<kỳ>` và **giữ vĩnh viễn**.
+- Quá **7 ngày** chưa sao lưu ra ngoài máy, Trang chủ sẽ nhắc.
+- **Quy trình tháng gợi ý:** chốt kỳ → kiểm tra thư mục thứ hai đã có bản `sau-chot` → mỗi quý thử *Khôi phục từ file* trên một máy khác.
+
 ## Lưu ý
 Danh mục chuẩn chỉ là số liệu khởi đầu — kế toán kiểm tra lại đơn giá, tỷ lệ BH, biểu thuế theo quy định hiện hành.
 

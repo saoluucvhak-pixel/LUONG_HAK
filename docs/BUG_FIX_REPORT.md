@@ -208,3 +208,10 @@ Rollback: cài lại alpha.10. Phụ lục đã chọn "Từ ngày hiệu lực"
 
 Rollback: cài lại alpha.11. Báo cáo quay về ghi toàn bộ cho phòng ban cuối kỳ; dữ liệu không đổi.
 
+## 2.0.0-alpha.13 — Sao lưu ra ngoài máy (nhánh `claude/v2-backup-offsite`)
+| Rủi ro | Thay đổi | File | Test |
+|---|---|---|---|
+| Mọi bản sao lưu nằm cùng ổ với dữ liệu (hỏng ổ / mất máy / mã độc = mất hết); kỳ đã chốt không có bản giữ lâu dài; sao lưu ra ngoài hoàn toàn thủ công | (A) thư mục thứ hai tự chép + kiểm SHA-256; (B) bản sau chốt giữ vĩnh viễn; (D) nhắc quá 7 ngày | `main/storage.js`, `main.js`, `preload.js`, `app.js`, `ui/icons.js` | U-MIR-01…04, E2E |
+
+Rollback: cài lại alpha.12 — bản sao lưu đã tạo vẫn dùng được (cùng định dạng); `settings.json` bị bỏ qua.
+

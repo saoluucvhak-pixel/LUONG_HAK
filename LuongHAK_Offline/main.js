@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const os = require("os");
 const { createStorage } = require("./main/storage");
@@ -23,6 +23,18 @@ function registerIpc() {
   ipcMain.on("store-read", (e, name) => { try { e.returnValue = storage.readBackup(name); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
   ipcMain.on("store-quarantine", (e) => { try { e.returnValue = storage.quarantineCorrupt(); } catch (err) { e.returnValue = null; } });
   ipcMain.on("open-data-folder", () => { shell.openPath(path.dirname(storage.dataFile)); });
+  // Thư mục sao lưu thứ hai: người dùng CHỌN bằng hộp thoại của Windows ở tiến trình chính (giao diện không gửi đường dẫn tùy ý)
+  ipcMain.on("backup-mirror-choose", (e) => {
+    try {
+      const w = BrowserWindow.fromWebContents(e.sender);
+      const r = dialog.showOpenDialogSync(w, { title: "Chọn thư mục sao lưu thứ hai (USB / ổ mạng / thư mục Google Drive)", properties: ["openDirectory", "createDirectory"] });
+      e.returnValue = r && r[0] ? storage.setMirror(r[0]) : { ok: false, cancelled: true };
+    } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; }
+  });
+  ipcMain.on("backup-mirror-clear", (e) => { try { e.returnValue = storage.setMirror(null); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
+  ipcMain.on("backup-mirror-sync", (e) => { try { e.returnValue = storage.syncMirror(); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
+  ipcMain.on("backup-status", (e) => { try { e.returnValue = storage.backupStatus(); } catch (err) { e.returnValue = null; } });
+  ipcMain.on("backup-note-external", (e) => { try { storage.noteExternal(); e.returnValue = true; } catch (err) { e.returnValue = false; } });
   // Băm mật khẩu ở tiến trình chính (PBKDF2-SHA256) — giao diện không tự xử lý thuật toán; so sánh chống đo thời gian
   const crypto = require("crypto"), { Buffer } = require("buffer");
   const kdf = (pw, salt, iter) => crypto.pbkdf2Sync(String(pw), Buffer.from(String(salt), "hex"), Math.min(Math.max(+iter || 210000, 100000), 2000000), 32, "sha256");

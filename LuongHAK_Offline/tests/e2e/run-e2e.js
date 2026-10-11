@@ -151,6 +151,7 @@ async function launch(dataDir, opt) {
   ok("data.json có nhân viên + kỳ đã chốt v2 + lịch sử v1", saved.nhanvien.length === 1 && saved.kyluong.length === 1 && saved.kyluong[0].checksum && saved.kyluong[0].version === 2 && saved.kyluong_lichsu.length === 1 && saved.kyluong_lichsu[0].moChot.lyDo === "Kiểm thử mở chốt");
   ok("Lương thỏa thuận lưu đúng 12000000", saved.chitiethd[0]["Lương thỏa thuận"] === "12000000", saved.chitiethd[0]["Lương thỏa thuận"]);
   const bks = fs.readdirSync(path.join(DATA, "backups"));
+  ok("(B) Chốt kỳ → bản sao lưu 'sau-chot-2026-09' (2 lần chốt → 2 bản, giữ vĩnh viễn)", bks.filter((f) => /^sau-chot-2026-09_.*\.json$/.test(f)).length === 2, bks.filter((f) => /^sau-chot/.test(f)).join(", "));
   ok("Có bản sao lưu tự động (đầu ngày + trước mở chốt)", bks.some((f) => /^daily_/.test(f)) && bks.some((f) => /^truoc-mo-chot_/.test(f)), bks.join(", "));
   const crypto = require("crypto"), bj = bks.filter((f) => /\.json$/.test(f));
   ok("Mỗi bản sao lưu có file kiểm tra SHA-256 khớp nội dung", bj.length > 0 && bj.every((f) => { try { return JSON.parse(fs.readFileSync(path.join(DATA, "backups", f + ".sha256"), "utf8")).sha256 === crypto.createHash("sha256").update(fs.readFileSync(path.join(DATA, "backups", f), "utf8")).digest("hex"); } catch (e) { return false; } }), bj.length + " bản");
@@ -317,6 +318,24 @@ async function launch(dataDir, opt) {
       adminCols.includes("Lương thỏa thuận") && !tbCols.includes("Lương thỏa thuận") && !/1[23]\.?000\.?000/.test(head + plText + formText + rep) && /🔒 ẩn/.test(plText) && salaryInput === 0 && /ô lương được ẩn/.test(formText),
       "cột admin/tbp: " + adminCols.includes("Lương thỏa thuận") + "/" + tbCols.includes("Lương thỏa thuận") + " · phụ lục có '🔒 ẩn': " + /🔒 ẩn/.test(plText) + " · ô lương trong form: " + salaryInput + " · có số lương 12/13 triệu: " + /1[23]\.?000\.?000/.test(head + plText + formText + rep));
     ok("Không lỗi JavaScript với vai trò Trưởng bộ phận", errs.length === 0, errs.join(" | "));
+    await app.close();
+  }
+
+  // (A) + (D): thư mục sao lưu thứ hai + nhắc sao lưu ra ngoài máy
+  {
+    const USB = fs.mkdtempSync(path.join(os.tmpdir(), "hak-usb-"));
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=home]"); await w.waitForTimeout(200);
+    const homeBefore = await w.locator("main").first().innerText();
+    await app.evaluate(({ dialog }, p) => { dialog.showOpenDialogSync = () => [p]; }, USB); // giả lập người dùng chọn thư mục trong hộp thoại Windows
+    await w.click("#nav button[data-k=backup]"); await w.click('button:has-text("Chọn thư mục sao lưu thứ hai")'); await w.waitForTimeout(500);
+    const card = await w.locator(".card", { has: w.locator('h3:has-text("Sao lưu ra ngoài máy")') }).innerText();
+    const mir = fs.readdirSync(path.join(USB, "TinhLuongHAK-SaoLuu"));
+    await w.click("#nav button[data-k=home]"); await w.waitForTimeout(200);
+    const homeAfter = await w.locator("main").first().innerText();
+    ok("(D) Trang chủ nhắc khi CHƯA có bản sao lưu ra ngoài máy", /Chưa có bản sao lưu nào ra ngoài máy/.test(homeBefore));
+    ok("(A) Chọn thư mục thứ hai → chép ngay các bản sau chốt kỳ (+ file kiểm tra SHA-256); hết lời nhắc", card.includes(USB) && mir.filter((f) => /^sau-chot-2026-09_.*\.json$/.test(f)).length === 2 && mir.some((f) => /\.sha256$/.test(f)) && !/ra ngoài máy/.test(homeAfter.split("Nhớ sao lưu")[0]), mir.join(", "));
+    ok("Không lỗi JavaScript ở sao lưu ra ngoài máy", errs.length === 0, errs.join(" | "));
     await app.close();
   }
 

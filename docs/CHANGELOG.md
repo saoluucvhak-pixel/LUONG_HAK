@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [2.0.0-alpha.13] — 11/10/2026 — Sao lưu ra ngoài máy (A + B + D)
+- **(A) Thư mục sao lưu thứ hai**: Admin chọn USB / ổ mạng / thư mục Google Drive đồng bộ bằng hộp chọn thư mục của Windows. Mọi bản sao lưu tự chép sang và **đọc lại kiểm SHA-256**. USB rút ra / ổ mạng mất kết nối → sao lưu trên máy vẫn bình thường, app báo lỗi và có nút *Chép sang thư mục thứ hai ngay*.
+- **(B) Bản sao lưu sau chốt kỳ** `sau-chot-<kỳ>`: tạo ngay khi chốt, **giữ vĩnh viễn** (không bị dọn), tự chép sang thư mục thứ hai.
+- **(D) Nhắc nhở**: chưa từng / quá 7 ngày chưa sao lưu ra ngoài máy → Trang chủ cảnh báo (người có quyền sao lưu / Admin).
+- Cấu hình thư mục là của **từng máy** (`settings.json`), không nằm trong `data.json`.
+- Test: 133 (+4 U-MIR), E2E 55/55 (+4).
+
 ## [2.0.0-alpha.12] — 11/10/2026 — Q-19: chia chi phí lương theo phòng ban khi điều chuyển (engine 1.6.0)
 - Nhân viên đổi phòng ban trong tháng (phụ lục mới đổi *Phòng ban*) → báo cáo **Tổng hợp theo phòng ban** và **Bảng hạch toán** chia chi phí theo **số công làm ở từng phòng**:
   - thu nhập, BH NLĐ, BH công ty, thuế, tạm ứng, thực lĩnh;

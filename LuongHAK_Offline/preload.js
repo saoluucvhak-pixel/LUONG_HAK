@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld("hakStore", {
   readBackup: (name) => ipcRenderer.sendSync("store-read", name),
   quarantine: () => ipcRenderer.sendSync("store-quarantine"),
   openFolder: () => ipcRenderer.send("open-data-folder"),
+  mirrorChoose: () => ipcRenderer.sendSync("backup-mirror-choose"), // { ok, copied?, error?, cancelled? }
+  mirrorClear: () => ipcRenderer.sendSync("backup-mirror-clear"),
+  mirrorSync: () => ipcRenderer.sendSync("backup-mirror-sync"),
+  backupStatus: () => ipcRenderer.sendSync("backup-status"),       // { mirrorDir, lastMirrorOk, lastMirrorError, lastExternal, daysSinceExternal, permanent }
+  noteExternal: () => ipcRenderer.sendSync("backup-note-external"),
   whoami: () => ipcRenderer.sendSync("app-user"),            // { user, host } — tài khoản Windows đang dùng
   authSalt: () => ipcRenderer.sendSync("auth-salt"),
   authHash: (pw, salt, iter) => ipcRenderer.sendSync("auth-hash", pw, salt, iter),

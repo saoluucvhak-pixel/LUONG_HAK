@@ -65,6 +65,8 @@ Nguyên tắc:
 
 | `core/allocation` (2.0-α12) | `split(số tiền, phần)` · `byDepartment(kq)` · `costByKey(kq, tkOf)` | bảng lương | chia chi phí người điều chuyển theo công (Q-19); tổng các phần = số gốc |
 
+| `main/storage` + `preload` (2.0-α13) | `setMirror(dir)` · `syncMirror()` · `backupStatus()` · `noteExternal()` — IPC `backup-mirror-choose` (hộp chọn thư mục ở tiến trình chính) / `-clear` / `-sync` / `backup-status` / `backup-note-external` | thư mục người dùng chọn | chép bản sao lưu + kiểm SHA-256; cấu hình riêng từng máy ở `settings.json` |
+
 ### 3.1 Tầng repository (2.0-α6)
 ```
 UI (app.js) ──plan()──▶ core/repository ──▶ validate · importer.keyOf · period-guard   (chỉ đọc)

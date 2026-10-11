@@ -59,6 +59,7 @@
 - [x] Q-22 chọn cách áp dụng phụ lục giữa tháng (R-56, alpha.11, engine 1.5.0)
 - [x] Q-19 chia chi phí theo phòng ban (R-53, alpha.12)
 - [x] Q-04/Q-23/Q-25 BH dưới ngưỡng: giữ công thức, ngưỡng khai ở Danh mục Mã lương (R-57)
+- [x] Sao lưu ra ngoài máy A + B + D (alpha.13, R-58); C (mã hóa bản sao lưu) — chưa làm theo quyết định chủ sở hữu
 - Tiếp theo: gom 4 đường ghi còn lại (nhập Excel, gộp chấm công, thêm NV, xóa NV) vào repository → SQLite ghi theo dòng
 
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)

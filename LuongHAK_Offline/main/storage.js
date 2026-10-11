@@ -6,6 +6,9 @@
 //  - Mỗi bản sao lưu có file kiểm tra <tên>.sha256 → phát hiện bản sao lưu bị hỏng/sửa trước khi khôi phục.
 //  - Dọn bớt bản cũ theo loại nhưng KHÔNG BAO GIỜ xóa bản sao lưu tốt (đã kiểm tra) mới nhất.
 //  - Lỗi đĩa (đầy, không có quyền, ghi thất bại) → trả lỗi rõ ràng, file đang có giữ nguyên, không để lại file tạm.
+//  - (2.0-α13) Bản "sau-chot-<kỳ>" (tạo khi chốt kỳ) KHÔNG BAO GIỜ bị dọn.
+//  - (2.0-α13) Thư mục sao lưu THỨ HAI (USB / NAS / thư mục Drive đồng bộ): mỗi bản sao lưu được chép sang, đọc lại kiểm SHA-256;
+//    thư mục không truy cập được → sao lưu trên máy vẫn bình thường, lỗi được ghi lại để app nhắc người dùng.
 "use strict";
 const realFs = require("fs");
 const path = require("path");
@@ -13,6 +16,8 @@ const crypto = require("crypto");
 const { Buffer } = require("buffer");
 
 const KEEP = { daily: 60, startup: 10, default: 20 };
+const MIRROR_SUB = "TinhLuongHAK-SaoLuu"; // thư mục con tạo trong thư mục người dùng chọn
+const isPermanent = (tag) => /^sau-chot/.test(tag); // bản sau chốt kỳ: giữ vĩnh viễn
 
 function pad(n, w) { return String(n).padStart(w || 2, "0"); }
 function stamp(d) { d = d || new Date(); return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + "-" + pad(d.getMilliseconds(), 3); }
@@ -39,6 +44,9 @@ function createStorage(dir, opts) {
   const backupDir = path.join(dir, "backups");
   const ensure = () => { fs.mkdirSync(dir, { recursive: true }); fs.mkdirSync(backupDir, { recursive: true }); };
   const exists = (f) => { try { fs.statSync(f); return true; } catch (e) { return false; } };
+  const settingsFile = path.join(dir, "settings.json"); // cấu hình RIÊNG của máy này (không nằm trong data.json)
+  function readSettings() { try { const o = JSON.parse(fs.readFileSync(settingsFile, "utf8")); return o && typeof o === "object" ? o : {}; } catch (e) { return {}; } }
+  function writeSettings(o) { ensure(); writeAtomic(settingsFile, JSON.stringify(o, null, 1), false); }
 
   function fsyncDir(d) { let fd; try { fd = fs.openSync(d, "r"); fs.fsyncSync(fd); } catch (e) { /* Windows không mở được thư mục — bỏ qua */ } finally { if (fd !== undefined) try { fs.closeSync(fd); } catch (e) { /* bỏ qua */ } } }
   /** Ghi nguyên tử: file tạm (tên riêng) → fsync → rename. exclusive=true: không bao giờ đè file đích đã có. */
@@ -94,6 +102,7 @@ function createStorage(dir, opts) {
     try { fs.unlinkSync(path.join(backupDir, name + ".sha256")); } catch (e) { /* bỏ qua */ }
   }
   function prune(tag) {
+    if (isPermanent(tag)) return;
     const keep = KEEP[tag] || KEEP.default;
     const all = list();
     const victims = all.filter((f) => f.tag === tag).slice(keep);
@@ -124,7 +133,64 @@ function createStorage(dir, opts) {
     tag = safeTag(tag);
     const file = writeBackup(tag, text, name);
     prune(tag);
+    mirrorOne(file, tag);
     return file;
+  }
+
+  // ---------- Thư mục sao lưu thứ hai ----------
+  function mirrorRoot() { const st = readSettings(); return st.mirrorDir ? path.join(st.mirrorDir, MIRROR_SUB) : null; }
+  function noteMirror(ok, msg) {
+    const st = readSettings();
+    if (ok) { st.lastMirrorOk = now().toISOString(); st.lastMirrorError = ""; st.lastExternal = st.lastMirrorOk; }
+    else st.lastMirrorError = now().toISOString() + " · " + msg;
+    try { writeSettings(st); } catch (e) { /* không ghi được cấu hình: không ảnh hưởng dữ liệu */ }
+  }
+  /** Chép 1 bản sao lưu (+ file kiểm tra) sang thư mục thứ hai, đọc lại so SHA-256. Không bao giờ ném lỗi ra ngoài. */
+  function mirrorOne(file, tag) {
+    const st = readSettings(); if (!st.mirrorDir) return { ok: false, skipped: true };
+    try {
+      if (!exists(st.mirrorDir)) throw new Error("Không truy cập được thư mục " + st.mirrorDir + " (USB chưa cắm / ổ mạng mất kết nối?)");
+      const root = path.join(st.mirrorDir, MIRROR_SUB); fs.mkdirSync(root, { recursive: true });
+      const text = fs.readFileSync(path.join(backupDir, file), "utf8"), sc = fs.readFileSync(path.join(backupDir, file + ".sha256"), "utf8");
+      if (!exists(path.join(root, file))) writeAtomic(path.join(root, file), text, true);
+      writeAtomic(path.join(root, file + ".sha256"), sc, false);
+      const want = JSON.parse(sc).sha256;
+      if (sha256(fs.readFileSync(path.join(root, file), "utf8")) !== want) throw new Error("Bản chép sang thư mục thứ hai không khớp mã kiểm tra — kiểm tra lại USB / ổ đĩa");
+      pruneMirror(root, tag || "");
+      noteMirror(true);
+      return { ok: true };
+    } catch (e) { noteMirror(false, errText(e)); return { ok: false, error: errText(e) }; }
+  }
+  function pruneMirror(root, tag) {
+    if (!tag || isPermanent(tag)) return;
+    const keep = KEEP[tag] || KEEP.default;
+    const mine = fs.readdirSync(root).filter((f) => /\.json$/.test(f) && f.indexOf(tag + "_") === 0).sort().reverse(); // tên chứa thời điểm → mới nhất trước
+    mine.slice(keep).forEach((f) => { try { fs.unlinkSync(path.join(root, f)); } catch (e) { /* bỏ qua */ } try { fs.unlinkSync(path.join(root, f + ".sha256")); } catch (e) { /* bỏ qua */ } });
+  }
+  /** Đặt / bỏ thư mục thứ hai. Đặt xong chép ngay bản mới nhất + mọi bản sau chốt kỳ còn thiếu. */
+  function setMirror(dirPath) {
+    const st = readSettings();
+    if (!dirPath) { delete st.mirrorDir; st.lastMirrorError = ""; writeSettings(st); return { ok: true }; }
+    if (!exists(dirPath)) return { ok: false, error: "Thư mục không tồn tại" };
+    if (path.resolve(dirPath).indexOf(path.resolve(dir)) === 0) return { ok: false, error: "Hãy chọn thư mục ở ổ khác / USB / Drive — không chọn bên trong thư mục dữ liệu của app" };
+    st.mirrorDir = dirPath; writeSettings(st);
+    return syncMirror();
+  }
+  function syncMirror() {
+    if (!mirrorRoot()) return { ok: false, error: "Chưa chọn thư mục sao lưu thứ hai" };
+    const all = list(), pick = all.filter((b) => isPermanent(b.tag));
+    if (all[0] && pick.indexOf(all[0]) < 0) pick.unshift(all[0]);
+    let n = 0, err = "";
+    pick.forEach((b) => { const r = mirrorOne(b.name, b.tag); if (r.ok) n++; else err = r.error; });
+    if (!pick.length) { const f = backup("manual"); if (f) n++; }
+    return err ? { ok: false, error: err, copied: n } : { ok: true, copied: n };
+  }
+  /** Ghi nhận người dùng đã "Sao lưu ra file" (tải file về để cất USB / Drive). */
+  function noteExternal() { const st = readSettings(); st.lastExternal = now().toISOString(); try { writeSettings(st); } catch (e) { /* bỏ qua */ } }
+  function backupStatus() {
+    const st = readSettings(), last = st.lastExternal ? new Date(st.lastExternal) : null;
+    return { mirrorDir: st.mirrorDir || "", lastMirrorOk: st.lastMirrorOk || "", lastMirrorError: st.lastMirrorError || "", lastExternal: st.lastExternal || "",
+      daysSinceExternal: last ? Math.floor((now() - last) / 864e5) : null, permanent: list().filter((b) => isPermanent(b.tag)).length };
   }
   function cleanupTmp() {
     [dir, backupDir].forEach((d) => {
@@ -180,7 +246,8 @@ function createStorage(dir, opts) {
     fs.renameSync(dataFile, path.join(dir, f));
     return f;
   }
-  return { dataFile, backupDir, load, save, backup, list, readBackup, verifyBackup, verifyAll, quarantineCorrupt, info: () => ({ dataFile, backupDir }) };
+  return { dataFile, backupDir, load, save, backup, list, readBackup, verifyBackup, verifyAll, quarantineCorrupt, info: () => ({ dataFile, backupDir }),
+    setMirror, syncMirror, noteExternal, backupStatus };
 }
 
 module.exports = { createStorage, isValidDataText, sha256 };

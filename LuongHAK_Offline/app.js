@@ -1029,7 +1029,11 @@
     var snap = CLS.buildSnapshot(db, ky, fresh, fresh._staff, { note: note, buTheoNgay: st.bu, engineVersion: E.ENGINE_VERSION, user: currentUser() });
     CLS.close(db, snap); audit("Chốt kỳ lương", ky + " v" + snap.version + " — " + now2.soNV + " NV, thực lĩnh " + now2.thucLinh);
     if (!saveNow()) { CLS.rollbackClose(db, snap); db.auditlog.pop(); alert("CHỐT KHÔNG THÀNH CÔNG: chưa lưu được dữ liệu xuống đĩa. Kỳ lương vẫn ở trạng thái chưa chốt."); render(); return; }
-    st.kq = null; render(); toast("Đã chốt và lưu " + kyLabel(ky) + " (phiên bản " + snap.version + ")");
+    // Bản sao lưu SAU CHỐT KỲ: giữ vĩnh viễn, tự chép sang thư mục sao lưu thứ hai nếu đã chọn (main/storage.js)
+    var bkChot = null; try { bkChot = store && store.backup ? store.backup("sau-chot-" + ky) : null; } catch (e) { bkChot = null; }
+    var bs = bkChot && store.backupStatus ? store.backupStatus() : null;
+    st.kq = null; render(); toast("Đã chốt và lưu " + kyLabel(ky) + " (phiên bản " + snap.version + ")" + (bkChot ? " · đã tạo bản sao lưu sau chốt" + (bs && bs.mirrorDir && !bs.lastMirrorError ? " và chép sang thư mục thứ hai" : "") : ""));
+    if (bs && bs.mirrorDir && bs.lastMirrorError) alert("⚠ Đã chốt và sao lưu trên máy, nhưng KHÔNG chép được sang thư mục sao lưu thứ hai:\n" + bs.lastMirrorError + "\n\nCắm USB / kết nối ổ mạng rồi vào Công ty & Sao lưu → 'Chép sang thư mục thứ hai ngay'.");
     });
   }
   function moChot(ky) {
@@ -1426,6 +1430,11 @@
     if (iss.length) w.appendChild(h("div", { class: "warn", html: "<b>🩺 " + iss.length + " vấn đề dữ liệu mức Critical/High</b> có thể làm sai tiền lương — xem tại <b>Công ty & Sao lưu → Kiểm tra dữ liệu</b>.<br>" + iss.slice(0, 3).map(function (i) { return "• " + esc(i.msg); }).join("<br>") }));
     var het = HRM.reports(db).hethan(30);
     if (het.length) w.appendChild(h("div", { class: "warn", html: "<b>⏰ " + het.length + " hợp đồng sắp hết hạn / đã quá hạn trong 30 ngày tới.</b> <a href='#' id='lnkhh'>Xem báo cáo</a>" }));
+    var bst = store && store.backupStatus && (can("backup.restore") || can("system.admin")) ? store.backupStatus() : null;
+    if (bst && (bst.daysSinceExternal == null || bst.daysSinceExternal > 7 || bst.lastMirrorError)) w.appendChild(h("div", { class: "locked", html: "⚠ <b>" +
+      (bst.lastMirrorError ? "Không chép được sang thư mục sao lưu thứ hai" : bst.daysSinceExternal == null ? "Chưa có bản sao lưu nào ra ngoài máy" : "Đã " + bst.daysSinceExternal + " ngày chưa sao lưu ra ngoài máy") +
+      "</b> — hỏng ổ cứng / mất máy / mã độc sẽ mất cả dữ liệu lẫn bản sao lưu trên máy. Vào <b>Công ty & Sao lưu</b>: chọn <b>thư mục sao lưu thứ hai</b> (USB, ổ mạng, Google Drive) hoặc bấm <b>Sao lưu ra file</b>." +
+      (bst.lastMirrorError ? "<br><span>" + esc(bst.lastMirrorError) + "</span>" : "") }));
     w.appendChild(h("div", { class: "warn", html: "<b>Nhớ sao lưu:</b> " + (store ? "app tự lưu dữ liệu và tự giữ bản sao lưu mỗi ngày trên máy này. Vẫn nên định kỳ" : "dữ liệu nằm trong trình duyệt của máy này. Cuối mỗi kỳ lương hãy") + " vào <b>Sao lưu</b> → <b>Sao lưu ra file</b> và cất file ở nơi khác (USB, Google Drive...)." }));
     setTimeout(function () { var a = $("#lnkhh"); if (a) a.onclick = function (e) { e.preventDefault(); st.tab = "baocao"; st.bc = "hethan"; render(); }; }, 0);
     return w;
@@ -1442,7 +1451,7 @@
     }
     c.appendChild(h("div", { class: "warn", text: "Trước khi cài lại Windows / đổi máy: bấm 'Sao lưu ra file' và cất file sang USB/Drive. Sang máy mới cài app rồi 'Khôi phục từ file'." }));
     var bar = h("div", { class: "bar" });
-    bar.appendChild(btn("⬇ Sao lưu ra file", "pri", function () { if (!need("backup.restore", "sao lưu toàn bộ dữ liệu ra file")) return; download("LuongHAK_backup_" + new Date().toISOString().slice(0, 10) + ".json", "application/json", JSON.stringify(db)); audit("Sao lưu ra file", ""); }));
+    bar.appendChild(btn("⬇ Sao lưu ra file", "pri", function () { if (!need("backup.restore", "sao lưu toàn bộ dữ liệu ra file")) return; download("LuongHAK_backup_" + new Date().toISOString().slice(0, 10) + ".json", "application/json", JSON.stringify(db)); audit("Sao lưu ra file", ""); if (store && store.noteExternal) store.noteExternal(); }));
     bar.appendChild(btn("⬆ Khôi phục từ file", "", function () {
       if (!need("backup.restore")) return;
       var f = h("input", { type: "file", accept: ".json" });
@@ -1460,7 +1469,7 @@
     bar.appendChild(btn("🗑 Xóa toàn bộ dữ liệu", "red", function () { if (!need("system.admin")) return; if (confirm("XÓA TOÀN BỘ dữ liệu? Không thể hoàn tác!\n(Tài khoản người dùng được giữ lại.)") && confirm("Chắc chắn chứ?")) { backupNow("truoc-xoa-toan-bo"); db = { nguoidung: db.nguoidung, baomat: db.baomat, auditlog: db.auditlog }; ensureTables(); audit("Xóa toàn bộ dữ liệu", "đã sao lưu trước khi xóa"); saveNow(); st.kq = null; render(); } }));
     c.appendChild(bar);
     c.appendChild(h("div", { class: "hint", text: "Hiện có — " + Object.keys(ALL).map(function (k) { return ALL[k].ten + ": " + countOf(k); }).join(" · ") }));
-    var w = h("div"); w.appendChild(cardCongTy()); if (can("system.admin")) w.appendChild(cardUsers()); w.appendChild(c); w.appendChild(cardBackups()); w.appendChild(cardIntegrity()); w.appendChild(cardAudit());
+    var w = h("div"); w.appendChild(cardCongTy()); if (can("system.admin")) w.appendChild(cardUsers()); w.appendChild(c); w.appendChild(cardOffsite()); w.appendChild(cardBackups()); w.appendChild(cardIntegrity()); w.appendChild(cardAudit());
     return w;
   }
   // ---------- Khôi phục / sao lưu / kiểm tra dữ liệu ----------
@@ -1497,11 +1506,37 @@
     if (!saveNow()) { alert("Đã nạp dữ liệu nhưng CHƯA lưu được xuống đĩa!"); }
     st.kq = null; st.tab = "home"; render(); toast("Đã khôi phục từ " + label); if (mm.length) alert(mm.join("\n"));
   }
+  function cardOffsite() {
+    var c = h("div", { class: "card" });
+    c.appendChild(h("h3", { text: "🛡 Sao lưu ra ngoài máy (thư mục thứ hai)" }));
+    if (!store || !store.backupStatus) { c.appendChild(h("div", { class: "hint", text: "Chỉ có trong bản cài (.exe). Bản chạy trình duyệt: dùng 'Sao lưu ra file'." })); return c; }
+    var bs = store.backupStatus() || {};
+    c.appendChild(h("div", { class: "hint", text: "Chọn 1 thư mục KHÁC ổ đĩa của máy này: USB, ổ cứng ngoài, ổ mạng (NAS) hoặc thư mục Google Drive đã đồng bộ. Mỗi bản sao lưu (đầu ngày, trước thao tác lớn, sau chốt kỳ…) sẽ tự chép sang thư mục con 'TinhLuongHAK-SaoLuu' và được kiểm tra SHA-256. Bản sau chốt kỳ được giữ vĩnh viễn." }));
+    var rows = [
+      ["Thư mục thứ hai", bs.mirrorDir || "— chưa chọn —"],
+      ["Lần chép tốt gần nhất", bs.lastMirrorOk ? fmtTime(bs.lastMirrorOk) : "—"],
+      ["Lần sao lưu ra ngoài gần nhất", bs.lastExternal ? fmtTime(bs.lastExternal) + (bs.daysSinceExternal != null ? " (" + bs.daysSinceExternal + " ngày trước)" : "") : "chưa có"],
+      ["Bản sao lưu sau chốt kỳ (giữ vĩnh viễn)", String(bs.permanent || 0)]];
+    var t = h("table"), tb = h("tbody"); rows.forEach(function (r) { tb.appendChild(h("tr", {}, [h("td", { class: "t", text: r[0] }), h("td", { class: "t", text: r[1] })])); }); t.appendChild(tb); c.appendChild(t);
+    if (bs.lastMirrorError) c.appendChild(h("div", { class: "warn", text: "⚠ Lần chép gần nhất bị lỗi: " + bs.lastMirrorError }));
+    var bar = h("div", { class: "bar" });
+    if (can("system.admin")) bar.appendChild(btn(bs.mirrorDir ? "📁 Đổi thư mục…" : "📁 Chọn thư mục sao lưu thứ hai…", "pri", function () {
+      var r = store.mirrorChoose(); if (r && r.cancelled) return;
+      if (r && r.ok) { audit("Đặt thư mục sao lưu thứ hai", (store.backupStatus() || {}).mirrorDir || ""); toast("Đã chọn thư mục và chép " + (r.copied || 0) + " bản sao lưu"); } else alert("⚠ " + ((r && r.error) || "Không đặt được thư mục"));
+      render();
+    }));
+    if (bs.mirrorDir && can("backup.restore")) bar.appendChild(btn("⇪ Chép sang thư mục thứ hai ngay", "", function () {
+      var r = store.mirrorSync(); if (r && r.ok) toast("Đã chép " + (r.copied || 0) + " bản sao lưu"); else alert("⚠ " + ((r && r.error) || "Không chép được")); render();
+    }));
+    if (bs.mirrorDir && can("system.admin")) bar.appendChild(btn("Bỏ thư mục thứ hai", "ghost", function () { if (!confirm("Bỏ thư mục sao lưu thứ hai? (Các bản đã chép ở đó vẫn giữ nguyên)")) return; store.mirrorClear(); audit("Bỏ thư mục sao lưu thứ hai", bs.mirrorDir); render(); }));
+    c.appendChild(bar);
+    return c;
+  }
   function cardBackups() {
     var c = h("div", { class: "card" });
     c.appendChild(h("h3", { text: "🗂 Các bản sao lưu tự động trên máy" }));
     if (!store || !store.listBackups) { c.appendChild(h("div", { class: "hint", text: "Chỉ có trong bản cài (.exe). Bản chạy trình duyệt: dùng 'Sao lưu ra file'." })); return c; }
-    c.appendChild(h("div", { class: "hint", text: "daily = đầu mỗi ngày (giữ 60) · startup = mỗi lần mở app (giữ 10) · truoc-… = tự sao lưu trước thao tác lớn (nhập Excel, mở chốt, khôi phục, xóa)." }));
+    c.appendChild(h("div", { class: "hint", text: "daily = đầu mỗi ngày (giữ 60) · startup = mỗi lần mở app (giữ 10) · truoc-… = tự sao lưu trước thao tác lớn (nhập Excel, mở chốt, khôi phục, xóa) · sau-chot-… = ngay sau khi chốt kỳ (giữ VĨNH VIỄN)." }));
     var STATUS = { ok: "✓ Nguyên vẹn (SHA-256)", unverified: "Bản cũ — chưa có mã kiểm tra", mismatch: "✕ HỎNG / bị sửa", invalid: "✕ Không đọc được" };
     c.appendChild(h("div", { class: "bar" }, [btn("💾 Tạo bản sao lưu ngay", "pri", function () { if (!need("backup.restore", "tạo bản sao lưu")) return; var n = backupNow("thu-cong"); toast(n ? "Đã tạo " + n : "Chưa có dữ liệu để sao lưu"); render(); }),
       store.verifyBackups ? btn("🩺 Kiểm tra tất cả bản sao lưu", "", function () { st.bkVerify = true; render(); }) : null]));
@@ -1769,7 +1804,7 @@
       m.appendChild(h("div", { class: "card" }, [h("h3", { text: "⚠ Có lỗi khi hiển thị màn hình này" }),
         h("div", { class: "warn", text: String(e && e.message || e) }),
         h("div", { class: "hint", text: "Dữ liệu KHÔNG bị mất. Hãy quay về Trang chủ; nếu lỗi lặp lại, bấm Sao lưu ra file và gửi file + ảnh màn hình cho người hỗ trợ." }),
-        h("div", { class: "bar" }, [btn("🏠 Về Trang chủ", "pri", function () { st.tab = "home"; render(); }), btn("⬇ Sao lưu ra file", "", function () { if (!need("backup.restore", "sao lưu toàn bộ dữ liệu ra file")) return; download("LuongHAK_backup_" + new Date().toISOString().slice(0, 10) + ".json", "application/json", JSON.stringify(db)); })])]));
+        h("div", { class: "bar" }, [btn("🏠 Về Trang chủ", "pri", function () { st.tab = "home"; render(); }), btn("⬇ Sao lưu ra file", "", function () { if (!need("backup.restore", "sao lưu toàn bộ dữ liệu ra file")) return; download("LuongHAK_backup_" + new Date().toISOString().slice(0, 10) + ".json", "application/json", JSON.stringify(db)); if (store && store.noteExternal) store.noteExternal(); })])]));
       if (window.console) console.error(e);
     }
   }
@@ -1780,7 +1815,7 @@
       $("#nav").innerHTML = ""; var t0 = $("#top"); t0.innerHTML = ""; t0.appendChild(h("h2", { text: !(db.nguoidung || []).length ? "Thiết lập ban đầu" : "Đăng nhập" }));
       var m0 = $("#main"); m0.innerHTML = "";
       m0.appendChild(!(db.nguoidung || []).length ? setupAdminScreen() : st.authView === "recover" ? recoverAdminScreen() : loginScreen());
-      $("#sidefoot").textContent = "v2.0.0-alpha.12"; return;
+      $("#sidefoot").textContent = "v2.0.0-alpha.13"; return;
     }
     if (!tabAllowed(st.tab)) st.tab = "home";
     var nav = $("#nav"); nav.innerHTML = "";
@@ -1794,7 +1829,7 @@
       if (n[0] === "nhansu") b.appendChild(h("span", { class: "n", text: db.nhanvien.filter(function (r) { return r["Trạng thái"] !== "Đã nghỉ việc"; }).length }));
       nav.appendChild(b);
     });
-    $("#sidefoot").textContent = "v2.0.0-alpha.12 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
+    $("#sidefoot").textContent = "v2.0.0-alpha.13 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
     var bb = $(".brand small"); if (bb) bb.textContent = congTy()["Tên công ty"] || "Chạy offline";
     var top = $("#top"); top.innerHTML = "";
     var title = TITLES[st.tab] || (S[st.tab] && S[st.tab].ten) || "";

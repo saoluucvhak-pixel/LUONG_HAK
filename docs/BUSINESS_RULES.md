@@ -53,6 +53,7 @@
 ### Sao lưu
 - R-30 Sao lưu đầu ngày (60 ngày), khi mở app (10 bản), trước thao tác lớn (20 bản/loại), khi dữ liệu giảm > 50%.
 - R-31 Không bao giờ ghi đè file dữ liệu bằng dữ liệu không hợp lệ; không sao lưu file hỏng; file hỏng được cất giữ, không xóa.
+- R-58 (2.0-α13, chủ sở hữu chọn A + B + D 11/10/2026) **Sao lưu ra ngoài máy**: (A) Admin chọn *thư mục sao lưu thứ hai* (USB / NAS / thư mục Google Drive đồng bộ) — mọi bản sao lưu tự chép sang thư mục con `TinhLuongHAK-SaoLuu` + kiểm SHA-256; thư mục không truy cập được → sao lưu trên máy vẫn bình thường, lỗi được báo. (B) Ngay sau khi chốt kỳ: bản `sau-chot-<kỳ>`, **không bao giờ tự xóa** (trên máy và thư mục thứ hai). (D) Quá 7 ngày chưa có bản ra ngoài máy (chép thư mục thứ hai hoặc *Sao lưu ra file*) → Trang chủ nhắc. Cấu hình thư mục là của từng máy (`settings.json`), không nằm trong `data.json`.
 - R-32 (2.0) Bản sao lưu:
   - Tên duy nhất, không bao giờ ghi đè nhau.
   - Có mã SHA-256; bản không khớp **không được khôi phục**.
