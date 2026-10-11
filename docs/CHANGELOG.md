@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## [Chưa phát hành] — Q-26
+- Chủ sở hữu chọn **phương án A** cho BH tháng nghỉ việc: giữ nguyên quy tắc R-57 (quy chế R-60). **Không đổi công thức**; thêm test I-22 khóa hành vi.
+
 ## [2.0.0-alpha.14] — 11/10/2026 — Sổ quản lý lao động theo NĐ 145/2020 Điều 3
 - **Sổ quản lý lao động** (Báo cáo nhân sự) chọn **năm**, có đủ nội dung khoản 2 Điều 3 Nghị định 145/2020/NĐ-CP. Các cột cũ giữ nguyên, thêm: quốc tịch, chuyên môn, bậc kỹ năng nghề, vị trí việc làm, ngày bắt đầu làm việc, mức đóng BHXH, nâng bậc / nâng lương trong năm, nghỉ hằng năm / việc riêng có lương / không lương / ốm, làm thêm (công TC), đào tạo, kỷ luật & trách nhiệm vật chất, tai nạn LĐ / bệnh nghề nghiệp, ngày + lý do chấm dứt HĐ.
 - Hồ sơ thêm: *Bậc trình độ kỹ năng nghề* (Học vấn), *Vị trí việc làm* (Phụ lục HĐ), *Lý do chấm dứt* (Hợp đồng), *Loại nghỉ* (Đơn nghỉ — trống = nghỉ hằng năm), *Hình thức kỷ luật* + *Bồi thường thiệt hại* (Nội quy).
