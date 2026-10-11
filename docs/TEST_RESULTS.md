@@ -1,5 +1,15 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.6 — PR3 tầng repository (10/10/2026, nhánh `claude/v2-repository`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **112/112** (+8 U-REPO-01…08) |
+| E2E Electron (xvfb, Linux) | ✅ **43/43** (+1 A3-01) |
+| Bằng chứng A3-01 trên mã alpha.5 | E2E **thất bại**: phụ lục của hợp đồng 2 trước/sau khi bấm Hủy = **1/0** (mồ côi); sau sửa = 1/1 |
+| Hồi quy công thức | ✅ không đổi (R-PERF, v1.3.0) |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.5 — PR2 hiệu năng (10/10/2026, nhánh `claude/v2-perf`)
 | Nhóm | Kết quả |
 |---|---|

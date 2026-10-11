@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [2.0.0-alpha.6] — 10/10/2026 — PR3 tầng repository
+### Sửa lỗi
+- **A3-01 (High)**: sửa *Số HĐLĐ* của hợp đồng có hiệu lực trong kỳ đã chốt, rồi bị chặn (không phải Admin) hoặc bấm **Hủy** ở hộp xác nhận → phụ lục lương, nghỉ phép… của hợp đồng **đã bị đổi sang số mới** trong khi hợp đồng giữ số cũ → phụ lục "mồ côi", không được tính lương. Nguyên nhân: đổi bảng con **trước** khi kiểm tra hồi tố. Nay chỉ đổi sau khi mọi kiểm tra đã qua và người dùng đồng ý.
+### Thay đổi
+- `core/repository.js`: 1 cửa ghi dữ liệu (`plan` → xác nhận → `apply`) cho lưới nhập liệu, form hồ sơ, xóa hồ sơ. Không đổi quy tắc nghiệp vụ, không đổi công thức.
+- Nhật ký thêm: dán dữ liệu danh mục hồi tố (Admin) nay được ghi nhật ký như sửa từng ô.
+- Test: 112 (+8 U-REPO), E2E 43/43 (+1 A3-01).
+
 ## [2.0.0-alpha.5] — 10/10/2026 — PR2 hiệu năng (PERF-01)
 - Chỉ mục Mã NV (`HR.buildIndex`) cho dựng danh sách lương, danh sách Nhân sự, báo cáo nhân sự. Ở 5.000 NV:
   - dựng danh sách lương **1.175 → 22 ms**;
