@@ -17,7 +17,7 @@
       { k: "Hiệu lực từ", t: "date", req: 1 }],
       cols: ["Số CCCD", "Ngày sinh", "Giới tính", "Số điện thoại", "Hiệu lực từ"], desc: "Khi đổi CCCD/địa chỉ… thêm dòng mới với 'Hiệu lực từ' mới, dòng cũ giữ làm lịch sử." },
     hocvan: { ten: "Trình độ học vấn", icon: "🎓", lv: "nv", f: [
-      { k: "Trình độ học vấn", req: 1 }, { k: "Chuyên môn" }, { k: "Bằng cấp" }, { k: "Ngày cấp bằng", t: "date" }, { k: "Số hồ sơ" }, { k: "File hồ sơ (đường dẫn)" }] },
+      { k: "Trình độ học vấn", req: 1 }, { k: "Chuyên môn" }, { k: "Bậc trình độ kỹ năng nghề", hint: "Sổ quản lý lao động (NĐ 145/2020 Đ3): VD Bậc 3/7, Thợ bậc 4…" }, { k: "Bằng cấp" }, { k: "Ngày cấp bằng", t: "date" }, { k: "Số hồ sơ" }, { k: "File hồ sơ (đường dẫn)" }] },
     nhanthan: { ten: "Nhân thân / Người phụ thuộc", icon: "👪", lv: "nv", f: [
       { k: "Họ tên nhân thân", req: 1 }, { k: "Quan hệ", t: "sel", o: ["Vợ/Chồng", "Con", "Cha", "Mẹ", "Khác"], req: 1 },
       { k: "Ngày sinh", t: "date" }, { k: "Số CCCD nhân thân" }, { k: "Mã số thuế" },
@@ -37,7 +37,10 @@
     hopdong: { ten: "Hợp đồng lao động", icon: "📄", lv: "nv", f: [
       { k: "Số HĐLĐ", req: 1 }, { k: "Hình thức HĐLĐ", t: "sel", o: ["Thử việc", "Xác định thời hạn", "Không xác định thời hạn", "Thời vụ"], req: 1 },
       { k: "Ngày vào làm", t: "date", req: 1 }, { k: "Ngày hết hạn", t: "date", hint: "Để trống nếu không xác định thời hạn" },
-      { k: "Ngày chấm dứt", t: "date", hint: "Ngày nghỉ việc thực tế — từ tháng sau sẽ không tính lương" }, { k: "Ghi chú", t: "area" }],
+      { k: "Ngày chấm dứt", t: "date", hint: "Ngày nghỉ việc thực tế — từ tháng sau sẽ không tính lương" },
+      { k: "Lý do chấm dứt", t: "sel", o: ["Hết hạn hợp đồng", "Đã hoàn thành công việc theo hợp đồng", "Hai bên thỏa thuận chấm dứt", "Người lao động đơn phương chấm dứt", "Người sử dụng lao động đơn phương chấm dứt",
+        "Kỷ luật sa thải", "Cho thôi việc do thay đổi cơ cấu, công nghệ / lý do kinh tế", "Nghỉ hưu", "Thử việc không đạt", "Người lao động chết / mất năng lực hành vi dân sự", "Lý do khác"], hint: "Sổ quản lý lao động: thời điểm chấm dứt HĐLĐ và lý do" },
+      { k: "Ghi chú", t: "area" }],
       cols: ["Số HĐLĐ", "Hình thức HĐLĐ", "Ngày vào làm", "Ngày hết hạn", "Ngày chấm dứt"] },
     // ---- Bảng thuộc hợp đồng ----
     chitiethd: { ten: "Lương & phụ lục HĐ", icon: "📑", lv: "hd", f: [
@@ -45,6 +48,7 @@
       { k: "Hiệu lực từ", t: "date", req: 1, hint: "Lương từ tháng này trở đi lấy theo dòng này" },
       { k: "Cách áp dụng trong tháng hiệu lực", t: "sel", o: ["Cả tháng", "Từ ngày hiệu lực"], hint: "Q-22: hiệu lực giữa tháng — 'Cả tháng' = cả tháng theo mức mới; 'Từ ngày hiệu lực' = công trước ngày hiệu lực tính mức cũ, từ ngày hiệu lực tính mức mới. Để trống = Cả tháng" },
       { k: "Phòng ban", t: "ref", ref: "dm_phongban", req: 1 }, { k: "Chức vụ", t: "ref", ref: "dm_chucvu" },
+      { k: "Vị trí việc làm", hint: "Sổ quản lý lao động: VD Kế toán tổng hợp, Thợ vận hành máy dăm, Lái xe xúc…" },
       { k: "Mã hình thức lương", t: "sel", o: ["LTG", "LSP"], req: 1, hint: "LTG = thời gian, LSP = sản phẩm" },
       { k: "Mã lương", t: "multi", ref: "dm_luong", req: 1, hint: "Chọn 1–2 mã. Mã thứ 2 dùng cho bơm dăm (BD) nếu có" },
       { k: "Lương cơ bản", t: "money", hint: "Mức đóng BHXH" }, { k: "Lương thỏa thuận", t: "money", req: 1, hint: "Lương tháng; với mã CN1/CN2/SP là đơn giá 1 công" },
@@ -59,6 +63,7 @@
     quyenloiphep: { ten: "Quyền lợi phép", icon: "🏖️", lv: "hd", f: [
       { k: "Năm áp dụng", t: "num", req: 1 }, { k: "Số ngày được cấp", t: "num", req: 1 }, { k: "Số ngày cộng dồn năm trước", t: "num" }, { k: "Ghi chú", t: "area" }] },
     nghiphep: { ten: "Nghỉ phép", icon: "🌴", lv: "hd", f: [
+      { k: "Loại nghỉ", t: "sel", o: ["Nghỉ hằng năm", "Nghỉ việc riêng có hưởng lương", "Nghỉ không hưởng lương"], hint: "Để trống = Nghỉ hằng năm (trừ vào phép năm)" },
       { k: "Từ ngày", t: "date", req: 1 }, { k: "Đến ngày", t: "date", req: 1 }, { k: "Số ngày nghỉ", t: "num", req: 1 },
       { k: "Trạng thái duyệt", t: "sel", o: ["Chờ duyệt", "Đã duyệt", "Từ chối"], req: 1 }, { k: "Người duyệt" }, { k: "Ghi chú", t: "area" }] },
     nghiom: { ten: "Nghỉ ốm", icon: "🤒", lv: "hd", f: [
@@ -67,15 +72,27 @@
       { k: "Trạng thái duyệt", t: "sel", o: ["Chờ duyệt", "Đã duyệt", "Từ chối"], req: 1 }, { k: "Ghi chú", t: "area" }] },
     noiquy: { ten: "Nội quy / Kỷ luật", icon: "⚠️", lv: "hd", f: [
       { k: "Ngày", t: "date", req: 1 }, { k: "Nội dung vi phạm", t: "area", req: 1 },
-      { k: "Tình trạng xử lý", t: "sel", o: ["Chưa xử lý", "Đang xử lý", "Đã xử lý"], req: 1 }, { k: "Nội dung xử lý", t: "area" }] },
+      { k: "Tình trạng xử lý", t: "sel", o: ["Chưa xử lý", "Đang xử lý", "Đã xử lý"], req: 1 },
+      { k: "Hình thức kỷ luật", t: "sel", o: ["Khiển trách", "Kéo dài thời hạn nâng lương không quá 06 tháng", "Cách chức", "Sa thải"], hint: "Để trống nếu chưa / không kỷ luật" },
+      { k: "Bồi thường thiệt hại (trách nhiệm vật chất)", t: "money" }, { k: "Nội dung xử lý", t: "area" }] },
     khenthuong: { ten: "Khen thưởng", icon: "🏆", lv: "hd", f: [
       { k: "Ngày", t: "date", req: 1 }, { k: "Hình thức khen thưởng", req: 1 }, { k: "Lý do", t: "area" }, { k: "Giá trị tiền thưởng", t: "money" }, { k: "Ghi chú", t: "area" }],
       desc: "Chỉ để lưu hồ sơ. Muốn cộng tiền vào lương tháng, nhập thêm ở mục Thưởng / Trừ." },
+    // ---- Bổ sung theo nội dung sổ quản lý lao động (NĐ 145/2020/NĐ-CP Điều 3 khoản 2) ----
+    daotao: { ten: "Đào tạo / nâng cao trình độ", icon: "🎓", lv: "nv", f: [
+      { k: "Từ ngày", t: "date", req: 1 }, { k: "Đến ngày", t: "date" },
+      { k: "Hình thức", t: "sel", o: ["Đào tạo", "Bồi dưỡng", "Nâng cao trình độ kỹ năng nghề", "Đào tạo lại", "Khác"], req: 1 },
+      { k: "Nội dung", req: 1 }, { k: "Đơn vị đào tạo" }, { k: "Chứng chỉ / văn bằng" }, { k: "Ghi chú", t: "area" }],
+      cols: ["Từ ngày", "Đến ngày", "Hình thức", "Nội dung", "Chứng chỉ / văn bằng"] },
+    tainanld: { ten: "Tai nạn lao động / Bệnh nghề nghiệp", icon: "🚑", lv: "nv", f: [
+      { k: "Ngày", t: "date", req: 1 }, { k: "Loại", t: "sel", o: ["Tai nạn lao động", "Bệnh nghề nghiệp"], req: 1 },
+      { k: "Nội dung", t: "area", req: 1 }, { k: "Mức suy giảm khả năng lao động (%)", t: "num" }, { k: "Chế độ đã giải quyết", t: "area" }, { k: "Ghi chú", t: "area" }],
+      cols: ["Ngày", "Loại", "Nội dung", "Mức suy giảm khả năng lao động (%)", "Chế độ đã giải quyết"] },
     tailieu: { ten: "Tài liệu", icon: "📎", lv: "hd", f: [
       { k: "Loại tài liệu", t: "sel", o: ["CCCD", "Giấy khám sức khỏe", "Bằng cấp", "Hợp đồng", "Khác"], req: 1 }, { k: "Tên tài liệu", req: 1 },
       { k: "Đường dẫn file", hint: "VD: D:\\HoSo\\NV001\\cccd.pdf (file lưu trên máy, app chỉ ghi đường dẫn)" }, { k: "Ngày tài liệu", t: "date" }, { k: "Ghi chú", t: "area" }] }
   };
-  var NV_TABS = ["canhan", "hopdong", "nhanthan", "thanhtoan", "congtac", "hocvan", "suckhoe", "lienhe", "nghenghiep"];
+  var NV_TABS = ["canhan", "hopdong", "nhanthan", "thanhtoan", "congtac", "hocvan", "daotao", "suckhoe", "tainanld", "lienhe", "nghenghiep"];
   var HD_TABS = ["chitiethd", "quyenloiphep", "nghiphep", "nghiom", "khamsk", "khenthuong", "noiquy", "tailieu"];
   Object.keys(HR).forEach(function (k) {
     var c = HR[k];
@@ -328,6 +345,8 @@
   PAY_TABLES.forEach(function (t) { PAY_FIELDS[t] = {}; HR[t].f.forEach(function (f) { if (f.t === "money") PAY_FIELDS[t][f.k] = 1; }); });
   var PAY_HIDDEN = "🔒 ẩn";
   function isPayField(table, col) { return !!(PAY_FIELDS[table] && PAY_FIELDS[table][col]); }
+  /** Nghỉ phép tính vào phép năm: "Nghỉ hằng năm" hoặc để trống (dữ liệu trước 2.0-α14). */
+  function laNghiNam(r) { return !r["Loại nghỉ"] || r["Loại nghỉ"] === "Nghỉ hằng năm"; }
   function addDays(isoS, n) { var d = new Date(isoS + "T00:00:00"); d.setDate(d.getDate() + n); return iso(d); }
   /** @param opts { hidePay: true } — che cột lương cá nhân (Q-24) */
   function reports(db, opts) {
@@ -367,10 +386,12 @@
           var ma = n["Mã NV"];
           var ql = rowsOf(db, "quyenloiphep", ma, ix).filter(function (r) { return String(r["Năm áp dụng"]) === y; });
           var cap = ql.reduce(function (a, r) { return a + (+r["Số ngày được cấp"] || 0) + (+r["Số ngày cộng dồn năm trước"] || 0); }, 0);
-          var sum = function (k) { return rowsOf(db, k, ma, ix).filter(function (r) { return d10(r["Từ ngày"]).slice(0, 4) === y && r["Trạng thái duyệt"] === "Đã duyệt"; }).reduce(function (a, r) { return a + (+r["Số ngày nghỉ"] || 0); }, 0); };
-          var p = sum("nghiphep"), o = sum("nghiom");
-          if (!cap && !p && !o) return;
-          rows.push({ "Mã NV": ma, "Họ và tên": n["Họ và tên"], "Phép được cấp": cap, "Đã nghỉ phép": p, "Phép còn lại": cap - p, "Nghỉ ốm": o });
+          var lay = function (k, loai) { return rowsOf(db, k, ma, ix).filter(function (r) { return d10(r["Từ ngày"]).slice(0, 4) === y && r["Trạng thái duyệt"] === "Đã duyệt" && (!loai || loai(r)); }).reduce(function (a, r) { return a + (+r["Số ngày nghỉ"] || 0); }, 0); };
+          var p = lay("nghiphep", laNghiNam), vr = lay("nghiphep", function (r) { return r["Loại nghỉ"] === "Nghỉ việc riêng có hưởng lương"; });
+          var kl = lay("nghiphep", function (r) { return r["Loại nghỉ"] === "Nghỉ không hưởng lương"; }), o = lay("nghiom");
+          if (!cap && !p && !vr && !kl && !o) return;
+          // Chỉ "Nghỉ hằng năm" (hoặc để trống — dữ liệu cũ) trừ vào phép năm
+          rows.push({ "Mã NV": ma, "Họ và tên": n["Họ và tên"], "Phép được cấp": cap, "Đã nghỉ phép": p, "Phép còn lại": cap - p, "Nghỉ việc riêng có lương": vr, "Nghỉ không hưởng lương": kl, "Nghỉ ốm": o });
         });
         return rows;
       },
@@ -389,17 +410,39 @@
         });
         return rows.sort(function (a, b) { return a["Ngày sinh"].slice(8) < b["Ngày sinh"].slice(8) ? -1 : 1; });
       },
-      soLaoDong: function () {
-        var ix = buildIndex(db);
+      /** Sổ quản lý lao động — đủ nội dung khoản 2 Điều 3 Nghị định 145/2020/NĐ-CP; số liệu "trong năm" theo năm nam (mặc định năm nay). */
+      soLaoDong: function (nam) {
+        var ix = buildIndex(db), y = String(nam || t.slice(0, 4)), inY = function (v) { return d10(v).slice(0, 4) === y; };
+        var congOf = function (v) { var m = String(v == null ? "" : v).trim().match(/^(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : 0; };
+        var ngay = function (ma, k, loc) { return rowsOf(db, k, ma, ix).filter(function (r) { return inY(r["Từ ngày"]) && r["Trạng thái duyệt"] === "Đã duyệt" && (!loc || loc(r)); }).reduce(function (a, r) { return a + (+r["Số ngày nghỉ"] || 0); }, 0); };
         return nvs.map(function (n, i) {
-          var hh = hienHanh(db, n["Mã NV"], null, ix), c = hh.cn || {}, hd = hh.hd || {}, ct = hh.ct || {};
-          return { "STT": i + 1, "Mã NV": n["Mã NV"], "Họ và tên": n["Họ và tên"], "Giới tính": c["Giới tính"] || "", "Ngày sinh": c["Ngày sinh"] || "",
-            "Số CCCD": c["Số CCCD"] || n["Số CCCD"] || "", "Ngày cấp": c["Ngày cấp"] || "", "Nơi cấp": c["Nơi cấp"] || "", "Quốc tịch": c["Quốc tịch"] || "",
-            "Thường trú": c["Thường trú"] || "", "Chỗ ở hiện tại": c["Địa chỉ hiện tại"] || "", "Số điện thoại": c["Số điện thoại"] || "",
-            "Trình độ": (latestBy(rowsOf(db, "hocvan", n["Mã NV"], ix), "Ngày cấp bằng") || {})["Trình độ học vấn"] || "",
-            "Phòng ban": hh.tenPB, "Chức vụ": hh.tenCV, "Số HĐLĐ": hd["Số HĐLĐ"] || "", "Loại HĐLĐ": hd["Hình thức HĐLĐ"] || "",
-            "Ngày vào làm": hd["Ngày vào làm"] || "", "Ngày hết hạn": hd["Ngày hết hạn"] || "", "Ngày chấm dứt": hd["Ngày chấm dứt"] || "",
-            "Lương cơ bản": hidePay ? PAY_HIDDEN : +ct["Lương cơ bản"] || "", "Lương thỏa thuận": hidePay ? PAY_HIDDEN : +ct["Lương thỏa thuận"] || "", "Số sổ BHXH": c["Số sổ BHXH"] || "", "Trạng thái": n["Trạng thái"] };
+          var ma = n["Mã NV"], hh = hienHanh(db, ma, null, ix), c = hh.cn || {}, hd = hh.hd || {}, ct = hh.ct || {};
+          var hv = latestBy(rowsOf(db, "hocvan", ma, ix), "Ngày cấp bằng") || {};
+          var hds = rowsOf(db, "hopdong", ma, ix), batDau = hds.map(function (x) { return d10(x["Ngày vào làm"]); }).filter(Boolean).sort()[0] || "";
+          // Nâng bậc / nâng lương trong năm: phụ lục có hiệu lực trong năm đổi Lương thỏa thuận so với phụ lục liền trước
+          var pls = rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return d10(r["Hiệu lực từ"]); }).sort(function (a, b) { return d10(a["Hiệu lực từ"]) < d10(b["Hiệu lực từ"]) ? -1 : 1; });
+          var nang = [];
+          pls.forEach(function (r, k) { if (k && inY(r["Hiệu lực từ"]) && String(r["Lương thỏa thuận"] || "") !== String(pls[k - 1]["Lương thỏa thuận"] || "")) nang.push(d10(r["Hiệu lực từ"]) + (hidePay ? "" : ": " + (pls[k - 1]["Lương thỏa thuận"] || "?") + " → " + (r["Lương thỏa thuận"] || "?"))); });
+          var tc = (db.chamcong || []).filter(function (r) { return r && r["Mã NV"] === ma && /TC/i.test(String(r["Hình thức công"] || "")) && String(r["Kỳ"] || "").slice(0, 4) === y; })
+            .reduce(function (a, r) { for (var d = 1; d <= 31; d++) a += congOf(r[("0" + d).slice(-2)]); return a; }, 0);
+          var dt = rowsOf(db, "daotao", ma, ix).filter(function (r) { return inY(r["Từ ngày"]); }).map(function (r) { return [r["Hình thức"], r["Nội dung"]].filter(Boolean).join(": "); });
+          var kl = rowsOf(db, "noiquy", ma, ix).filter(function (r) { return inY(r["Ngày"]) && (r["Hình thức kỷ luật"] || r["Bồi thường thiệt hại (trách nhiệm vật chất)"]); })
+            .map(function (r) { return d10(r["Ngày"]) + " " + [r["Hình thức kỷ luật"], r["Bồi thường thiệt hại (trách nhiệm vật chất)"] ? "bồi thường " + r["Bồi thường thiệt hại (trách nhiệm vật chất)"] : ""].filter(Boolean).join(", "); });
+          var tn = rowsOf(db, "tainanld", ma, ix).filter(function (r) { return inY(r["Ngày"]); }).map(function (r) { return d10(r["Ngày"]) + " " + (r["Loại"] || "") + (r["Mức suy giảm khả năng lao động (%)"] ? " (" + r["Mức suy giảm khả năng lao động (%)"] + "%)" : ""); });
+          return { "STT": i + 1, "Mã NV": ma, "Họ và tên": n["Họ và tên"], "Giới tính": c["Giới tính"] || "", "Ngày sinh": c["Ngày sinh"] || "", "Quốc tịch": c["Quốc tịch"] || "",
+            "Thường trú": c["Thường trú"] || "", "Chỗ ở hiện tại": c["Địa chỉ hiện tại"] || "",
+            "Số CCCD": c["Số CCCD"] || n["Số CCCD"] || "", "Ngày cấp": c["Ngày cấp"] || "", "Nơi cấp": c["Nơi cấp"] || "", "Số điện thoại": c["Số điện thoại"] || "",
+            "Trình độ": hv["Trình độ học vấn"] || "", "Chuyên môn": hv["Chuyên môn"] || "", "Bậc trình độ kỹ năng nghề": hv["Bậc trình độ kỹ năng nghề"] || "",
+            "Phòng ban": hh.tenPB, "Chức vụ": hh.tenCV, "Vị trí việc làm": ct["Vị trí việc làm"] || "",
+            "Số HĐLĐ": hd["Số HĐLĐ"] || "", "Loại HĐLĐ": hd["Hình thức HĐLĐ"] || "", "Bắt đầu làm việc": batDau, "Ngày vào làm": hd["Ngày vào làm"] || "", "Ngày hết hạn": hd["Ngày hết hạn"] || "",
+            "Số sổ BHXH": c["Số sổ BHXH"] || "", "Mức đóng BHXH": ct["Mức đóng bảo hiểm"] || "",
+            "Lương cơ bản": hidePay ? PAY_HIDDEN : +ct["Lương cơ bản"] || "", "Lương thỏa thuận": hidePay ? PAY_HIDDEN : +ct["Lương thỏa thuận"] || "",
+            ["Nâng bậc, nâng lương " + y]: hidePay && nang.length ? PAY_HIDDEN + " (" + nang.join("; ") + ")" : nang.join("; "),
+            ["Nghỉ hằng năm " + y + " (ngày)"]: ngay(ma, "nghiphep", laNghiNam), ["Nghỉ việc riêng có lương " + y]: ngay(ma, "nghiphep", function (r) { return r["Loại nghỉ"] === "Nghỉ việc riêng có hưởng lương"; }),
+            ["Nghỉ không hưởng lương " + y]: ngay(ma, "nghiphep", function (r) { return r["Loại nghỉ"] === "Nghỉ không hưởng lương"; }), ["Nghỉ ốm " + y]: ngay(ma, "nghiom"),
+            ["Làm thêm " + y + " (công TC)"]: Math.round(tc * 100) / 100,
+            ["Nâng cao trình độ, kỹ năng nghề " + y]: dt.join("; "), ["Kỷ luật, trách nhiệm vật chất " + y]: kl.join("; "), ["Tai nạn LĐ, bệnh nghề nghiệp " + y]: tn.join("; "),
+            "Ngày chấm dứt": hd["Ngày chấm dứt"] || "", "Lý do chấm dứt": hd["Lý do chấm dứt"] || "", "Trạng thái": n["Trạng thái"] };
         });
       },
       lichsu: function (ma) {

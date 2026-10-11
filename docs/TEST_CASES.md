@@ -95,6 +95,16 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α14 Sổ quản lý lao động (`tests/unit/so-lao-dong.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-SLD-01 | Sổ có đủ các nhóm nội dung khoản 2 Điều 3 NĐ 145/2020 |
+| U-SLD-02 | Số liệu năm 2026 đúng: chỉ đơn *Đã duyệt*, đúng loại nghỉ, công TC của năm, đào tạo / kỷ luật / tai nạn trong năm; năm 2025 khác |
+| U-SLD-03 | Q-24: không có quyền xem lương → lương, mức đóng BHXH, mức nâng lương bị che; vẫn ghi ngày nâng lương |
+| U-SLD-04 | Báo cáo nghỉ phép: chỉ *Nghỉ hằng năm* (hoặc trống) trừ phép năm; việc riêng / không lương tách cột |
+
+R-PERF-02 (cập nhật): báo cáo nghỉ và sổ lao động mới phải giữ **nguyên giá trị mọi cột cũ** so với alpha.4.
+
 ## Unit — 2.0-α13 sao lưu ra ngoài máy (`tests/unit/storage-mirror.test.js`)
 | ID | Nội dung |
 |---|---|

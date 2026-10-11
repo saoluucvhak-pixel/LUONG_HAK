@@ -32,6 +32,12 @@
 - R-11 Hợp đồng có Ngày chấm dứt < đầu tháng → không tính lương tháng đó.
 - R-12 Nhân viên "Đã nghỉ việc" mà hợp đồng chưa chấm dứt → vẫn tính và **cảnh báo**.
 - R-13 Người phụ thuộc = nhân thân "Đăng ký phụ thuộc = Có" còn hiệu lực trong kỳ.
+- R-59 (2.0-α14) **Sổ quản lý lao động** theo khoản 2 Điều 3 Nghị định 145/2020/NĐ-CP (sổ dạng điện tử, theo năm): họ tên, giới tính, ngày sinh, quốc tịch, địa chỉ, CCCD; trình độ chuyên môn kỹ thuật, bậc trình độ kỹ năng nghề; vị trí việc làm; loại HĐLĐ; thời điểm bắt đầu làm việc; tham gia BHXH (số sổ, mức đóng); tiền lương; nâng bậc nâng lương; số ngày nghỉ trong năm (nghỉ hằng năm, nghỉ việc riêng có hưởng lương, nghỉ không hưởng lương); số giờ làm thêm; nâng cao trình độ, kỹ năng nghề; kỷ luật, trách nhiệm vật chất; tai nạn lao động, bệnh nghề nghiệp; thời điểm chấm dứt HĐLĐ và lý do.
+  - Đơn nghỉ có thêm *Loại nghỉ*; **để trống = Nghỉ hằng năm** (dữ liệu cũ giữ nguyên ý nghĩa). Chỉ nghỉ hằng năm trừ vào phép năm.
+  - Làm thêm lấy từ chấm công các dòng Hình thức có "TC" trong năm — đơn vị là **công** như bảng chấm công (chưa quy ra giờ, câu hỏi mở).
+  - Bảng mới: `daotao` (nâng cao trình độ), `tainanld` (tai nạn lao động / bệnh nghề nghiệp). Thiếu dữ liệu → ô trống, không phải lỗi.
+  - Người không có quyền xem lương (Q-24): cột lương / mức đóng BHXH / mức nâng lương hiện `🔒 ẩn`, chỉ còn ngày nâng lương.
+  - Sổ này **không** thay thế *Báo cáo tình hình sử dụng lao động* (Mẫu 01/PLI, nộp 6 tháng/lần) — chưa có trong app.
 
 ### Chốt kỳ
 - R-20 Chốt luôn tính lại từ dữ liệu mới nhất; nếu khác bảng đang xem → dừng để kiểm tra.

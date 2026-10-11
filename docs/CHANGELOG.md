@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [2.0.0-alpha.14] — 11/10/2026 — Sổ quản lý lao động theo NĐ 145/2020 Điều 3
+- **Sổ quản lý lao động** (Báo cáo nhân sự) chọn **năm**, có đủ nội dung khoản 2 Điều 3 Nghị định 145/2020/NĐ-CP. Các cột cũ giữ nguyên, thêm: quốc tịch, chuyên môn, bậc kỹ năng nghề, vị trí việc làm, ngày bắt đầu làm việc, mức đóng BHXH, nâng bậc / nâng lương trong năm, nghỉ hằng năm / việc riêng có lương / không lương / ốm, làm thêm (công TC), đào tạo, kỷ luật & trách nhiệm vật chất, tai nạn LĐ / bệnh nghề nghiệp, ngày + lý do chấm dứt HĐ.
+- Hồ sơ thêm: *Bậc trình độ kỹ năng nghề* (Học vấn), *Vị trí việc làm* (Phụ lục HĐ), *Lý do chấm dứt* (Hợp đồng), *Loại nghỉ* (Đơn nghỉ — trống = nghỉ hằng năm), *Hình thức kỷ luật* + *Bồi thường thiệt hại* (Nội quy).
+- 2 tab hồ sơ mới: **🎓 Đào tạo / nâng cao trình độ**, **🚑 Tai nạn lao động / Bệnh nghề nghiệp** (nhập tay, nhập Excel).
+- Báo cáo nghỉ phép: chỉ nghỉ hằng năm trừ phép; tách 2 cột việc riêng có lương / không lương.
+- **Không đổi công thức lương** — hồi quy v1.3.0 và alpha.4 trùng 100%.
+- Test: 137 (+4 U-SLD), E2E 55/55.
+
 ## [2.0.0-alpha.13] — 11/10/2026 — Sao lưu ra ngoài máy (A + B + D)
 - **(A) Thư mục sao lưu thứ hai**: Admin chọn USB / ổ mạng / thư mục Google Drive đồng bộ bằng hộp chọn thư mục của Windows. Mọi bản sao lưu tự chép sang và **đọc lại kiểm SHA-256**. USB rút ra / ổ mạng mất kết nối → sao lưu trên máy vẫn bình thường, app báo lỗi và có nút *Chép sang thư mục thứ hai ngay*.
 - **(B) Bản sao lưu sau chốt kỳ** `sau-chot-<kỳ>`: tạo ngay khi chốt, **giữ vĩnh viễn** (không bị dọn), tự chép sang thư mục thứ hai.

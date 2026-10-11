@@ -30,7 +30,7 @@
     sanluong: ["Ngày cân", "KL hàng (Tấn)"], bandam: ["Ngày cân", "KL hàng (Tấn)"],
     nhanvien: ["Mã NV", "Họ và tên"], hopdong: ["Mã NV", "Số HĐLĐ", "Ngày vào làm"], chitiethd: ["Mã NV", "Số HĐLĐ", "Hiệu lực từ"]
   };
-  var HR_SUB = { canhan: 1, hocvan: 1, nhanthan: 1, thanhtoan: 1, suckhoe: 1, lienhe: 1, nghenghiep: 1, congtac: 1, hopdong: 1, chitiethd: 1, khamsk: 1, quyenloiphep: 1, nghiphep: 1, nghiom: 1, noiquy: 1, khenthuong: 1, tailieu: 1 };
+  var HR_SUB = { daotao: 1, tainanld: 1, canhan: 1, hocvan: 1, nhanthan: 1, thanhtoan: 1, suckhoe: 1, lienhe: 1, nghenghiep: 1, congtac: 1, hopdong: 1, chitiethd: 1, khamsk: 1, quyenloiphep: 1, nghiphep: 1, nghiom: 1, noiquy: 1, khenthuong: 1, tailieu: 1 };
   var MONTHLY = { chamcong: 1, sanluong: 1, bandam: 1, psluong: 1, ungluong: 1, tiencom: 1 };
 
   // Chuẩn hóa từng phần của khóa để "bt" / "BT" / để trống (engine coi là BT), "2026-9" / "2026-09" được coi là cùng 1 bản ghi

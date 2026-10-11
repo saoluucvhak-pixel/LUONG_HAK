@@ -1,5 +1,14 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.14 — Sổ quản lý lao động (11/10/2026, nhánh `claude/v2-so-lao-dong`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **137/137** (+4 U-SLD-01…04; R-PERF-02 giữ nguyên cột cũ) |
+| Hồi quy công thức (v1.3.0, alpha.4) | ✅ trùng 100% — không đổi công thức |
+| E2E Electron (xvfb, Linux) | ✅ **55/55** |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.13 — Sao lưu ra ngoài máy (11/10/2026, nhánh `claude/v2-backup-offsite`)
 | Nhóm | Kết quả |
 |---|---|

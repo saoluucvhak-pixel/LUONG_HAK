@@ -117,6 +117,15 @@ Mọi báo cáo xuất được Excel.
 ## Báo cáo nhân sự
 HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/ốm theo năm · Vi phạm chưa xử lý · Sinh nhật trong tháng · Sổ quản lý lao động · Lịch sử hồ sơ từng người. Tất cả xuất được Excel.
 
+### Sổ quản lý lao động (từ 2.0-alpha.14 — NĐ 145/2020 Điều 3)
+Chọn **năm** rồi mở *Sổ quản lý lao động*: mỗi người 1 dòng, đủ nội dung luật yêu cầu. Để sổ đầy đủ, nhập thêm trong Hồ sơ:
+- *Học vấn*: Bậc trình độ kỹ năng nghề · *Phụ lục HĐ*: Vị trí việc làm · *Hợp đồng*: Ngày chấm dứt + **Lý do chấm dứt**;
+- *Đơn nghỉ*: **Loại nghỉ** (để trống = nghỉ hằng năm, chỉ loại này trừ phép năm);
+- *Nội quy*: Hình thức kỷ luật, Bồi thường thiệt hại;
+- tab **🎓 Đào tạo** và **🚑 Tai nạn lao động / Bệnh nghề nghiệp**.
+
+Làm thêm lấy từ chấm công (dòng Hình thức có TC), tính bằng **công**. Ô trống = chưa nhập dữ liệu. Xuất Excel để lưu / in sổ hằng năm.
+
 ## Dữ liệu & sao lưu
 - Bản cài tự lưu vào `%APPDATA%\Tinh Luong HAK\data.json` (ghi an toàn, không hỏng file khi mất điện giữa chừng).
 - Sao lưu tự động trong thư mục `backups`: **daily** = trạng thái đầu mỗi ngày (giữ 60 ngày, không bị ghi đè trong ngày) · **startup** = mỗi lần mở app (giữ 10) · **truoc-nang-cap** = nguyên trạng dữ liệu bản cũ trước khi nâng cấp · **truoc-…** = trước nhập Excel lớn, mở chốt, khôi phục, xóa toàn bộ, hoặc khi dữ liệu giảm hơn một nửa.

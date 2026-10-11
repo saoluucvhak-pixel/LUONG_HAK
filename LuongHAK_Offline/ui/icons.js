@@ -37,6 +37,7 @@
     check: '<path d="m5 12 5 5 9-10"/>',
     printer: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
     folder: '<path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+    medical: '<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M9 7V5h6v2"/><path d="M12 10v6M9 13h6"/>',
     shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8.1-8 9-4.6-.9-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
     trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
     building: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 21v-3h4v3"/>',
@@ -72,7 +73,7 @@
     "🏠": "home", "▶": "play", "🔒": "lock", "🔓": "unlock", "📈": "chart", "🗓": "calendar", "📅": "calendar", "⚖": "scale",
     "🚛": "truck", "🎁": "gift", "💵": "card", "🍚": "bowl", "👥": "users", "👤": "user", "📊": "pie", "📚": "grid", "⚙": "db",
     "⬇": "down", "⬆": "up", "📄": "file", "📑": "files", "💾": "save", "🔍": "search", "✎": "edit", "🕘": "clock", "⏰": "alarm",
-    "⚠": "warn", "✔": "check", "✓": "check", "🖨": "printer", "📂": "folder", "📁": "folder", "🗂": "folder", "🛡": "shield", "🗑": "trash", "🏢": "building",
+    "⚠": "warn", "✔": "check", "✓": "check", "🖨": "printer", "📂": "folder", "📁": "folder", "🗂": "folder", "🛡": "shield", "🚑": "medical", "🗑": "trash", "🏢": "building",
     "📋": "clipboard", "📒": "book", "↔": "swap", "🧾": "receipt", "🌴": "leaf", "🏖": "sun", "🤒": "thermo", "🎂": "cake",
     "🩺": "steth", "❤": "heart", "📞": "phone", "🪪": "id", "🎓": "cap", "👪": "family", "🏦": "bank", "💼": "case", "🔀": "shuffle",
     "🏆": "award", "📎": "clip", "＋": "plus", "✕": "close", "←": "left", "⛔": "stop", "👁": "eye", "🔑": "key", "📖": "book", "🖨️": "printer"

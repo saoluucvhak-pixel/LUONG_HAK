@@ -45,9 +45,11 @@ test("R-PERF-02 hienHanh có/không chỉ mục = bản alpha.4 cho mọi NV, nh
   const r = HR.reports(db), o = OLD.reports(db);
   assert.deepEqual(r.hethan(400), o.hethan(400));
   assert.deepEqual(r.tinhhinh(), o.tinhhinh());
-  assert.deepEqual(r.nghi(2026), o.nghi(2026));
+  // 2.0-α14 thêm cột (Sổ quản lý lao động theo NĐ 145/2020, loại nghỉ): các cột CÓ TỪ TRƯỚC phải giữ đúng giá trị
+  const sameOld = (now, old) => { assert.equal(now.length, old.length); old.forEach((ro, i) => Object.keys(ro).forEach((k) => assert.deepEqual(now[i][k], ro[k], k))); };
+  sameOld(r.nghi(2026), o.nghi(2026));
   assert.deepEqual(r.sinhnhat(9), o.sinhnhat(9));
-  assert.deepEqual(r.soLaoDong(), o.soLaoDong());
+  sameOld(r.soLaoDong(), o.soLaoDong());
 });
 
 test("R-PERF-03 hiệu năng: dựng danh sách lương 5.000 NV < 200 ms (bản quét alpha.4 ~1 giây)", () => {

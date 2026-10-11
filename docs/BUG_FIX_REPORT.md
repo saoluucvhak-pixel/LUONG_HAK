@@ -215,3 +215,11 @@ Rollback: cài lại alpha.11. Báo cáo quay về ghi toàn bộ cho phòng ban
 
 Rollback: cài lại alpha.12 — bản sao lưu đã tạo vẫn dùng được (cùng định dạng); `settings.json` bị bỏ qua.
 
+## 2.0.0-alpha.14 — Sổ quản lý lao động (nhánh `claude/v2-so-lao-dong`)
+| Thiếu sót (so với NĐ 145/2020 Điều 3 k2) | Thay đổi | File | Test |
+|---|---|---|---|
+| Sổ cũ thiếu: quốc tịch, bậc kỹ năng nghề, vị trí việc làm, ngày bắt đầu làm việc, mức đóng BHXH, nâng lương, ngày nghỉ theo loại, làm thêm, đào tạo, kỷ luật / trách nhiệm vật chất, tai nạn LĐ / BNN, lý do chấm dứt | Thêm trường hồ sơ + 2 bảng `daotao`, `tainanld`; `soLaoDong(nam)` theo năm; đơn nghỉ có *Loại nghỉ* | `hr.js`, `core/importer.js`, `app.js`, `ui/icons.js` | U-SLD-01…04, R-PERF-02 |
+| Báo cáo nghỉ phép trừ cả nghỉ không lương vào phép năm (khi có loại nghỉ) | Chỉ *Nghỉ hằng năm* / trống trừ phép | `hr.js` | U-SLD-04 |
+
+Rollback: cài lại alpha.13. Các cột / bảng mới bị bỏ qua (không xóa); sổ quay về dạng cũ.
+

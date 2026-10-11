@@ -848,7 +848,7 @@
     bar.appendChild(q); bar.appendChild(ft); bar.appendChild(h("span", { class: "sp" }));
     bar.appendChild(btn("📄 Tải file mẫu", "", function () { saveXlsx("Mau_HoSoNhanSu.xlsx", Object.keys(HR).map(templateSheet), "template"); toast("File mẫu có 1 sheet cho mỗi loại hồ sơ"); }, "Mỗi loại hồ sơ là 1 sheet"));
     bar.appendChild(btn("⬆ Nhập Excel", "", importAllFile, "Nhập file Excel nhiều sheet (Nhân viên, Thông tin cá nhân, Hợp đồng…)"));
-    bar.appendChild(btn("⬇ Sổ lao động", "", function () { var rows = HRM.reports(db, { hidePay: !canSeePay() }).soLaoDong(); saveXlsx("SoQuanLyLaoDong.xlsx", [{ name: "Sổ quản lý lao động", cols: rows[0] ? Object.keys(rows[0]) : [], rows: rows }]); }));
+    bar.appendChild(btn("⬇ Sổ lao động", "", function () { var rows = HRM.reports(db, { hidePay: !canSeePay() }).soLaoDong(st.nam); saveXlsx("SoQuanLyLaoDong.xlsx", [{ name: "Sổ quản lý lao động", cols: rows[0] ? Object.keys(rows[0]) : [], rows: rows }]); }));
     card.appendChild(bar);
     card.appendChild(h("div", { class: "hint", text: "Bấm vào một nhân viên để mở hồ sơ đầy đủ (cá nhân, hợp đồng, phụ lục lương, người phụ thuộc, nghỉ phép…). Lương được tính theo phụ lục hợp đồng đang hiệu lực." }));
     var tw = h("div", { class: "tw" }); card.appendChild(tw); wrap.appendChild(card);
@@ -916,7 +916,11 @@
       card.appendChild(simpleTable(rows));
     } else if (st.bc === "vipham") { rows = R.vipham(); card.appendChild(simpleTable(rows)); }
     else if (st.bc === "sinhnhat") { rows = R.sinhnhat(st.thang); card.appendChild(h("div", { class: "hint", text: "Theo kỳ lương đang chọn: tháng " + st.thang })); card.appendChild(simpleTable(rows)); }
-    else if (st.bc === "solaodong") { rows = R.soLaoDong(); card.appendChild(simpleTable(rows)); }
+    else if (st.bc === "solaodong") {
+      rows = R.soLaoDong(st.nam);
+      card.appendChild(h("div", { class: "hint", text: "Nội dung theo khoản 2 Điều 3 Nghị định 145/2020/NĐ-CP (lập sổ trong 30 ngày kể từ ngày bắt đầu hoạt động; cập nhật từ ngày người lao động bắt đầu làm việc; xuất trình khi cơ quan có thẩm quyền yêu cầu). Các cột nghỉ / làm thêm / đào tạo / kỷ luật / tai nạn lấy theo năm " + st.nam + " (năm của kỳ đang chọn). Bấm 'Xuất Excel' để in / lưu sổ." }));
+      card.appendChild(simpleTable(rows));
+    }
     else if (st.bc === "lichsu") {
       var sel = h("select"); sel.appendChild(h("option", { value: "", text: "— chọn nhân viên —" }));
       db.nhanvien.forEach(function (n) { sel.appendChild(h("option", { value: n["Mã NV"], text: n["Mã NV"] + " — " + n["Họ và tên"] })); });
@@ -1815,7 +1819,7 @@
       $("#nav").innerHTML = ""; var t0 = $("#top"); t0.innerHTML = ""; t0.appendChild(h("h2", { text: !(db.nguoidung || []).length ? "Thiết lập ban đầu" : "Đăng nhập" }));
       var m0 = $("#main"); m0.innerHTML = "";
       m0.appendChild(!(db.nguoidung || []).length ? setupAdminScreen() : st.authView === "recover" ? recoverAdminScreen() : loginScreen());
-      $("#sidefoot").textContent = "v2.0.0-alpha.13"; return;
+      $("#sidefoot").textContent = "v2.0.0-alpha.14"; return;
     }
     if (!tabAllowed(st.tab)) st.tab = "home";
     var nav = $("#nav"); nav.innerHTML = "";
@@ -1829,7 +1833,7 @@
       if (n[0] === "nhansu") b.appendChild(h("span", { class: "n", text: db.nhanvien.filter(function (r) { return r["Trạng thái"] !== "Đã nghỉ việc"; }).length }));
       nav.appendChild(b);
     });
-    $("#sidefoot").textContent = "v2.0.0-alpha.13 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
+    $("#sidefoot").textContent = "v2.0.0-alpha.14 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
     var bb = $(".brand small"); if (bb) bb.textContent = congTy()["Tên công ty"] || "Chạy offline";
     var top = $("#top"); top.innerHTML = "";
     var title = TITLES[st.tab] || (S[st.tab] && S[st.tab].ten) || "";
