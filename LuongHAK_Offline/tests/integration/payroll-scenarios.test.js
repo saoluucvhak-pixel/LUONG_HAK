@@ -29,7 +29,7 @@ test("I-15 đủ tháng 9/2026 (26 công chuẩn): BH 630.000; thuế (20tr − 
   assert.equal(b["BH trừ NLĐ"], 630000); assert.equal(b["Thuế TNCN"], 193500); assert.equal(b["Thực lĩnh"], 19177000);
 });
 
-test("I-16 vào làm giữa tháng 15/09 (14 công): lương 20tr × 14/26 = 10.769.231; thu nhập tính thuế < 0 → thuế 0; BH vẫn trừ đủ [chờ KT xác nhận — Q-23]", () => {
+test("I-16 vào làm giữa tháng 15/09 (14 công): lương 20tr × 14/26 = 10.769.231; thuế 0; BH trừ đủ vì danh mục CHƯA KHAI ngưỡng (dữ liệu trống, công thức vẫn có — R-57, xem I-21)", () => {
   const db = one(); db.hopdong[0]["Ngày vào làm"] = "2026-09-15"; db.chitiethd[0]["Hiệu lực từ"] = "2026-09-15";
   db.chamcong = [keep(ccRow("NV001", 2026, 9), 15, 30)];
   const { b } = pay(db, 2026, 9);
@@ -69,4 +69,17 @@ test("I-20 phụ lục tăng lương hiệu lực GIỮA THÁNG (16/09), KHÔNG 
   db.chitiethd.push(Object.assign({}, db.chitiethd[0], { "Hiệu lực từ": "2026-09-16", "Lương thỏa thuận": "26000000" }));
   assert.equal(pay(db, 2026, 9).b["Lương thời gian"], 26000000);
   assert.equal(pay(db, 2026, 8).b["Lương thời gian"], 20000000);
+});
+
+test("I-21 (R-57) cùng dữ liệu I-16, chỉ KHAI ngưỡng 15 công cho TG1 trong danh mục → công thức có sẵn tự áp dụng: không trừ BH NLĐ, truy thu phần công ty 6tr × 23,5% = 1.410.000", () => {
+  const db = one(); db.hopdong[0]["Ngày vào làm"] = "2026-09-15"; db.chitiethd[0]["Hiệu lực từ"] = "2026-09-15";
+  db.chamcong = [keep(ccRow("NV001", 2026, 9), 15, 30)];
+  db.dm_luong.find((l) => l["Mã lương"] === "TG1")["Ngưỡng truy thu BH (công)"] = "15"; // chỉ thay DỮ LIỆU danh mục, không đổi code
+  const { b } = pay(db, 2026, 9);
+  assert.equal(b["Tổng công"], 14);
+  assert.equal(b["BH trừ NLĐ"], 0); assert.equal(b["Truy thu BH"], 1410000); // (17,5% + 3% + 1% + 2%) × 6.000.000
+  assert.equal(b["Thực lĩnh"], 9359000); // 10.769.231 − 1.410.000 = 9.359.231 → làm tròn 1.000
+  // đủ ngưỡng (khai 14) → đóng bình thường
+  db.dm_luong.find((l) => l["Mã lương"] === "TG1")["Ngưỡng truy thu BH (công)"] = "14";
+  assert.equal(pay(db, 2026, 9).b["BH trừ NLĐ"], 630000);
 });

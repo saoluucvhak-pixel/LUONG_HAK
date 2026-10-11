@@ -204,6 +204,15 @@
         "Số CCCD": (cn && cn["Số CCCD"]) || nv["Số CCCD"] || "", "Số tài khoản": tk ? tk["Số tài khoản"] : "", "Tên Ngân hàng": tk ? tk["Tên ngân hàng"] : "",
         "HTTT": ct["HTTT"] || "", "Số HĐLĐ": hd["Số HĐLĐ"]
       });
+      // Q-19 (R-53): phụ lục trong kỳ đổi Phòng ban → ghi các đoạn "Mã PB@từ ngày" để chia chi phí theo công (chỉ thêm khi có đổi phòng ban)
+      var plHD = rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return r["Số HĐLĐ"] === hd["Số HĐLĐ"] && d10(r["Hiệu lực từ"]); });
+      var dau0 = latestBy(plHD, "Hiệu lực từ", b.dau), seg = [];
+      plHD.filter(function (r) { var v = d10(r["Hiệu lực từ"]); return v > b.dau && v <= b.cuoi; })
+        .sort(function (x, y) { return d10(x["Hiệu lực từ"]) < d10(y["Hiệu lực từ"]) ? -1 : 1; })
+        .forEach(function (r) { seg.push({ pb: r["Phòng ban"] || "", tu: +d10(r["Hiệu lực từ"]).slice(8, 10) }); });
+      if (dau0) seg.unshift({ pb: dau0["Phòng ban"] || "", tu: 1 });
+      var segPB = seg.filter(function (x, i) { return i === 0 || x.pb !== seg[i - 1].pb; });
+      if (segPB.length > 1) out[out.length - 1]["Phân bổ phòng ban"] = segPB.map(function (x) { return x.pb + "@" + x.tu; }).join(";");
       if (tuNgay) { out[out.length - 1]["Áp dụng từ ngày"] = tuNgay; out[out.length - 1]["Lương thỏa thuận trước"] = lttTruoc; } // chỉ thêm khi thật sự chia (dòng khác giữ y hệt bản trước)
     });
     return { list: out, warn: warn };

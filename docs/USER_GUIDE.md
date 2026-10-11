@@ -78,6 +78,9 @@ Khi lập phụ lục có *Hiệu lực từ* giữa tháng, chọn ô **Cách �
   - Bảo hiểm tính theo phụ lục mới.
   - Màn hình Tính lương ghi rõ số công theo từng mức.
 
+## Điều chuyển phòng ban giữa tháng (từ 2.0-alpha.12)
+Lập **phụ lục mới** có *Hiệu lực từ* là ngày chuyển và *Phòng ban* mới. Báo cáo *Tổng hợp theo phòng ban* và *Bảng hạch toán* sẽ tự chia chi phí lương của người đó theo số công làm ở từng phòng. Số tiền lương của người lao động không đổi.
+
 ## Lương lấy từ hồ sơ như thế nào
 - Chỉ tính cho nhân viên có **hợp đồng còn hiệu lực trong kỳ** (Ngày vào làm ≤ cuối tháng, chưa chấm dứt trước đầu tháng).
 - Lấy dòng **Lương & phụ lục HĐ** mới nhất có "Hiệu lực từ" ≤ cuối tháng → tăng lương chỉ cần thêm 1 phụ lục mới.

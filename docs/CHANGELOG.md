@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [2.0.0-alpha.12] — 11/10/2026 — Q-19: chia chi phí lương theo phòng ban khi điều chuyển (engine 1.6.0)
+- Nhân viên đổi phòng ban trong tháng (phụ lục mới đổi *Phòng ban*) → báo cáo **Tổng hợp theo phòng ban** và **Bảng hạch toán** chia chi phí theo **số công làm ở từng phòng**:
+  - thu nhập, BH NLĐ, BH công ty, thuế, tạm ứng, thực lĩnh;
+  - mỗi phòng vào đúng TK chi phí (622 / 641 / 642…).
+- Tổng các phòng luôn bằng tổng bảng lương. **Số tiền lương từng người không đổi.**
+- Màn hình Tính lương có dòng thông báo người được chia và tỷ lệ.
+- Kỳ chốt trước bản này giữ báo cáo cũ. Người không điều chuyển: báo cáo y hệt trước (U-ALLOC-04).
+- Q-04 / Q-23 / Q-25 (chủ sở hữu xác nhận): giữ công thức BH dưới ngưỡng; ngưỡng khai ở Danh mục Mã lương (R-57) — gỡ đánh dấu "cần quyết định" trong quy chế.
+- I-21: chứng minh công thức truy thu BH tự áp dụng ngay khi khai ngưỡng trong danh mục (danh mục mẫu trống là thiếu dữ liệu, không phải thiếu công thức).
+- `core/allocation.js` (mới). Test: 129 (+4 U-ALLOC, +1 I-21), E2E 51/51.
+
 ## [2.0.0-alpha.11] — 11/10/2026 — Q-22: chọn cách áp dụng phụ lục giữa tháng (engine 1.5.0)
 - Phụ lục có thêm ô **Cách áp dụng trong tháng hiệu lực**:
   - *Cả tháng* (mặc định, để trống = như cũ);

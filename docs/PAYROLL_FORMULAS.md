@@ -58,6 +58,13 @@ Khi đó:
 - Khác mã lương thì không chia: cả tháng theo phụ lục mới, kèm cảnh báo.
 - Không chọn, hoặc chọn *Cả tháng*: như engine 1.4.0.
 
+### 4b. Chia chi phí theo phòng ban khi điều chuyển (engine 1.6.0, Q-19 / R-53)
+- Phụ lục trong kỳ (cùng hợp đồng) đổi *Phòng ban* → `staffForPayroll` ghi các đoạn `Mã PB@từ ngày`.
+- Engine đếm **công chính** ở từng đoạn, rồi ghi `Phân bổ PB = [{Mã PB, Phòng ban, Công, Tỷ lệ}]` vào dòng lương.
+- **Không đổi** số tiền lương.
+- Báo cáo *Tổng hợp theo phòng ban* và *Bảng hạch toán* chia từng khoản theo `Tỷ lệ`. Số lẻ được làm tròn theo phần dư lớn nhất, nên tổng các phòng luôn bằng tổng bảng lương.
+- Ví dụ (U-ALLOC-02): 20 tr, 13 công ở 01.01 (TK 642) và 13 công ở 02.01 (TK 622) → mỗi TK 10.000.000.
+
 ## 5. Bảo hiểm
 - Lương đóng BH = LCB, nếu trống = LTT **[Q-07]**. Không áp mức trần **[Q-06]**.
 - Đủ ngưỡng (không khai "Ngưỡng truy thu BH" hoặc Tổng công ≥ ngưỡng): BH NLĐ = ROUND(Lương đóng × (NLĐ.BHXH + BHYT + BHTN)).

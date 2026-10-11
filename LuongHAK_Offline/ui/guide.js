@@ -129,7 +129,7 @@
       ["Người lao động đóng", function (r) { return "BHXH " + pct(r["NLD.BHXH"]) + " · BHYT " + pct(r["NLD.BHYT"]) + " · BHTN " + pct(r["NLD.BHTN"]); }]], BH) +
       "<ul><li>Tiền lương đóng bảo hiểm = <b>Lương cơ bản</b> ghi trong phụ lục; nếu không ghi thì lấy Lương thỏa thuận. <b>[cần quyết định — Q-07]</b> Với lương công nhật/sản phẩm (lương thỏa thuận là đơn giá), phải ghi Lương cơ bản để đóng BH đúng.</li>" +
       "<li><b>[cần quyết định — Q-06]</b> Chưa áp dụng mức trần tiền lương đóng BHXH/BHTN.</li>" +
-      "<li>Tháng có số công dưới <i>Ngưỡng truy thu BH</i> của mã lương: người lao động không bị trừ phần BH thường mà bị <b>truy thu phần công ty đóng</b>. <b>[cần quyết định — Q-04]</b></li></ul>";
+      "<li>Tháng có số công dưới <i>Ngưỡng truy thu BH</i> của mã lương: người lao động không bị trừ phần BH thường mà bị <b>truy thu phần công ty đóng</b>. Ngưỡng công do công ty quy định cho từng mã lương trong Danh mục Mã lương; để trống = không áp dụng ngưỡng (đóng đủ).</li></ul>";
     h += D("Thuế thu nhập cá nhân") + table([["Mã", function (r) { return r["Mã thuế TNCN"]; }], ["Phương thức", function (r) { return r["Nội dung"]; }], ["Mức", function (r) { return n(r["Mức thuế"]) ? pct(r["Mức thuế"]) : ""; }], ["Ghi chú", function (r) { return r["Ghi chú"]; }]], TN) +
       "<p><b>Biểu thuế lũy tiến từng phần</b> áp dụng kỳ " + ky + ":</p>" + table([["Bậc", function (r) { return r["Bậc"]; }], ["Thu nhập tính thuế/tháng", function (r) { return "từ " + money(r["Thu nhập từ"]) + (n(r["Thu nhập đến"]) ? " đến " + money(r["Thu nhập đến"]) : " trở lên"); }], ["Thuế suất", function (r) { return pct(r["Tỷ lệ"]); }]], BT) +
       "<p><b>Giảm trừ gia cảnh</b>:</p>" + table([["Mã", function (r) { return r["Mã giảm trừ"]; }], ["Đối tượng", function (r) { return /NPT/i.test(r["Mã giảm trừ"]) ? "Mỗi người phụ thuộc" : "Bản thân người nộp thuế"; }], ["Mức/tháng", function (r) { return money(r["Số tiền"]) + " đ"; }]], GT) +
@@ -151,7 +151,7 @@
     h += "<h3>Chương VII. ĐIỀU KHOẢN THI HÀNH</h3>";
     h += D("Hiệu lực") + "<p>Quy chế có hiệu lực từ ngày …/…/" + nam + ". Các đơn vị, phòng ban và người lao động có trách nhiệm thực hiện. Quy chế được xem xét sửa đổi khi pháp luật hoặc điều kiện sản xuất kinh doanh thay đổi.</p>";
     h += "<div class='g-sign'><div><b>ĐẠI DIỆN TỔ CHỨC ĐẠI DIỆN NLĐ</b><br><i>(nếu có)</i></div><div><b>GIÁM ĐỐC</b><br><i>(ký, ghi rõ họ tên, đóng dấu)</i><br><br><br>" + esc(ct["Người đại diện pháp luật"] || "") + "</div></div>";
-    h += "<div class='g-warn g-noprint'><b>Các điểm cần công ty quyết định trước khi ban hành</b> (phần mềm đang áp dụng như mô tả, không tự đổi công thức): Q-02 tổng công gồm tăng ca · Q-03 tiền cơm và thuế · Q-04 truy thu BH · Q-05 khoản trừ vượt thu nhập · Q-06 trần BH · Q-07 lương đóng BH với công nhật · Q-08 chia sản lượng nhiều người · Q-09 phụ cấp công tác · Q-10 khấu trừ vãng lai · Q-17 mức tăng ca tối thiểu theo luật. Chi tiết: <code>docs/BUSINESS_RULES.md</code>.</div>";
+    h += "<div class='g-warn g-noprint'><b>Các điểm cần công ty quyết định trước khi ban hành</b> (phần mềm đang áp dụng như mô tả, không tự đổi công thức): Q-02 tổng công gồm tăng ca · Q-03 tiền cơm và thuế · Q-05 khoản trừ vượt thu nhập · Q-06 trần BH · Q-07 lương đóng BH với công nhật · Q-08 chia sản lượng nhiều người · Q-09 phụ cấp công tác · Q-10 khấu trừ vãng lai · Q-17 mức tăng ca tối thiểu theo luật. Chi tiết: <code>docs/BUSINESS_RULES.md</code>.</div>";
     return h;
   }
 

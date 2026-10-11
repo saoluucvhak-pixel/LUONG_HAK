@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var KEY = "luonghak_db_v1";
-  var E = window.LuongEngine, C = window.HAKCore, VAL = C.validate, IMP = C.importer, INT = C.integrity, CLS = C.close, GRD = C.guard, SCH = C.schema, PERM = C.perm, RP = C.repo;
+  var E = window.LuongEngine, C = window.HAKCore, VAL = C.validate, IMP = C.importer, INT = C.integrity, CLS = C.close, GRD = C.guard, SCH = C.schema, PERM = C.perm, RP = C.repo, ALLOC = C.alloc;
   var DAYS = []; for (var i = 1; i <= 31; i++) DAYS.push(("0" + i).slice(-2));
 
   // ---------- Định nghĩa bảng ----------
@@ -1127,14 +1127,10 @@
   var BCL_NAM = { thang: 1, nvnam: 1, thuenam: 1 };
 
   function bcPhongBan(r) {
-    var m = {};
-    r.bangluong.forEach(function (x) {
-      var k = x["Phòng ban"] || "(chưa có phòng ban)";
-      var o = m[k] || (m[k] = { "Phòng ban": k, "Số người": 0, "Tổng công": 0, "Tổng thu nhập": 0, "BH trừ NLĐ": 0, "Thuế TNCN": 0, "Tạm ứng": 0, "Trừ khác": 0, "Thực lĩnh": 0, "BH công ty đóng": 0 });
-      o["Số người"]++; ["Tổng công", "Tổng thu nhập", "BH trừ NLĐ", "Thuế TNCN", "Tạm ứng", "Trừ khác", "Thực lĩnh"].forEach(function (f) { o[f] += n0(x[f]); });
-    });
-    r.bhxh.forEach(function (b) { var k = b["Phòng ban"] || "(chưa có phòng ban)"; if (m[k]) m[k]["BH công ty đóng"] += n0(b["Cộng BH công ty đóng"]); });
-    return addTotal(Object.keys(m).sort().map(function (k) { return m[k]; }));
+    // Q-19 (R-53): người điều chuyển trong kỳ được chia theo công ở từng phòng (core/allocation.js); tổng các phòng = tổng bảng lương
+    var res = ALLOC.byDepartment(r), rows = addTotal(res.rows);
+    if (rows.length) rows[rows.length - 1]["Số người"] = res.people; // người điều chuyển được đếm ở mỗi phòng đã làm; dòng tổng = số người thật
+    return rows;
   }
   function bcCong(nam, thang) {
     var ky = kyKey(nam, thang), m = {};
@@ -1179,9 +1175,8 @@
   }
   function bcHachToan(r, nam, thang) {
     var ky = thang + "/" + nam, rows = [], cp = {}, cpBH = {}, sum = function (f) { return r.bangluong.reduce(function (a, x) { return a + n0(x[f]); }, 0); };
-    var maPBof = {}; r.bangluong.forEach(function (x) { maPBof[x["Mã NV"]] = x["Mã PB"]; });
-    r.bangluong.forEach(function (x) { var tk = tkChiPhi(x["Mã PB"], x["Phòng ban"]); cp[tk] = (cp[tk] || 0) + n0(x["Tổng thu nhập"]); });
-    r.bhxh.forEach(function (b) { var tk = tkChiPhi(maPBof[b["Mã NV"]], b["Phòng ban"]); cpBH[tk] = (cpBH[tk] || 0) + n0(b["Cộng BH công ty đóng"]); });
+    // Q-19 (R-53): chi phí người điều chuyển chia theo công ở từng phòng → đúng TK chi phí của từng phòng
+    var cost = ALLOC.costByKey(r, tkChiPhi); cp = cost.luong; cpBH = cost.bh;
     var add = function (no, co, dg, tien) { if (Math.round(tien)) rows.push({ "Kỳ": ky, "TK Nợ": no, "TK Có": co, "Diễn giải": dg, "Số tiền": Math.round(tien) }); };
     Object.keys(cp).sort().forEach(function (tk) { add(tk, "334", "Tính lương phải trả kỳ " + ky, cp[tk]); });
     Object.keys(cpBH).sort().forEach(function (tk) { add(tk, "338", "Trích BHXH/BHYT/BHTN/KPCĐ (DN đóng) kỳ " + ky, cpBH[tk]); });
@@ -1785,7 +1780,7 @@
       $("#nav").innerHTML = ""; var t0 = $("#top"); t0.innerHTML = ""; t0.appendChild(h("h2", { text: !(db.nguoidung || []).length ? "Thiết lập ban đầu" : "Đăng nhập" }));
       var m0 = $("#main"); m0.innerHTML = "";
       m0.appendChild(!(db.nguoidung || []).length ? setupAdminScreen() : st.authView === "recover" ? recoverAdminScreen() : loginScreen());
-      $("#sidefoot").textContent = "v2.0.0-alpha.11"; return;
+      $("#sidefoot").textContent = "v2.0.0-alpha.12"; return;
     }
     if (!tabAllowed(st.tab)) st.tab = "home";
     var nav = $("#nav"); nav.innerHTML = "";
@@ -1799,7 +1794,7 @@
       if (n[0] === "nhansu") b.appendChild(h("span", { class: "n", text: db.nhanvien.filter(function (r) { return r["Trạng thái"] !== "Đã nghỉ việc"; }).length }));
       nav.appendChild(b);
     });
-    $("#sidefoot").textContent = "v2.0.0-alpha.11 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
+    $("#sidefoot").textContent = "v2.0.0-alpha.12 · " + (store ? "Tự lưu ra file trên máy" : "Dữ liệu lưu trong trình duyệt");
     var bb = $(".brand small"); if (bb) bb.textContent = congTy()["Tên công ty"] || "Chạy offline";
     var top = $("#top"); top.innerHTML = "";
     var title = TITLES[st.tab] || (S[st.tab] && S[st.tab].ten) || "";

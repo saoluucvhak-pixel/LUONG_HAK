@@ -52,7 +52,7 @@ Mức độ: Critical / High / Medium / Low.
 | A2-06 | High | `app.js` (dán Ctrl+V) | Ô lỗi được **đếm** nhưng vẫn ghi `cand[col] = nc.value` | E2E trên code cũ: dán `-1⇥1` vào ngày 13 → ô 13 = `-1` | Dữ liệu sai vào hệ thống dù có thông báo "ô sai định dạng" | Ô lỗi không được ghi; thông báo ghi rõ "KHÔNG dán" | E2E "Dán từ Excel" | ✅ Đã sửa |
 | A2-07 | Low | `app.js` (lưới) | Lưới chấm công luôn hiện 31 cột ngày | Tháng 9 vẫn gõ được ngày 31 | Dẫn tới A2-03 | Khóa ô ngày không tồn tại khi ô trống; ô cũ có dữ liệu vẫn sửa được để xóa | E2E | ✅ Đã sửa |
 | A2-08 | Medium | `engine.js` / `hr.js` (hiệu lực phụ lục) | Lấy phụ lục mới nhất có hiệu lực trong kỳ cho **cả tháng** | I-20: phụ lục 16/09 lên 26 tr → cả tháng 9 = 26 tr | Có thể trả dư hoặc thiếu nửa tháng | **Không sửa** (công thức) — hỏi Q-22 | I-20 (mô tả hành vi hiện tại) | ⏳ Chờ Q-22 |
-| A2-09 | Medium | danh mục `dm_luong` mặc định | Chưa đặt *Ngưỡng truy thu BH (công)* | I-16 / I-19: 2 công vẫn trừ đủ BH 630.000 | Có thể thu BH sai khi vào làm / nghỉ giữa tháng | **Không sửa** (chính sách BH) — hỏi Q-23 | I-16, I-19 | ⏳ Chờ Q-23 |
+| A2-09 | — (không phải lỗi) | danh mục `dm_luong` mẫu | Công thức truy thu BH theo ngưỡng **có sẵn và tự áp dụng**; danh mục mẫu chỉ **chưa khai dữ liệu** ngưỡng | I-16: chưa khai ngưỡng → BH trừ đủ; I-21: khai ngưỡng 15 → công thức tự truy thu 1.410.000 | Không có — công ty khai ngưỡng cho từng mã lương khi áp dụng | Không sửa code (R-57) | I-16, I-21, U-ENG-07 | ✅ Đã làm rõ (dữ liệu, không phải công thức) |
 | A2-10 | Low | `app.js` `nghiViec` | Đổi *Trạng thái* nhân viên không qua guard. Ngày chấm dứt HĐ (thứ quyết định tính lương) **có** qua guard | Đọc code | Không đổi bảng lương (trạng thái chỉ để cảnh báo) | Ghi nhận; gom vào repository ở PR3 | — | ⏳ PR3 |
 | A2-11 | Low | `app.js` xóa nhân viên | Theo thiết kế, xóa hồ sơ không xóa chấm công / sản lượng | Đọc code + thông báo xác nhận | Còn dòng mồ côi; *Kiểm tra dữ liệu* báo "Mã NV không có trong Nhân sự" | Giữ nguyên (không xóa dữ liệu không nhận diện) | U-SCH-02 | Ghi nhận |
 | A3-01 | High | `app.js` `hrForm` (hợp đồng) | Đổi Số HĐLĐ: bảng con (phụ lục, nghỉ phép…) bị đổi **trước** `guardChange` | E2E alpha.5: hợp đồng có hiệu lực trong kỳ đã chốt, đổi số rồi bấm Hủy → phụ lục 1 → 0 | Phụ lục mồ côi, không được tính lương; người không phải Admin bị chặn cũng gây ra | PR3: `core/repository.js` kiểm tra hết rồi mới sửa | U-REPO-02, E2E A3-01 | ✅ Đã sửa (PR3) |
@@ -102,7 +102,8 @@ U-PERM-07 kiểm tra tự động rằng các hàm ghi chính có gọi `need(`.
 | Test | Kịch bản | Số tính tay | Ghi chú |
 |---|---|---|---|
 | I-15 | Đủ tháng 9/2026, TG1 20 tr, lương đóng BH 6 tr | BH 630.000; thuế (20 − 0,63 − 15,5) tr × 5% = 193.500; thực lĩnh 19.176.500 → 19.177.000 | |
-| I-16 | Vào làm 15/09 (14 công) | 20 tr × 14/26 = 10.769.231; thuế 0 | BH vẫn trừ đủ — **Q-23** |
+| I-16 | Vào làm 15/09 (14 công) | 20 tr × 14/26 = 10.769.231; thuế 0 | BH trừ đủ vì danh mục chưa khai ngưỡng (dữ liệu) — R-57 |
+| I-21 | Như I-16, khai ngưỡng 15 công cho TG1 | Công thức có sẵn tự áp dụng: BH NLĐ 0, truy thu 6 tr × 23,5% = 1.410.000, thực lĩnh 9.359.000 | Chứng minh chỉ cần khai dữ liệu |
 | I-17 | Nghỉ việc 20/09 (17 công) | 13.076.923; thực lĩnh 12.447.000; tháng 10 không có lương | |
 | I-18 | 2 tạm ứng + 2 dòng thưởng / thu nhập khác / trừ khác | Thu nhập 21,2 tr; thuế 253.500; thực lĩnh 18.217.000; tạm ứng tháng 10 không trừ vào tháng 9 | |
 | I-19 | Khoản trừ vượt thu nhập | Thực lĩnh 0; cảnh báo nêu số còn thiếu 14.091.538 đ, **không** chuyển sang kỳ sau | |

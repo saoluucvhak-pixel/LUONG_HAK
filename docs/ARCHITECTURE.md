@@ -63,6 +63,8 @@ Nguyên tắc:
 | `hr.js` (2.0-α5) | `buildIndex(db)` · `hienHanh(db, ma, asOf, ix)` | dữ liệu | chỉ mục `Map` theo Mã NV, dựng mỗi lượt (không cache giữa các lần gọi) |
 | **`core/repository`** (2.0-α6) | `createRepo({db, can, audit, uid, tableName, hdChildren})` → `plan(op, table, target, values, {what, checkDup})` · `apply(plan, {audit, action})` | 1 thao tác thêm / sửa / xóa | `plan`: `{ok, code, msg, retro, impact, confirmMsg}` — **không sửa gì**; `apply`: kiểm tra lại rồi mới ghi + nhật ký trước/sau. Thứ tự kiểm tra: quyền → ô ngày → trùng khóa → Q-15 → kỳ chốt / hồi tố. Đổi Số HĐLĐ / xóa HĐ kéo theo bảng con **sau** khi mọi kiểm tra đã qua |
 
+| `core/allocation` (2.0-α12) | `split(số tiền, phần)` · `byDepartment(kq)` · `costByKey(kq, tkOf)` | bảng lương | chia chi phí người điều chuyển theo công (Q-19); tổng các phần = số gốc |
+
 ### 3.1 Tầng repository (2.0-α6)
 ```
 UI (app.js) ──plan()──▶ core/repository ──▶ validate · importer.keyOf · period-guard   (chỉ đọc)

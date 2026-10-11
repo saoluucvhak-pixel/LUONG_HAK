@@ -95,6 +95,14 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α12 chia chi phí theo phòng ban (`tests/unit/allocation.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-ALLOC-01 | Chia số tiền: tổng các phần = số gốc (số lẻ, số âm) |
+| U-ALLOC-02 | 01.01 → 02.01 từ 16/09 (13 + 13 công): mỗi phòng 50%; BH công ty chia đúng; TK 642 / 622 mỗi bên 10.000.000; lương không đổi; có thông báo |
+| U-ALLOC-03 | Chỉ làm ở phòng cũ → 100% phòng cũ; kết hợp Q-22 vẫn tổng đúng |
+| U-ALLOC-04 | Không điều chuyển → không có Phân bổ PB; báo cáo và hạch toán y hệt cách cũ (80 NV) |
+
 ## Unit — 2.0-α11 phụ lục giữa tháng (`tests/unit/phuluc-q22.test.js`)
 | ID | Nội dung (tính tay, tháng 9/2026: 13 công trước 16/09, 13 công từ 16/09) |
 |---|---|
@@ -143,7 +151,8 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | ID | Nội dung (số tính tay — `AUDIT_V2.md` §5) |
 |---|---|
 | I-15 | Đủ tháng: BH 630.000, thuế 193.500, thực lĩnh 19.177.000 |
-| I-16 | Vào làm 15/09: lương theo 14/26 công, thuế 0, BH vẫn trừ đủ [Q-23] |
+| I-16 | Vào làm 15/09: lương theo 14/26 công, thuế 0, BH trừ đủ vì danh mục chưa khai ngưỡng (dữ liệu) |
+| I-21 | (R-57) Cùng dữ liệu, khai ngưỡng 15 công cho TG1 → công thức tự truy thu 1.410.000, không trừ BH NLĐ; khai 14 → đóng bình thường |
 | I-17 | Nghỉ việc 20/09: 17 công; tháng 10 không có lương |
 | I-18 | Nhiều tạm ứng + thưởng + thu nhập khác + trừ khác cộng dồn; tạm ứng kỳ sau không trừ |
 | I-19 | Khoản trừ vượt thu nhập → thực lĩnh 0 + cảnh báo số còn thiếu |

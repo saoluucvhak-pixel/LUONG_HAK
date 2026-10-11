@@ -345,11 +345,23 @@
         "Thưởng": p["Thưởng"], "Thu nhập khác": p["Thu nhập khác"], "Tổng thu nhập": tongTN,
         "BH trừ NLĐ": bhNLD, "Truy thu BH": truyThu, "Thuế TNCN": thue, "Trừ khác": truKhac, "Tạm ứng": tamUng, "Thực lĩnh": thucLinh
       });
+      // Q-19 (R-53): điều chuyển phòng ban trong kỳ → tỷ lệ chia chi phí theo công chính ở từng phòng (không đổi số tiền lương)
+      if (ns["Phân bổ phòng ban"]) {
+        var segs = String(ns["Phân bổ phòng ban"]).split(";").map(function (x) { var i = x.lastIndexOf("@"); return { pb: x.slice(0, i), tu: +x.slice(i + 1) || 1 }; });
+        var congSeg = segs.map(function () { return 0; });
+        Object.keys(c.congChinhTheoNgay).forEach(function (k) { var j = 0; segs.forEach(function (sg, i) { if (+k >= sg.tu) j = i; }); congSeg[j] += c.congChinhTheoNgay[k] || 0; });
+        var tongSeg = congSeg.reduce(function (a, b) { return a + b; }, 0);
+        out.bangluong[out.bangluong.length - 1]["Phân bổ PB"] = segs.map(function (sg, i) {
+          return { "Mã PB": sg.pb, "Phòng ban": (pb[sg.pb] || {})["Tên phòng ban"] || sg.pb || "", "Công": Math.round(congSeg[i] * 1000) / 1000,
+            "Tỷ lệ": tongSeg > 0 ? congSeg[i] / tongSeg : (i === segs.length - 1 ? 1 : 0) }; // không có công → toàn bộ vào phòng ban cuối kỳ
+        });
+        out.canhbao.push(ma + ": điều chuyển phòng ban trong kỳ (Q-19) — chi phí chia theo công: " + out.bangluong[out.bangluong.length - 1]["Phân bổ PB"].map(function (x) { return (x["Phòng ban"] || x["Mã PB"]) + " " + x["Công"] + " công (" + Math.round(x["Tỷ lệ"] * 1000) / 10 + "%)"; }).join(", "));
+      }
     });
     return out;
   }
 
-  var ENGINE_VERSION = "1.5.0"; // 1.5.0: Q-22 tùy chọn áp dụng phụ lục từ ngày hiệu lực (không chọn = giống 1.4.0)
+  var ENGINE_VERSION = "1.6.0"; // 1.5.0: Q-22 áp dụng phụ lục từ ngày hiệu lực · 1.6.0: Q-19 "Phân bổ PB" khi điều chuyển (không dùng = số tiền giống 1.4.0)
   var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, tachCong: tachCong, tongHopChamCong: tongHopChamCong, hieuLuc: hieuLuc, num: num, pct: pct };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LuongEngine = api;
 })(typeof window !== "undefined" ? window : this);

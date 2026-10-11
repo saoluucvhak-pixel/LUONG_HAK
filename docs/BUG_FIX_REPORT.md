@@ -201,3 +201,10 @@ Rollback: cài lại alpha.9. Cột *Số chứng từ* chỉ là cột thêm, b
 
 Rollback: cài lại alpha.10. Phụ lục đã chọn "Từ ngày hiệu lực" sẽ được tính cả tháng như cũ; kỳ đã chốt không đổi.
 
+## 2.0.0-alpha.12 — Q-19 (nhánh `claude/v2-q19-phongban`)
+| Thay đổi nghiệp vụ (chủ sở hữu duyệt) | Cách làm | File | Test |
+|---|---|---|---|
+| Q-19 / R-53: làm ở phòng nào tính chi phí phòng đó | `staffForPayroll` ghi đoạn phòng ban; engine 1.6.0 ghi `Phân bổ PB` theo công; báo cáo và hạch toán chia theo tỷ lệ | `hr.js`, `engine.js`, `core/allocation.js` (mới), `app.js` | U-ALLOC-01…04 |
+
+Rollback: cài lại alpha.11. Báo cáo quay về ghi toàn bộ cho phòng ban cuối kỳ; dữ liệu không đổi.
+

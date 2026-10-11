@@ -1,5 +1,14 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.12 — Q-19 chia chi phí theo phòng ban (11/10/2026, nhánh `claude/v2-q19-phongban`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **128/128** (+4 U-ALLOC-01…04) |
+| Không điều chuyển (80 NV) | ✅ báo cáo theo phòng ban + hạch toán **y hệt** cách cũ (U-ALLOC-04); hồi quy công thức trùng 100% |
+| E2E Electron (xvfb, Linux) | ✅ **51/51** |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.11 — Q-22 phụ lục giữa tháng (11/10/2026, nhánh `claude/v2-q22-phuluc`)
 | Nhóm | Kết quả |
 |---|---|
