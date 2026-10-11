@@ -47,6 +47,12 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
   - **Ctrl+F**: vào ô tìm kiếm;
   - **Ctrl+V**: dán nhiều dòng từ Excel. Dán tiếp sang trang sau nếu dài hơn 1 trang.
 
+## Thưởng / Trừ, Tạm ứng — Số chứng từ (từ 2.0-alpha.10)
+- Ghi **Số chứng từ** (số phiếu chi / số quyết định thưởng) cho mỗi dòng.
+- Nhập lại file có cùng số chứng từ thì app **cập nhật**, không cộng thêm. Ví dụ: sửa số tiền trong file rồi nhập lại.
+- Một phiếu chi cho nhiều người: mỗi người 1 dòng, cùng số chứng từ.
+- Dòng chưa có số chứng từ vẫn dùng được, nhưng app sẽ nhắc. *Kiểm tra dữ liệu* báo các dòng có thể bị nhập trùng.
+
 ## Nhập Excel (v1.4)
 - Sau khi chọn file, app hiện **màn hình xem trước**: số dòng *Thêm mới · Cập nhật · Trùng (bỏ qua) · Lỗi dữ liệu · Sai tham chiếu · Kỳ đã chốt*. Chỉ dòng Thêm mới / Cập nhật được ghi. Bấm **⬇ Tải danh sách lỗi** để sửa và nhập lại.
 - Nhập lại cùng file **không tạo dòng trùng**: dòng cùng khóa (VD chấm công cùng Kỳ + Mã NV + Hình thức công) được cập nhật.

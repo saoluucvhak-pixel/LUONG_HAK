@@ -26,7 +26,7 @@ File `%APPDATA%\Tinh Luong HAK\data.json` là một object; mỗi khóa là mộ
 | Phát sinh | `chamcong` | Kỳ + Mã NV + Hình thức công — chuẩn hóa: kỳ `YYYY-MM`, hình thức viết hoa, để trống = BT | 31 cột ngày `01`…`31`. Engine cộng **mọi** dòng. Từ 2.0-P1, nhập Excel giữ đúng 1 dòng / khóa (gộp theo ngày, xung đột nếu trùng ngày) |
 | | `sanluong`, `bandam` | Phiếu cân + Mã NV | |
 | | `tiencom` | Ngày + Mã NV | |
-| | `psluong`, `ungluong` | (không có — chặn dòng trùng y hệt) | ⚠ Phase 4: thêm Số chứng từ làm khóa |
+| | `psluong`, `ungluong` | **Số chứng từ + Mã NV** (2.0-α10, Q-20); dòng chưa có số chứng từ: không có khóa, chỉ chặn dòng trùng y hệt | Cột mới *Số chứng từ* (không bắt buộc — dữ liệu cũ vẫn hợp lệ) |
 
 Quy ước giá trị (chuẩn hóa bởi `core/validate.js`): ngày `YYYY-MM-DD`, kỳ `YYYY-MM`, tiền là chuỗi số thuần (`"1500000"`), mã định danh là chuỗi (giữ số 0 đầu).
 

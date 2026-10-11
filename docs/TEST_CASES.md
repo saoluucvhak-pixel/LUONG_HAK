@@ -95,6 +95,14 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α10 Số chứng từ (`tests/unit/chungtu.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-CT-01 | Nhập lại file tạm ứng đã sửa số tiền (cùng số chứng từ) → cập nhật, không cộng 2 khoản; 1 phiếu chi nhiều người; nhập lại y hệt → trùng; bảng lương dùng số đã sửa |
+| U-CT-02 | Không có số chứng từ → như cũ + cảnh báo; trùng số chứng từ trong 1 file → xung đột |
+| U-CT-03 | Kiểm tra dữ liệu: High khi trùng số chứng từ + NV; Medium khi giống hệt không có số; không tự xóa |
+| U-CT-04 | Lưới (repository) chặn thêm dòng trùng số chứng từ + NV; dòng chưa có số không bị chặn |
+
 ## Unit — 2.0-α9 bảo mật lương (`tests/unit/pay-privacy.test.js`)
 | ID | Nội dung |
 |---|---|

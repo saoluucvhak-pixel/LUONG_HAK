@@ -1,5 +1,14 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.10 — Q-20 Số chứng từ (11/10/2026, nhánh `claude/v2-q20-chungtu`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **119/119** (+4 U-CT-01…04) |
+| Bằng chứng trên alpha.9 | `chungtu.test.js` **4/4 thất bại**. Cụ thể: nhập lại file tạm ứng đã sửa (1.000.000 → 1.200.000) thành 2 dòng, tổng 2.200.000 |
+| E2E Electron (xvfb, Linux) | ✅ **50/50** |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.9 — Q-24 bảo mật lương (11/10/2026, nhánh `claude/v2-q24-pay-privacy`)
 | Nhóm | Kết quả |
 |---|---|

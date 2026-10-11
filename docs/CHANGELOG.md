@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [2.0.0-alpha.10] — 11/10/2026 — Q-20 Số chứng từ; ghi nhận câu trả lời Q-18, Q-19, Q-21, Q-22, Q-23
+- **(Q-20) Số chứng từ** cho *Thưởng / Trừ* và *Tạm ứng*. Cột mới, không bắt buộc.
+  - Nhập lại file có cùng *Số chứng từ + Mã NV* thì **cập nhật**, không cộng thêm. Bản cũ: nhập lại file tạm ứng đã sửa số tiền thì thành 2 khoản.
+  - Lưới chặn dòng trùng số chứng từ.
+  - *Kiểm tra dữ liệu* báo **High** khi một số chứng từ có nhiều dòng cho cùng NV, **Medium** khi có dòng giống hệt nhau mà chưa có số chứng từ.
+  - Nhập Excel nhắc ghi số chứng từ.
+- Ghi nhận câu trả lời của chủ sở hữu:
+  - R-52 (Q-18): nhiều ca / ngày phân biệt bằng mã chấm công;
+  - R-55 (Q-21): giữ nguyên cách tính ô sai cũ, chỉ cảnh báo.
+- Đang triển khai: R-53 (Q-19) chia chi phí theo phòng ban; R-56 (Q-22) chọn cách áp dụng phụ lục giữa tháng.
+- Q-23: đã kiểm tra danh mục và công thức → câu hỏi tiếp **Q-25**.
+- Test: 119 (+4 U-CT), E2E 50/50.
+
 ## [2.0.0-alpha.9] — 11/10/2026 — Q-24 bảo mật lương cá nhân
 - (Q-24, chủ sở hữu duyệt) **Ẩn Lương thỏa thuận / Lương cơ bản** với người không có quyền *Xem bảng lương* và không có quyền *Sửa hồ sơ*. Với vai trò mặc định, chỉ **Trưởng bộ phận** bị ẩn. Áp dụng ở:
   - danh sách Nhân sự (bỏ cột);

@@ -12,7 +12,9 @@
   var KEYS = {
     chamcong: ["Kỳ", "Mã NV", "Hình thức công"],
     sanluong: ["Phiếu cân", "Mã NV"], bandam: ["Phiếu cân", "Mã NV"],
-    tiencom: ["Ngày", "Mã NV"], psluong: null, ungluong: null,
+    tiencom: ["Ngày", "Mã NV"],
+    // Q-20 (chủ sở hữu duyệt 11/10/2026): thưởng / trừ / tạm ứng có Số chứng từ → khóa Số chứng từ + Mã NV; không có số → như cũ (chỉ chặn dòng trùng y hệt)
+    psluong: ["Số chứng từ", "Mã NV"], ungluong: ["Số chứng từ", "Mã NV"],
     dm_luong: ["Mã lương", "Hiệu lực từ"], dm_phucap: ["Mã phụ cấp", "Hiệu lực từ"], dm_tangca: ["Mã tăng ca", "Hiệu lực từ"],
     dm_hotro: ["Mã hỗ trợ", "Hiệu lực từ"], dm_baohiem: ["Mã bảo hiểm", "Hiệu lực từ"], dm_tncn: ["Mã thuế TNCN", "Hiệu lực từ"],
     dm_bacthue: ["Bậc", "Hiệu lực từ"], dm_giamtru: ["Mã giảm trừ", "Hiệu lực từ"], dm_phongban: ["Mã phòng ban"], dm_chucvu: ["Mã chức vụ"],
@@ -43,7 +45,7 @@
     var parts = k.map(function (c) { return keyPart(table, c, r[c]); });
     var raw = k.map(function (c) { return String(r[c] == null ? "" : r[c]).trim(); });
     if (raw.every(function (p) { return !p; })) return null;
-    if (table === "sanluong" || table === "bandam") { if (!parts[0]) return null; } // không có số phiếu → không dùng khóa
+    if (table === "sanluong" || table === "bandam" || table === "psluong" || table === "ungluong") { if (!parts[0]) return null; } // không có số phiếu / số chứng từ → không dùng khóa
     return parts.join("\u0001");
   }
   function fingerprint(cols, r) { return cols.map(function (c) { return String(r[c] == null ? "" : r[c]); }).join("\u0001"); }
@@ -134,6 +136,7 @@
       }
       if (table === "nhanvien" && !r["Trạng thái"]) r["Trạng thái"] = "Đang làm việc";
       var item = { line: idx + 2, row: r, action: "add", reason: "" };
+      if ((table === "psluong" || table === "ungluong") && !r["Số chứng từ"]) warns.push("Chưa có Số chứng từ — nhập lại file sẽ không nhận ra dòng đã nhập (Q-20)");
       if (warns.length) item.warn = warns.join("; ");
       (REQUIRED[table] || []).forEach(function (c) { if (!r[c]) errs.push("Thiếu " + c); });
       if (errs.length) { item.action = "invalid"; item.reason = errs.join("; "); items.push(item); return; }

@@ -187,3 +187,10 @@ Rollback: cài lại alpha.7 (không đổi dữ liệu).
 
 Rollback: cài lại alpha.8 (không đổi dữ liệu).
 
+## 2.0.0-alpha.10 — Q-20 (nhánh `claude/v2-q20-chungtu`)
+| Vấn đề | Thay đổi | File | Test |
+|---|---|---|---|
+| Q-20 Thưởng / tạm ứng không có khóa: nhập lại file đã sửa số tiền → cộng 2 khoản (1.000.000 + 1.200.000) | Cột *Số chứng từ*; khóa Số chứng từ + Mã NV; cảnh báo khi trùng / thiếu số | `core/importer.js`, `core/integrity.js`, `app.js` | U-CT-01…04 (alpha.9 thất bại 4/4) |
+
+Rollback: cài lại alpha.9. Cột *Số chứng từ* chỉ là cột thêm, bản cũ bỏ qua cột này.
+

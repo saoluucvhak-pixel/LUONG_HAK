@@ -85,6 +85,20 @@
       else if (dup.length) push("High", "chamcong", lab + ": ngày " + dup.slice(0, 8).join(", ") + " nhập trùng (cùng số công) → đang bị CỘNG 2 LẦN. Bấm 'Gộp dòng chấm công trùng' để tính 1 lần (nên gộp).");
       else push("Medium", "chamcong", lab + ": " + rows.length + " dòng không trùng ngày → tính đúng, nên gộp thành 1 dòng (nút 'Gộp dòng chấm công trùng') để nhập Excel cập nhật được.");
     });
+    // Q-20: thưởng / trừ / tạm ứng — cùng Số chứng từ + Mã NV ở nhiều dòng = đang cộng nhiều lần; không có số chứng từ mà giống hệt nhau = có thể trùng
+    [["psluong", ["Thưởng", "Thu nhập khác", "Trừ khác"]], ["ungluong", ["Tạm ứng"]]].forEach(function (tc) {
+      var t = tc[0], byCt = {}, bySame = {};
+      (db[t] || []).forEach(function (r) {
+        if (!r || !r["Mã NV"]) return;
+        var ct = String(r["Số chứng từ"] || "").trim();
+        if (ct) { var k = ct + " · " + r["Mã NV"]; byCt[k] = (byCt[k] || 0) + 1; }
+        else { var k2 = [r["Mã NV"], r["Ngày hạch toán"]].concat(tc[1].map(function (c) { return String(r[c] || ""); })).join(" · "); bySame[k2] = (bySame[k2] || 0) + 1; }
+      });
+      var dupCt = Object.keys(byCt).filter(function (k) { return byCt[k] > 1; });
+      if (dupCt.length) push("High", t, dupCt.length + " số chứng từ bị nhập nhiều dòng cho cùng nhân viên → đang bị CỘNG NHIỀU LẦN (VD " + dupCt.slice(0, 5).join("; ") + "). Xóa dòng thừa.");
+      var same = Object.keys(bySame).filter(function (k) { return bySame[k] > 1; });
+      if (same.length) push("Medium", t, same.length + " nhóm dòng giống hệt nhau (cùng NV, ngày, số tiền) và chưa có Số chứng từ — kiểm tra có nhập trùng không, nên ghi Số chứng từ (VD " + same.slice(0, 3).join("; ") + ")");
+    });
     // Một phiếu cân chia cho nhiều người: cảnh báo để đối chiếu tổng
     ["sanluong", "bandam"].forEach(function (t) {
       var by = {};
