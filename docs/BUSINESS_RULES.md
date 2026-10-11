@@ -92,6 +92,7 @@
   - Phụ lục mới có hiệu lực lùi vào kỳ đã chốt (hồi tố) → chỉ Admin (R-26, Q-14).
   - Mở chốt một kỳ thì phụ lục chỉ còn bị khóa bởi các kỳ khác còn chốt.
 - R-50 (Q-13) Nhập Excel có dòng trùng với dữ liệu đã có → màn hình xem trước báo số dòng trùng, người dùng chọn **Bổ sung** (mặc định) hoặc **Ghi đè**.
+- R-51 (Q-24, chủ sở hữu duyệt 11/10/2026) **Bảo mật lương cá nhân**: *Lương thỏa thuận*, *Lương cơ bản* và *Giá trị tiền thưởng* (hồ sơ Khen thưởng, chủ sở hữu duyệt bổ sung 11/10/2026) chỉ hiển thị với người có quyền **Xem bảng lương** hoặc **Sửa hồ sơ**. Với vai trò mặc định, chỉ *Trưởng bộ phận* bị ẩn. Áp dụng ở danh sách Nhân sự, đầu hồ sơ, bảng và form *Lương & phụ lục HĐ* và *Khen thưởng*, báo cáo *Sổ lao động* và *Lịch sử*; ô bị ẩn hiện `🔒 ẩn`.
 
 ## 2. Câu hỏi mở — cần chủ sở hữu / kế toán xác nhận
 Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
@@ -121,4 +122,4 @@ Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 | Q-21 | Ô chấm công **sai đã có sẵn** trong dữ liệu (ngày 31 của tháng 30 ngày, số âm kiểu số): bảng lương có nên **bỏ qua** các ô này không? (Hiện engine vẫn cộng ngày không tồn tại.) | Giữ cách tính cũ, chỉ cảnh báo High |
 | Q-22 | Phụ lục tăng lương có hiệu lực **giữa tháng** (VD 16/09): tính cả tháng theo mức mới (hiện tại), mức cũ, hay **chia theo số công trước/sau** ngày hiệu lực? | Cả tháng theo phụ lục mới nhất có hiệu lực trong kỳ |
 | Q-23 | BHXH khi **vào làm / nghỉ giữa tháng** hoặc ít công: danh mục mặc định chưa đặt *Ngưỡng truy thu BH (công)* nên 2 công vẫn trừ đủ BH. Kế toán xác nhận ngưỡng áp dụng (theo quy định: không làm việc và không hưởng lương từ 14 ngày làm việc trở lên trong tháng thì không đóng) cho từng mã lương. | Theo danh mục; mặc định không có ngưỡng |
-| Q-24 | **Bảo mật lương:** vai trò *Trưởng bộ phận* (không có quyền xem bảng lương) hiện vẫn thấy *Lương thỏa thuận / Lương cơ bản* của **mọi** nhân viên (kể cả phòng khác) ở danh sách Nhân sự và phụ lục hợp đồng. Có ẩn các cột lương với vai trò không có quyền *Xem bảng lương* và không có quyền *Sửa hồ sơ* không? (Nhân sự vẫn cần thấy để lập phụ lục.) | Đang hiển thị — **đề xuất ẩn** |
+| Q-24 | **Bảo mật lương:** Trưởng bộ phận (không có quyền xem bảng lương) có được thấy lương thỏa thuận / lương cơ bản của nhân viên ở hồ sơ không? | ✅ **Đã trả lời (11/10/2026): ẩn theo đề xuất** → R-51 |

@@ -18,6 +18,7 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
 **Tạo tài khoản cho người khác** (chỉ Admin)
 - Vào **Công ty & Sao lưu → Người dùng & phân quyền → Thêm người dùng**.
 - Chọn **vai trò** (Nhân sự, Kế toán lương, Kế toán thanh toán, Trưởng bộ phận, Người phê duyệt, Người xem báo cáo) và đặt **mật khẩu tạm**. Người đó phải đổi mật khẩu ở lần đăng nhập đầu tiên.
+- (2.0-alpha.9, Q-24) Người **không** có quyền *Xem bảng lương* và cũng không có quyền *Sửa hồ sơ* (mặc định là **Trưởng bộ phận**) sẽ không thấy lương thỏa thuận / lương cơ bản / giá trị tiền thưởng của nhân viên. Các ô này hiện `🔒 ẩn`.
 - Bấm vào một dòng để sửa vai trò, khóa tài khoản hoặc đặt lại mật khẩu tạm.
 
 **Người dùng chỉ thấy và làm được những việc vai trò cho phép.** Ví dụ:

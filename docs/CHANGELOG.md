@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [2.0.0-alpha.9] — 11/10/2026 — Q-24 bảo mật lương cá nhân
+- (Q-24, chủ sở hữu duyệt) **Ẩn Lương thỏa thuận / Lương cơ bản** với người không có quyền *Xem bảng lương* và không có quyền *Sửa hồ sơ*. Với vai trò mặc định, chỉ **Trưởng bộ phận** bị ẩn. Áp dụng ở:
+  - danh sách Nhân sự (bỏ cột);
+  - đầu hồ sơ;
+  - bảng *Lương & phụ lục HĐ* (hiện `🔒 ẩn`);
+  - form phụ lục (không hiện ô lương);
+  - báo cáo *Sổ lao động* và *Lịch sử*;
+  - **Giá trị tiền thưởng** trong hồ sơ *Khen thưởng* (chủ sở hữu duyệt bổ sung).
+- Quy tắc R-51. Không đổi dữ liệu, công thức hay quyền khác.
+- Test: 115 (+2 U-PAY), E2E 50/50 (+3).
+
 ## [2.0.0-alpha.8] — 11/10/2026 — PR5 giao diện: bảng lớn, tìm kiếm, bàn phím
 - **PERF-03 (High)**: lưới nhập liệu vẽ toàn bộ dòng của kỳ. Ở 1.000 NV, mở *Chấm công* mất 5,6–6,9 giây, gõ 4 ký tự tìm kiếm mất 19 giây; ở 5.000 NV app treo. Nay:
   - **chia trang** (50/100/200/500 dòng, mặc định 100) → mở lưới 0,3 giây, kết quả lọc 0,4–0,55 giây;

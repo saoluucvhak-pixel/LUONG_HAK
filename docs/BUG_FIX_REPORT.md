@@ -180,3 +180,10 @@ Rollback: cài lại alpha.6 (định dạng file không đổi).
 
 Rollback: cài lại alpha.7 (không đổi dữ liệu).
 
+## 2.0.0-alpha.9 — Q-24 (nhánh `claude/v2-q24-pay-privacy`)
+| Vấn đề | Thay đổi | File | Test |
+|---|---|---|---|
+| Q-24 Trưởng bộ phận (không có quyền xem bảng lương) thấy lương thỏa thuận của mọi NV | `canSeePay()` = Xem bảng lương hoặc Sửa hồ sơ; che ở danh sách, đầu hồ sơ, phụ lục, khen thưởng (tiền thưởng), form, báo cáo | `app.js`, `hr.js` (`isPayField`, `reports(db, {hidePay})`) | U-PAY-01/02, E2E Q-24 (alpha.8 thất bại 4/4 vế) |
+
+Rollback: cài lại alpha.8 (không đổi dữ liệu).
+

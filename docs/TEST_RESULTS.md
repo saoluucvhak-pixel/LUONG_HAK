@@ -1,5 +1,14 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.9 — Q-24 bảo mật lương (11/10/2026, nhánh `claude/v2-q24-pay-privacy`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **115/115** (+2 U-PAY-01/02) |
+| E2E Electron (xvfb, Linux) | ✅ **50/50** (+3: Q-24 vai trò Trưởng bộ phận; tiền thưởng trong Khen thưởng `🔒 ẩn` — thất bại trên `hr.js` trước khi bổ sung; không lỗi JS) |
+| Bằng chứng trên alpha.8 | E2E Q-24 **thất bại** đủ 4 vế: Trưởng bộ phận thấy cột lương, phụ lục hiện số 13.000.000, form có ô lương, không có `🔒 ẩn` |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.8 — PR5 giao diện (11/10/2026, nhánh `claude/v2-ui-hrm`)
 | Nhóm | Kết quả |
 |---|---|

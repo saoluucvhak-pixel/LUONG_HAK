@@ -303,8 +303,16 @@
   }
 
   // ---------- Báo cáo nhân sự ----------
+  // Q-24 (chủ sở hữu duyệt 11/10/2026): tiền lương / thưởng cá nhân — ẩn với người không có quyền Xem bảng lương và không có quyền Sửa hồ sơ
+  //   chitiethd: Lương cơ bản, Lương thỏa thuận · khenthuong: Giá trị tiền thưởng (chủ sở hữu duyệt bổ sung 11/10/2026)
+  var PAY_TABLES = ["chitiethd", "khenthuong"], PAY_FIELDS = {};
+  PAY_TABLES.forEach(function (t) { PAY_FIELDS[t] = {}; HR[t].f.forEach(function (f) { if (f.t === "money") PAY_FIELDS[t][f.k] = 1; }); });
+  var PAY_HIDDEN = "🔒 ẩn";
+  function isPayField(table, col) { return !!(PAY_FIELDS[table] && PAY_FIELDS[table][col]); }
   function addDays(isoS, n) { var d = new Date(isoS + "T00:00:00"); d.setDate(d.getDate() + n); return iso(d); }
-  function reports(db) {
+  /** @param opts { hidePay: true } — che cột lương cá nhân (Q-24) */
+  function reports(db, opts) {
+    var hidePay = !!(opts && opts.hidePay);
     var t = today(), nvs = db.nhanvien || [];
     var name = {}; nvs.forEach(function (n) { name[n["Mã NV"]] = n["Họ và tên"]; });
     return {
@@ -372,7 +380,7 @@
             "Trình độ": (latestBy(rowsOf(db, "hocvan", n["Mã NV"], ix), "Ngày cấp bằng") || {})["Trình độ học vấn"] || "",
             "Phòng ban": hh.tenPB, "Chức vụ": hh.tenCV, "Số HĐLĐ": hd["Số HĐLĐ"] || "", "Loại HĐLĐ": hd["Hình thức HĐLĐ"] || "",
             "Ngày vào làm": hd["Ngày vào làm"] || "", "Ngày hết hạn": hd["Ngày hết hạn"] || "", "Ngày chấm dứt": hd["Ngày chấm dứt"] || "",
-            "Lương cơ bản": +ct["Lương cơ bản"] || "", "Lương thỏa thuận": +ct["Lương thỏa thuận"] || "", "Số sổ BHXH": c["Số sổ BHXH"] || "", "Trạng thái": n["Trạng thái"] };
+            "Lương cơ bản": hidePay ? PAY_HIDDEN : +ct["Lương cơ bản"] || "", "Lương thỏa thuận": hidePay ? PAY_HIDDEN : +ct["Lương thỏa thuận"] || "", "Số sổ BHXH": c["Số sổ BHXH"] || "", "Trạng thái": n["Trạng thái"] };
         });
       },
       lichsu: function (ma) {
@@ -381,7 +389,7 @@
           if (k === "nhanvien") return;
           rowsOf(db, k, ma).forEach(function (r) {
             var d = d10(r["Hiệu lực từ"] || r["Ngày vào làm"] || r["Từ ngày"] || r["Ngày"] || r["Ngày khám"] || r["Ngày cấp bằng"] || r["Ngày tài liệu"] || "");
-            var tom = HR[k].cols.map(function (c) { return r[c] ? c + ": " + r[c] : ""; }).filter(Boolean).join(" · ");
+            var tom = HR[k].cols.map(function (c) { return r[c] ? c + ": " + (hidePay && isPayField(k, c) ? PAY_HIDDEN : r[c]) : ""; }).filter(Boolean).join(" · ");
             ev.push({ "Ngày": d, "Loại hồ sơ": HR[k].ten, "Nội dung": tom });
           });
         });
@@ -390,7 +398,7 @@
     };
   }
 
-  var api = { HR: HR, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, staffForPayroll: staffForPayroll,
+  var api = { HR: HR, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll,
     seedDanhMuc: seedDanhMuc, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.HRM = api;
 })(typeof window !== "undefined" ? window : this);

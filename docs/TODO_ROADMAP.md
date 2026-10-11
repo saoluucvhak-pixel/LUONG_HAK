@@ -53,7 +53,8 @@
 - [x] **PR3 repository** (nhánh `claude/v2-repository`, alpha.6): `core/repository.js`, sửa A3-01; ngoại lệ còn lại khóa bằng U-REPO-08
 - [x] **PR4 lưu dữ liệu** (nhánh `claude/v2-storage-perf`, alpha.7): lưu 5.000 NV 243 → 110 ms; SQLite hoãn tới khi mọi đường ghi qua repository (`MIGRATION_PLAN.md` §2)
 - [x] **PR5 giao diện** (nhánh `claude/v2-ui-hrm`, alpha.8): chia trang bảng lớn, tìm kiếm nhớ theo bảng, phím tắt
-- [ ] Chờ chủ sở hữu: Q-24 (ẩn lương với vai trò không có quyền xem lương), R-45 ma trận quyền, phạm vi Trưởng bộ phận theo phòng ban
+- [x] Q-24 ẩn lương cá nhân với Trưởng bộ phận (alpha.9, R-51)
+- [ ] Chờ chủ sở hữu: R-45 ma trận quyền, phạm vi Trưởng bộ phận theo phòng ban
 - Tiếp theo: gom 4 đường ghi còn lại (nhập Excel, gộp chấm công, thêm NV, xóa NV) vào repository → SQLite ghi theo dòng
 
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)
