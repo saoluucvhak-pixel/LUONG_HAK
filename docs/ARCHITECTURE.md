@@ -36,7 +36,7 @@ Nguyên tắc:
 | HRM | `src/modules/{organization,employees,contracts,leave,assignments}` | `hr.js` (mô hình hồ sơ, lấy dữ liệu lương theo phụ lục, báo cáo nhân sự) |
 | PAYROLL | `src/modules/{attendance,production,payroll,insurance,personal-income-tax,advances,payments}` | `engine.js` (công thức), `core/payroll-close.js` (chốt/mở chốt/phiên bản) |
 | REPORTS | `src/modules/{reports,accounting}` | trong `app.js` (`bc*`) |
-| Core engine | `src/core/{calculation-engine,rule-engine,validation,permissions,events,settings}` | `core/validate.js`, `core/integrity.js`, `core/importer.js`, `core/payroll-close.js` |
+| Core engine | `src/core/{calculation-engine,rule-engine,validation,permissions,events,settings}` | `core/validate.js`, `core/integrity.js`, `core/importer.js`, `core/payroll-close.js`, `core/period-guard.js` (2.0), `core/schema.js` (2.0) |
 | Database & integrations | `src/main/{electron,ipc,security,storage}`, `src/database/{schema,migrations,repositories,backup}`, `src/integrations/{excel,csv,google-sheets,api}` | `main.js`, `preload.js`, `main/storage.js` (file JSON + sao lưu), SheetJS |
 | Tests | `tests/{unit,integration,regression,e2e,perf}` | ✅ đã có đủ 5 nhóm |
 
@@ -51,7 +51,11 @@ Nguyên tắc:
 | `core/payroll-close` | `buildSnapshot` · `close` · `reopen(db, ky, lyDo)` · `verify` · `diff` | kết quả lương | snapshot có checksum, phiên bản, lịch sử |
 | `hr.js` | `staffForPayroll(db, nam, thang)` | hồ sơ + hợp đồng | `{list, warn}` — đầu vào engine |
 | `engine.js` | `tinhBangLuong(db, nam, thang, buTheoNgay)` | dữ liệu kỳ | `{bangluong, bhxh, tncn, canhbao}` |
-| `main/storage` (IPC) | `load` · `save(text)` · `backup(tag)` · `list` · `readBackup` · `quarantineCorrupt` | — | `true` hoặc lỗi; không bao giờ ghi đè dữ liệu tốt bằng dữ liệu hỏng |
+| `main/storage` (IPC) | `load` · `save(text)` · `backup(tag)` · `list` · `readBackup` · `verifyAll` · `quarantineCorrupt` | — | `true` hoặc lỗi dễ hiểu; tên sao lưu duy nhất + SHA-256; không bao giờ ghi đè dữ liệu tốt bằng dữ liệu hỏng |
+| `core/importer` (2.0) | `plan(..., {mode: "merge"\|"replace"})` | | thêm các action `merged` và `conflict`; `item.diff = {set, change, clear, keep}` |
+| `core/period-guard` (2.0) | `impact(db, table, row)` · `impactChange(db, table, before, after)` · `references(db, maNV)` · `changedFields(a, b)` | 1 thay đổi | `{kind: "locked"\|"retro"\|"none", periods}` |
+| `core/schema` (2.0) | `validate(db, {tables, hrTables})` | dữ liệu đã parse | `{ok, fatal, errors, info, stats}` — không sửa dữ liệu |
+| `preload` (2.0) | `hakStore.whoami()` · `hakStore.verifyBackups()` | — | `{user, host}` · trạng thái bản sao lưu |
 
 ## 4. Luồng tính & chốt lương (Phase 1)
 

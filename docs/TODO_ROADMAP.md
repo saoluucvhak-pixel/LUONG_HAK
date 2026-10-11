@@ -27,7 +27,18 @@
 - [ ] Vá SheetJS 0.20.3 (chờ mạng) — SEC-03
 - [ ] Nghiệm thu bộ cài trên Windows
 
+## 2.0 — Giai đoạn ưu tiên 1: sửa lỗi dữ liệu, chốt kỳ, sao lưu ✅ (mã + test) — nhánh `claude/v2-phase1-data-fixes`
+- [x] Kiểm toán lại từ HEAD `6a4e954` → `AUDIT_REPORT.md` §6 (BUG-021…039, RISK-01…04)
+- [x] Chấm công / nhập Excel: chuẩn hóa khóa, gộp theo ngày, xung đột, chế độ bổ sung/ghi đè, gộp dữ liệu trùng sẵn có, hoàn tác khi lưu lỗi
+- [x] Kỳ đã chốt: phân loại locked/retro/none, cảnh báo hồi tố + nhật ký trước/sau, chặn đổi Mã NV, người thực hiện, checksum dữ liệu đầu vào, khôi phục báo kỳ chốt mất/đổi
+- [x] Sao lưu: tên duy nhất, SHA-256, ghi an toàn + đọc lại, không xóa bản tốt cuối cùng, mô phỏng lỗi đĩa
+- [x] Kiểm tra cấu trúc dữ liệu (`core/schema.js`), chặn ghi khi cấu trúc nguy hiểm
+- [x] Test: 78 unit/integration/regression, 27 E2E
+- [ ] Chủ sở hữu trả lời Q-12…Q-16
+- [ ] Nghiệm thu trên Windows thật
+
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)
+0. (Đã khảo sát) SQLite qua `node:sqlite` có sẵn trong Electron 43 / Node 24.21 — không cần module native.
 1. Tách `app.js` theo `ARCHITECTURE.md` §2: `src/renderer/pages/*` (mỗi trang 1 file), `src/modules/payroll/reports.js` (chuyển `bc*` ra khỏi UI, có test), `src/modules/hrm/*` (từ `hr.js`).
 2. Tầng repository: mọi truy cập `db.<bảng>` qua `repo.list/get/insert/update/remove` (kiểm tra khóa, khóa kỳ, nhật ký trước/sau tại 1 chỗ). Viết test cho repository trước khi chuyển.
 3. PERF-01: chỉ mục theo Mã NV trong `staffForPayroll`/`hienHanh` (mục tiêu < 200 ms cho 5.000 NV, cần chủ sở hữu duyệt ngưỡng).

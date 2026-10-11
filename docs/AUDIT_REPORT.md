@@ -109,3 +109,59 @@ Vị trí dòng ghi theo commit `78a612c`. Trạng thái: ✅ đã sửa ở Pha
 ## 5. Câu hỏi nghiệp vụ cần xác nhận
 
 Xem `docs/BUSINESS_RULES.md` mục "Câu hỏi mở" (Q-01 … Q-10). Phase 1 **không thay đổi bất kỳ công thức tiền lương nào**; mọi khác biệt so với v1.3.0 đã được kiểm thử hồi quy phân loại (`docs/TEST_RESULTS.md`).
+
+---
+
+## 6. Kiểm toán lại cho 2.0 — giai đoạn ưu tiên 1 (HEAD `6a4e954`, 10/10/2026)
+
+Phạm vi đọc lại: `app.js`, `engine.js`, `hr.js`, `core/*`, `main/storage.js`, `main.js`, `preload.js`, `index.html`, `style.css`, test, tài liệu, workflow CI.
+Mỗi phát hiện được phân loại:
+
+- **Tái hiện**: có script hoặc test chứng minh trên mã 1.4.0.
+- **Mã nguồn**: xác nhận bằng đọc luồng mã, nay có test E2E hoặc unit chặn lại.
+- **Rủi ro**: có căn cứ nhưng chưa xảy ra.
+- **Quy tắc chưa rõ**: cần chủ sở hữu hoặc kế toán xác nhận.
+- **Kiến trúc**: hạn chế về cấu trúc, xử lý ở giai đoạn sau.
+
+### 6.1 Lỗi đã xác nhận và đã sửa
+| ID | Mức | Loại | Vấn đề | Bằng chứng trên 1.4.0 |
+|---|---|---|---|---|
+| BUG-021 | High | Tái hiện | 1 file có 2 dòng chấm công cùng *Kỳ + Mã NV + Hình thức* (tách nửa tháng) → dòng sau bị coi là "trùng", **mất 15 công** | R1: 30 → 15 công; U-CC-02 thất bại trên 1.4.0 |
+| BUG-022 | **Critical** | Tái hiện | Nhập bổ sung: ô **trống** trong file **xóa** dữ liệu đang có. Ví dụ file ngày 16–30 xóa ngày 1–15; file Nhân viên thiếu CCCD xóa CCCD. Nguyên nhân: SheetJS đọc `defval:""` và cập nhật bằng `Object.assign` | R2: 30 → 15 công; U-CC-05, U-CC-12 |
+| BUG-023 | High | Tái hiện | Dữ liệu đang có 2 dòng cùng khóa → nhập lại chỉ cập nhật 1 dòng → **45 công** thay vì 30 | R3; U-CC-10 |
+| BUG-024 | High | Tái hiện | Khóa không chuẩn hóa: "bt" khác "BT" → nhập lại **cộng đôi** (60 công) | R5; U-CC-09 |
+| BUG-025 | Medium | Tái hiện | Bảng khác: 2 dòng cùng khóa nhưng khác dữ liệu trong 1 file → dòng sau bị bỏ im lặng (gắn "trùng") | U-CC-12 |
+| BUG-026 | **Critical** | Mã nguồn | `ensureTables()` thay bảng **sai kiểu** (không phải danh sách) bằng bảng rỗng → lần lưu kế tiếp **mất cả bảng** | E2E "Cấu trúc nguy hiểm…" |
+| BUG-027 | High | Mã nguồn | Mở file của **phiên bản mới hơn** (schemaVersion > 2): app vẫn chuẩn hóa và ghi đè theo cấu trúc cũ | E2E schemaVersion 3; U-SCH-01 |
+| BUG-028 | High | Mã nguồn | Bản chạy trình duyệt: dữ liệu trong localStorage hỏng → coi là rỗng → bị ghi đè | review `app.js` (load) |
+| BUG-029 | High | Mã nguồn | Màn hình khôi phục **cất file hỏng trước khi người dùng xác nhận**. Bấm Hủy thì lần mở sau app bắt đầu với dữ liệu trống (file hỏng vẫn được giữ) | review `recoveryScreen` |
+| BUG-030 | High | Tái hiện | 2 bản sao lưu trong **cùng 1 giây** trùng tên → bản sau **ghi đè** bản trước | S1; U-STO-08 |
+| BUG-031 | High | Tái hiện | Không có mã kiểm tra: bản sao lưu bị sửa hoặc hỏng (vẫn là JSON hợp lệ) vẫn được khôi phục | S2; U-STO-09 |
+| BUG-032 | Medium | Tái hiện | Cất file hỏng 2 lần cùng giây → file hỏng trước bị đè | S3; U-STO-15 |
+| BUG-033 | Medium | Mã nguồn | Bản sao lưu ghi không nguyên tử, không fsync. `save` không đọc lại để xác minh. File tạm sót lại khi mất điện. Lỗi đĩa không có thông báo dễ hiểu | U-STO-11..14, 16 (mô phỏng lỗi; bản cũ không cho mô phỏng nên không đối chiếu được) |
+| BUG-034 | High | Mã nguồn | **Đổi Mã NV** đổi theo cả dữ liệu phát sinh của **kỳ đã chốt**; không chặn khi mã đã có trong bảng lương đã chốt | U-GRD-04, review `editBaseNV` |
+| BUG-035 | High | Mã nguồn | Thay đổi **hồi tố** (phụ lục, hợp đồng, nhân thân, danh mục có hiệu lực, cho nghỉ việc lùi ngày) không có cảnh báo, không ghi nhật ký. Khôi phục bản sao lưu không báo **mất hoặc đổi kỳ đã chốt** | U-GRD-01..03, I-10 |
+| BUG-036 | Medium | Mã nguồn | Không ghi **người thực hiện** (`nguoiChot` luôn rỗng). Nhật ký bị cắt ở 5.000 dòng mà không lưu lại | E2E "NGƯỜI THỰC HIỆN" |
+| BUG-037 | Medium | Mã nguồn | Checksum của snapshot chỉ bao kết quả. Sửa **dữ liệu đầu vào đã chốt** không bị phát hiện | U-CLS-03 |
+| BUG-038 | Medium | Mã nguồn | Nhập Excel lưu thất bại: dữ liệu nhập vẫn nằm trong bộ nhớ (chỉ hiện thông báo). Chỉ sao lưu trước nhập khi từ 20 dòng trở lên | review `importPreview` |
+| BUG-039 | Low | Mã nguồn | "Kiểm tra dữ liệu" báo "cộng 2 lần" cho chấm công tách dòng **không trùng ngày** (thực tế tính đúng) | U-CC-10/11 |
+
+### 6.2 Rủi ro có căn cứ — chưa xử lý ở giai đoạn này
+| ID | Rủi ro | Hướng xử lý |
+|---|---|---|
+| RISK-01 | Lưu và sao lưu chậm hơn khoảng 2 lần (fsync, SHA-256, đọc lại). 5.000 NV: lưu ~170 ms, sao lưu ~250 ms. Ghi đồng bộ qua IPC nên có thể khựng giao diện | Giai đoạn 2: SQLite (`node:sqlite` có sẵn trong Electron 43 / Node 24.21, đã kiểm tra), ghi theo bản ghi |
+| RISK-02 | Nhật ký và checksum FNV nằm trong cùng file dữ liệu. Phát hiện được sửa nhầm, **không chống** được người cố ý sửa file | Giai đoạn 6: ký số bản chốt, nhật ký tách file chỉ ghi thêm |
+| RISK-03 | "Người thực hiện" là tài khoản Windows hoặc tên tự khai, **chưa xác thực** | Giai đoạn 6: đăng nhập và phân quyền (Q-16) |
+| RISK-04 | Sửa trực tiếp một phụ lục cũ vẫn được phép (có cảnh báo + nhật ký trước/sau) thay vì bắt buộc lập phụ lục mới | Chờ Q-15 |
+| SEC-03 | SheetJS 0.18.5 (đã giới hạn 20 MB) | Chờ mạng cho phép `cdn.sheetjs.com` |
+
+### 6.3 Hạn chế kiến trúc (giai đoạn 2)
+- `app.js` khoảng 1.500 dòng, trộn giao diện, nghiệp vụ và lưu trữ. Các phần đã tách được: `core/validate`, `importer`, `integrity`, `payroll-close`, `period-guard`, `schema`.
+- Toàn bộ dữ liệu là 1 file JSON, mỗi lần lưu ghi lại cả file.
+- Chưa có tầng phân quyền ở nghiệp vụ.
+
+### 6.4 Danh sách ưu tiên đã thực hiện
+1. Mất dữ liệu: BUG-022, 026, 027, 028, 029, 030, 031, 032, 033.
+2. Sai lương: BUG-021, 023, 024.
+3. Kiểm soát kỳ chốt và truy vết: BUG-034, 035, 036, 037, 038.
+4. Thông điệp: BUG-025, 039.

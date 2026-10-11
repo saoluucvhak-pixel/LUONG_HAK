@@ -10,10 +10,14 @@
 
 Mỗi lần mở app: `main.js` tạo `startup_*.json` (giữ 10). Khi dữ liệu có `schemaVersion` cũ, app tạo thêm `truoc-nang-cap_*.json` **trước** khi chuyển đổi (giữ 20, chỉ tạo khi nâng schema). Nếu chuyển đổi gây lỗi, khôi phục bản này tại *Công ty & Sao lưu → Các bản sao lưu*.
 
+| 1.4.0 → **2.0-P1** (vẫn schemaVersion 2) | không cần chuyển đổi | Chỉ **thêm** trường: `auditlog[].nguoi`, `kyluong[].inputChecksum`, file `backups/*.sha256`. Trước khi chuyển đổi, `core/schema.validate` chặn file có cấu trúc nguy hiểm (chế độ chỉ xem). Dòng chấm công trùng khóa sẵn có **không tự gộp**; người dùng bấm *Gộp dòng chấm công trùng* sau khi xem *Kiểm tra dữ liệu* (tổng công không đổi) | I-14, U-SCH-01/02, E2E cấu trúc nguy hiểm |
+
 ### Giới hạn đã biết
 Số tiền đã bị **hỏng bởi BUG-001** (bản 1.1–1.3, VD đơn giá 300.000 bị lưu thành "300") **không thể tự khôi phục** vì không còn thông tin gốc. `integrity.check` liệt kê mọi phụ lục có *Lương thỏa thuận / Lương cơ bản < 1.000đ* để người dùng nhập lại; cũng có thể đối chiếu với bản sao lưu cũ hơn hoặc kỳ đã chốt (snapshot giữ số đúng tại thời điểm chốt).
 
 ## 2. JSON → SQLite (Phase 2) — kế hoạch
+
+> **Kết quả khảo sát (10/10/2026):** Electron 43.7.9 chạy Node 24.21.0, có sẵn `node:sqlite` (`DatabaseSync`) — đã chạy thử tạo bảng, ghi, đọc. Nhờ vậy **không cần module native** như better-sqlite3 (vốn phải build lại cho từng phiên bản Electron trên Windows) → bộ cài vẫn thuần JS. `node:sqlite` còn gắn nhãn *experimental* ở Node 24 → bọc sau tầng repository để có thể thay thế.
 
 **Điều kiện bắt đầu:** bộ kiểm thử hồi quy xanh; có tầng repository (`src/database/repositories`) để giao diện/module không còn đọc `db.<bảng>` trực tiếp.
 

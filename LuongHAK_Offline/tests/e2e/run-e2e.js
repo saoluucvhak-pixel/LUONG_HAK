@@ -1,7 +1,7 @@
 // Kiểm thử end-to-end trên ứng dụng Electron thật (bản đóng gói chạy từ mã nguồn).
 // Chạy: ELECTRON_PATH=<đường dẫn electron> PLAYWRIGHT_MODULE=<đường dẫn playwright> node tests/e2e/run-e2e.js
 // (Linux không màn hình: xvfb-run -a node tests/e2e/run-e2e.js)
-/* global document */ // dùng trong các hàm w.evaluate(...) chạy bên trong cửa sổ app
+/* global document, DataTransfer, ClipboardEvent */ // dùng trong các hàm w.evaluate(...) chạy bên trong cửa sổ app
 // Dùng thư mục dữ liệu tạm (biến HAK_USER_DATA) — không đụng dữ liệu thật.
 "use strict";
 const fs = require("fs"), os = require("os"), path = require("path");
@@ -11,6 +11,7 @@ const APP = path.resolve(__dirname, "../..");
 const DATA = fs.mkdtempSync(path.join(os.tmpdir(), "hak-e2e-"));
 const DL = path.join(DATA, "downloads"); fs.mkdirSync(DL);
 const results = [];
+let dialogMode = "accept", dialogs = []; // "dismiss" = bấm Hủy ở hộp xác nhận
 function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra: extra || "" }); console.log((cond ? "PASS " : "FAIL ") + name + (extra ? " — " + extra : "")); }
 
 async function launch(dataDir) {
@@ -18,7 +19,7 @@ async function launch(dataDir) {
   const w = await app.firstWindow(); const errs = [];
   w.on("pageerror", (e) => errs.push(e.message));
   w.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
-  w.on("dialog", (d) => d.accept(d.type() === "prompt" ? "e2e" : undefined));
+  w.on("dialog", (d) => { dialogs.push(d.message()); return dialogMode === "dismiss" && d.type() === "confirm" ? d.dismiss() : d.accept(d.type() === "prompt" ? "e2e" : undefined); });
   await w.waitForSelector("#main > *");
   return { app, w, errs };
 }
@@ -72,6 +73,33 @@ async function launch(dataDir) {
     const bl = XLSX.utils.sheet_to_json(wb.Sheets.BangLuong);
     ok("Xuất Excel trọn bộ: đủ 4 sheet, số khớp bảng đã chốt", wb.SheetNames.join(",") === "BangLuong,BHXH,ThueTNCN,ChuyenKhoan" && bl[0]["Thực lĩnh"] === 11370000, wb.SheetNames.join(",") + " · thực lĩnh " + bl[0]["Thực lĩnh"]);
   } else ok("Xuất Excel trọn bộ kỳ đã chốt", false, "không thấy file");
+  // Lỗi 1: dán NHIỀU dòng vào danh mục có hiệu lực trong kỳ đã chốt → phải ghi nhật ký HỒI TỐ + cảnh báo (trước đây im lặng)
+  const auditOf = () => w.evaluate(() => window.hakStore.load()).then((t) => JSON.parse(t.text).auditlog || []);
+  await w.waitForTimeout(700); const au0 = (await auditOf()).length;
+  await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Mã lương")');
+  const dmCell = w.locator("#main tbody tr").first().locator("input").nth(4);
+  await dmCell.evaluate((el) => { const dt = new DataTransfer(); dt.setData("text/plain", "Dán E2E 1\nDán E2E 2"); el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); });
+  const pasteToast = await w.locator("#toast").textContent();
+  await w.waitForTimeout(700);
+  const auP = (await auditOf()).slice(au0).filter((a) => /HỒI TỐ/.test(a.chiTiet));
+  ok("Lỗi 1: dán nhiều dòng vào danh mục chồng kỳ đã chốt → ghi nhật ký HỒI TỐ từng dòng + cảnh báo", auP.length === 2 && /2 dòng hồi tố kỳ đã chốt/.test(pasteToast), pasteToast + " · nhật ký hồi tố: " + auP.length);
+  // Lỗi 2: sửa thông tin cơ bản của NV có trong bảng lương ĐÃ CHỐT → phải hỏi xác nhận TRƯỚC khi lưu; Hủy = không lưu, không ghi nhật ký
+  const nvCCCD = () => w.evaluate(() => window.hakStore.load()).then((t) => JSON.parse(t.text).nhanvien[0]["Số CCCD"] || "");
+  const cc0 = await nvCCCD(), au1 = (await auditOf()).length;
+  await w.click("#nav button[data-k=nhansu]"); await w.locator("#main table tbody tr").first().click();
+  await w.click('button:has-text("Sửa cơ bản")'); await w.waitForSelector(".dlg");
+  await w.locator(".dlg .fld", { hasText: "Số CCCD" }).first().locator("input").fill("001099000111");
+  dialogMode = "dismiss"; dialogs = [];
+  await w.click('.dlg footer button:has-text("Lưu")'); await w.waitForTimeout(700);
+  dialogMode = "accept";
+  ok("Lỗi 2: sửa cơ bản NV thuộc kỳ đã chốt → hỏi xác nhận hồi tố; bấm Hủy thì KHÔNG lưu, KHÔNG ghi nhật ký",
+    dialogs.some((m) => /ĐÃ CHỐT/.test(m)) && (await nvCCCD()) === cc0 && (await auditOf()).length === au1, dialogs.join(" | ") || "không có hộp xác nhận");
+  if (await w.locator(".dlg").count()) await w.click('.dlg footer button:has-text("Hủy")');
+  await w.click('button:has-text("Sửa cơ bản")'); await w.waitForSelector(".dlg");
+  await w.locator(".dlg .fld", { hasText: "Số CCCD" }).first().locator("input").fill("001099000111");
+  dialogs = []; await w.click('.dlg footer button:has-text("Lưu")'); await w.waitForTimeout(700);
+  const auE = (await auditOf()).slice(au1);
+  ok("Lỗi 2: đồng ý → lưu + nhật ký HỒI TỐ", (await nvCCCD()) === "001099000111" && auE.some((a) => /Sửa thông tin cơ bản/.test(a.thaoTac) && /HỒI TỐ/.test(a.chiTiet)), auE.map((a) => a.thaoTac).join(", "));
   await w.waitForTimeout(800);
   ok("Không có lỗi JavaScript (lần chạy 1)", errs.length === 0, errs.join(" | "));
   await app.close();
@@ -82,6 +110,10 @@ async function launch(dataDir) {
   ok("Lương thỏa thuận lưu đúng 12000000", saved.chitiethd[0]["Lương thỏa thuận"] === "12000000", saved.chitiethd[0]["Lương thỏa thuận"]);
   const bks = fs.readdirSync(path.join(DATA, "backups"));
   ok("Có bản sao lưu tự động (đầu ngày + trước mở chốt)", bks.some((f) => /^daily_/.test(f)) && bks.some((f) => /^truoc-mo-chot_/.test(f)), bks.join(", "));
+  const crypto = require("crypto"), bj = bks.filter((f) => /\.json$/.test(f));
+  ok("Mỗi bản sao lưu có file kiểm tra SHA-256 khớp nội dung", bj.length > 0 && bj.every((f) => { try { return JSON.parse(fs.readFileSync(path.join(DATA, "backups", f + ".sha256"), "utf8")).sha256 === crypto.createHash("sha256").update(fs.readFileSync(path.join(DATA, "backups", f), "utf8")).digest("hex"); } catch (e) { return false; } }), bj.length + " bản");
+  const au = saved.auditlog.filter((a) => /chốt/i.test(a.thaoTac));
+  ok("Nhật ký + bản chốt ghi NGƯỜI THỰC HIỆN (tài khoản Windows)", au.length >= 3 && au.every((a) => a.nguoi && /@/.test(a.nguoi)) && /@/.test(saved.kyluong[0].nguoiChot) && /@/.test(saved.kyluong_lichsu[0].moChot.nguoi), au.map((a) => a.thaoTac + ":" + a.nguoi).join(" · "));
 
   // mở lại
   ({ app, w, errs } = await launch());
@@ -105,6 +137,17 @@ async function launch(dataDir) {
   } else ok("Có bản sao lưu để khôi phục", false);
   await app.close();
 
+  // Cấu trúc dữ liệu nguy hiểm → chỉ xem/khôi phục, file KHÔNG bị đổi 1 byte (bản 1.4.0 thay bảng sai kiểu bằng bảng rỗng)
+  for (const [label, bad] of [["bảng Nhân viên sai kiểu", { schemaVersion: 2, nhanvien: { NV001: { "Họ và tên": "A" } }, chamcong: [] }],
+    ["file của phiên bản mới hơn (schemaVersion 3)", { schemaVersion: 3, nhanvien: [{ "Mã NV": "NV001" }], bangmoi: [{ x: 1 }] }]]) {
+    const SD = fs.mkdtempSync(path.join(os.tmpdir(), "hak-e2e-sch-")), txt0 = JSON.stringify(bad);
+    fs.writeFileSync(path.join(SD, "data.json"), txt0);
+    ({ app, w, errs } = await launch(SD)); await w.waitForTimeout(500);
+    const m = await w.locator("main").innerText();
+    await app.close();
+    ok("Cấu trúc nguy hiểm (" + label + ") → màn hình khôi phục, file giữ nguyên từng byte", /Không mở được file dữ liệu/.test(m) && /Cấu trúc dữ liệu không an toàn/.test(m) && fs.readFileSync(path.join(SD, "data.json"), "utf8") === txt0 && errs.length === 0, m.split("\n").slice(0, 3).join(" | ") + (errs.length ? " · LỖI JS: " + errs.join(" | ") : ""));
+  }
+
   // Nâng cấp từ dữ liệu bản 1.3.0 (không schemaVersion, tiền dạng "500.000", kỳ chốt kiểu cũ)
   const OLD = fs.mkdtempSync(path.join(os.tmpdir(), "hak-e2e-old-"));
   const legacy = { nhanvien: [{ "Mã NV": "NV001", "Họ và tên": "Cũ", "Trạng thái": "Đang làm việc", "Số CCCD": "49090001234" }],
@@ -116,12 +159,12 @@ async function launch(dataDir) {
   await app.close();
   const up = JSON.parse(fs.readFileSync(path.join(OLD, "data.json"), "utf8"));
   const ob = fs.readdirSync(path.join(OLD, "backups"));
-  const pre = ob.filter((f) => /^truoc-nang-cap_/.test(f))[0];
+  const pre = ob.filter((f) => /^truoc-nang-cap_.*\.json$/.test(f))[0];
   ok("Nâng cấp 1.3→1.4: có bản sao lưu trước nâng cấp chứa nguyên trạng", !!pre && JSON.parse(fs.readFileSync(path.join(OLD, "backups", pre), "utf8")).psluong[0]["Thưởng"] === "500.000", ob.join(", "));
   ok("Nâng cấp: tiền '500.000' → 500000, ngày → ISO, CCCD bù số 0, schemaVersion 2", up.psluong[0]["Thưởng"] === "500000" && up.psluong[0]["Ngày hạch toán"] === "2026-09-28" && up.nhanvien[0]["Số CCCD"] === "049090001234" && up.schemaVersion === 2);
   ok("Nâng cấp: kỳ đã chốt kiểu cũ giữ nguyên", up.kyluong.length === 1 && up.kyluong[0].kq.bangluong[0]["Thực lĩnh"] === 1000000);
   ({ app, w, errs } = await launch(OLD)); await w.waitForTimeout(400);
-  const ob2 = fs.readdirSync(path.join(OLD, "backups")).filter((f) => /^truoc-nang-cap_/.test(f));
+  const ob2 = fs.readdirSync(path.join(OLD, "backups")).filter((f) => /^truoc-nang-cap_.*\.json$/.test(f));
   ok("Mở lần 2 không tạo thêm bản trước nâng cấp", ob2.length === 1);
   await w.click("#nav button[data-k=kyluong]");
   ok("Kỳ chốt kiểu cũ hiển thị 'Bản cũ'", /Bản cũ/.test(await w.locator("main").innerText()));

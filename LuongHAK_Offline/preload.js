@@ -6,7 +6,9 @@ contextBridge.exposeInMainWorld("hakStore", {
   info: () => ipcRenderer.sendSync("store-info"),
   backup: (tag) => ipcRenderer.sendSync("store-backup", tag),
   listBackups: () => ipcRenderer.sendSync("store-list"),
+  verifyBackups: () => ipcRenderer.sendSync("store-verify"),  // [{ name, tag, created, status: ok|unverified|mismatch|invalid }]
   readBackup: (name) => ipcRenderer.sendSync("store-read", name),
   quarantine: () => ipcRenderer.sendSync("store-quarantine"),
-  openFolder: () => ipcRenderer.send("open-data-folder")
+  openFolder: () => ipcRenderer.send("open-data-folder"),
+  whoami: () => ipcRenderer.sendSync("app-user")             // { user, host } — tài khoản Windows đang dùng
 });

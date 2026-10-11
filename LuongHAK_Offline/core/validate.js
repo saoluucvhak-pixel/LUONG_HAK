@@ -82,6 +82,7 @@
     if (isDateCol(col)) { var d = normDate(v); return d === null ? { value: String(v), error: "Ngày không hợp lệ (cần dạng 2026-09-15 hoặc 15/09/2026)" } : { value: d }; }
     if (isMoneyCol(col)) { if (v === "" || v == null) return { value: "" }; var n = parseMoney(v); return isNaN(n) ? { value: String(v), error: "Số tiền không đọc được" } : { value: String(Math.round(n * 1e6) / 1e6) }; }
     if (isIdCol(col)) return { value: normId(col, v) };
+    if (col === "Hình thức công") return { value: String(v == null ? "" : v).trim().toUpperCase() };
     if (v == null) return { value: "" };
     if (typeof v === "number") return { value: String(Math.round(v * 1e9) / 1e9) };
     if (v instanceof Date) return { value: normDate(v) };
@@ -96,7 +97,18 @@
     return table === "chamcong" ? normKy(v) : (normDate(v) || "").slice(0, 7) || null;
   }
 
-  var api = { parseMoney: parseMoney, normMoney: normMoney, normDate: normDate, normKy: normKy, normId: normId, normCell: normCell,
+  /**
+   * 2 ô công "giống nhau" (dùng chung cho phát hiện nhập trùng Q-12 ở core/importer.js và core/integrity.js):
+   * "1" = 1 = "1,0"; "1qc" = "1QC".
+   */
+  function sameCell(x, y) {
+    var a = String(x == null ? "" : x).trim().toUpperCase().replace(",", "."), b = String(y == null ? "" : y).trim().toUpperCase().replace(",", ".");
+    if (a === b) return true;
+    var ma = a.match(/^(\d+(?:\.\d+)?)(.*)$/), mb = b.match(/^(\d+(?:\.\d+)?)(.*)$/);
+    return !!(ma && mb && parseFloat(ma[1]) === parseFloat(mb[1]) && ma[2].trim() === mb[2].trim());
+  }
+
+  var api = { parseMoney: parseMoney, sameCell: sameCell, normMoney: normMoney, normDate: normDate, normKy: normKy, normId: normId, normCell: normCell,
     isMoneyCol: isMoneyCol, isDateCol: isDateCol, isIdCol: isIdCol, rowPeriod: rowPeriod, PERIOD_FIELD: PERIOD_FIELD };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.validate = api; }

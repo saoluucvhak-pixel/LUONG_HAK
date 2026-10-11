@@ -1,4 +1,44 @@
-# TEST_RESULTS — Kết quả kiểm thử Phase 1 (v1.4.0)
+# TEST_RESULTS — Kết quả kiểm thử
+
+## 2.0.0-alpha.1 — giai đoạn ưu tiên 1 (10/10/2026, nhánh `claude/v2-phase1-data-fixes`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint (`eslint@9.39.5 . --max-warnings 0`) | ✅ 0 lỗi, 0 cảnh báo |
+| `npm test` (unit + integration + regression) | ✅ **78/78** (1.4.0: 44; thêm U-CC ×12, U-GRD/CLS/SCH ×7, U-STO ×9, I ×6) |
+| Hồi quy so với v1.3.0 (80 NV × 3 kỳ) | ✅ trùng 100% — **không đổi công thức** |
+| Bằng chứng lỗi: chạy test mới trên mã 1.4.0 | importer: **8/12 thất bại** (U-CC-02,03,05,06,07,09,10,12); storage: 9/9 thất bại. U-STO-11…14, 16 thất bại một phần vì bản cũ không cho mô phỏng lỗi đĩa; lỗi thật đã tái hiện là S1, S2, S3 |
+| E2E Electron 43.7.9 | ✅ **27/27** (thêm 4: SHA-256, người thực hiện, cấu trúc nguy hiểm ×2) |
+| Giao diện xem trước nhập Excel (Chromium, file .xlsx thật) | ✅ Gộp 1, Cập nhật 1 (thêm 15 ô · giữ 15 ô), Xung đột 2 (trùng ngày 05). Chế độ ghi đè hiện cảnh báo XÓA. Sau ghi: BT 30 + TC 6, nhật ký có chế độ "bổ sung". Không lỗi JS |
+| Rollback: 1.4.0 mở dữ liệu do 2.0 tạo | ✅ kỳ chốt "Nguyên vẹn", giữ `inputChecksum` / `nguoiChot`, đọc được bản sao lưu mới, 0 lỗi JS |
+| Bộ cài Windows thật | ⏳ chưa nghiệm thu |
+
+Script tái hiện lỗi (chạy trên 1.4.0):
+
+| | Kỳ vọng | 1.4.0 | 2.0-α1 |
+|---|---|---|---|
+| R1 — file 2 dòng BT 1–15 + 16–30 | 30 | 15 | 30 |
+| R2 — bổ sung 16–30 | 30 | 15 | 30 |
+| R3 — dữ liệu có 2 dòng trùng khóa, nhập file đủ tháng | 30 | 45 | chặn, giữ 30 |
+| R5 — "bt" | 30 | 60 | 30 |
+| S1 — 2 bản sao lưu cùng giây | 2 file | 1 file | 2 |
+| S2 — bản sao lưu bị sửa | từ chối | chấp nhận | từ chối |
+| S3 — 2 lần cất file hỏng cùng giây | giữ cả 2 | mất 1 | giữ cả 2 |
+
+### Hiệu năng (so với baseline 1.4.0, cùng máy)
+| Thao tác | 1.000 NV (1.4.0 → 2.0-α1) | 5.000 NV (1.4.0 → 2.0-α1) |
+|---|---|---|
+| Lưu (`storage.save`) | 15 → 32 ms | 85 → 169 ms |
+| Tạo bản sao lưu | 17 → ~60 ms | 107 → ~250 ms |
+| Kiểm tra cấu trúc khi mở (`schema.validate`, mới) | 26 ms | 81 ms |
+| Kiểm tra toàn vẹn | 42 → 49 ms | 115 → 149–157 ms |
+| Nhập lại chấm công 1 kỳ | 36 → 57 ms | 177 → 224 ms |
+| Tính lương 1 kỳ / dựng DS lương | không đổi (engine không đổi) | không đổi |
+
+**Nguyên nhân chậm hơn:** fsync, SHA-256 và đọc lại sau khi ghi (bảo vệ dữ liệu, không được bỏ theo yêu cầu 2.0 §14), cộng phần so sánh từng ô khi nhập. Hướng xử lý là SQLite ở giai đoạn 2 (RISK-01).
+
+---
+
+# Kết quả kiểm thử Phase 1 (v1.4.0)
 
 Môi trường: Linux, Node v22.22.0, Intel Xeon 2.10GHz 4 CPU · Chromium (Playwright 1.56.1) · Electron 43.7.9 (xvfb) · ngày 10/10/2026.
 
