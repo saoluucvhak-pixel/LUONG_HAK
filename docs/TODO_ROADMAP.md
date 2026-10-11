@@ -49,13 +49,14 @@
 - [x] Kiểm tra ô ngày chấm công (âm, chữ lạ, ngày không tồn tại, > 3 công) ở nhập Excel, lưới, dán, kiểm tra dữ liệu, chốt kỳ
 - [x] Test kịch bản tính lương I-15…I-20 (chờ Kế toán xác nhận Q-22, Q-23)
 - [ ] Chờ chủ sở hữu: Q-18…Q-23; mở mạng `cdn.sheetjs.com` (SEC-03)
-- Tiếp theo: **PR2 hiệu năng** (benchmark 100/500/1.000/5.000 NV, chỉ mục Mã NV cho `staffForPayroll`/`hienHanh`, `PERFORMANCE_REPORT.md`) → PR3 repository → PR4 SQLite → PR5 UI/HRM
+- [x] **PR2 hiệu năng** (nhánh `claude/v2-perf`, alpha.5): chỉ mục Mã NV, 5.000 NV dựng DS lương 22 ms — `PERFORMANCE_REPORT.md`
+- Tiếp theo: PR3 repository → PR4 SQLite (lưu ~250 ms ở 5.000 NV) → PR5 UI/HRM
 
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)
 0. (Đã khảo sát) SQLite qua `node:sqlite` có sẵn trong Electron 43 / Node 24.21 — không cần module native.
 1. Tách `app.js` theo `ARCHITECTURE.md` §2: `src/renderer/pages/*` (mỗi trang 1 file), `src/modules/payroll/reports.js` (chuyển `bc*` ra khỏi UI, có test), `src/modules/hrm/*` (từ `hr.js`).
 2. Tầng repository: mọi truy cập `db.<bảng>` qua `repo.list/get/insert/update/remove` (kiểm tra khóa, khóa kỳ, nhật ký trước/sau tại 1 chỗ). Viết test cho repository trước khi chuyển.
-3. PERF-01: chỉ mục theo Mã NV trong `staffForPayroll`/`hienHanh` (mục tiêu < 200 ms cho 5.000 NV, cần chủ sở hữu duyệt ngưỡng).
+3. ~~PERF-01~~ ✅ alpha.5 (22 ms / 5.000 NV).
 4. SQLite theo `MIGRATION_PLAN.md` §2 (chạy song song JSON/SQLite, so sánh kết quả = 0 khác biệt).
 5. Bundler (esbuild) để dùng module ES trong renderer; giữ build không cần mạng khi chạy.
 
