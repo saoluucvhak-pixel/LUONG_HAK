@@ -1,6 +1,6 @@
 # THIẾT KẾ HỆ THỐNG — Tính Lương HAK (bản offline cho Windows)
 
-> Phiên bản: **2.0.0-alpha.20** (thêm đọc ảnh / PDF chấm công bằng OCR; alpha.19 phân bổ khối lượng; nội dung khác như alpha.18), ngày 11/10/2026, nhánh `claude/v2-ocr-cham-cong`.
+> Phiên bản: **2.0.0-alpha.21** (quy chế lương HAK Group 2026 — engine 1.8.0, R-68; alpha.20 đọc ảnh / PDF chấm công bằng OCR; alpha.19 phân bổ khối lượng; nội dung khác như alpha.18), ngày 11/10/2026, nhánh `claude/v2-quy-che-luong-2026`.
 > File này tổng hợp các tài liệu chi tiết sau, mỗi chủ đề xem thêm ở file tương ứng:
 > - Kiến trúc: `ARCHITECTURE.md`
 > - Cấu trúc dữ liệu: `DATABASE_SCHEMA.md`
@@ -140,6 +140,7 @@ Chấm công · Sản lượng · Thưởng ────┘        │ cảnh b�
 2. **Tăng lương / biến động:** lập **phụ lục mới**, không sửa phụ lục cũ. Báo cáo Biến động tự nhận biết các loại: tăng mới, nghỉ việc, tăng / giảm lương, điều chuyển, đổi chức vụ, mức đóng BH.
 3. **Nghỉ việc:** ghi Ngày chấm dứt và lý do. Từ tháng sau người đó không còn được tính lương. Tháng nghỉ việc tính BH theo R-57 (Q-26, phương án A).
 4. **Nhập Excel:** lập kế hoạch → xem trước (thêm / cập nhật / gộp / trùng / xung đột / lỗi / kỳ đã chốt) → người dùng duyệt → áp dụng. App sao lưu `truoc-nhap-excel` trước khi áp dụng.
+7. **Quy chế tính lương (α21, R-68):** `engine.tinhBangLuong(db, năm, tháng, cáchBù, { quyChe })` — `"2026"` (mặc định, lưu ở `congty[0]["Quy chế tính lương"]`) áp dụng 10 quy tắc C1…C10 (PAYROLL_FORMULAS 3a); không truyền = cách tính 1.7 (test hồi quy). Bản chốt ghi `quyChe`; đối chiếu bản chốt dùng đúng quy chế lúc chốt.
 6. **Đọc ảnh / PDF chấm công (α20, R-67):** ảnh / trang PDF → xám → phóng ~2400 điểm → đoán chiều (OCR cả trang ở 4 hướng, đếm từ nằm ngang đọc chắc) → nhị phân hóa thích ứng → bám đường kẻ (chịu nghiêng nhẹ) → ô = vùng nền giữa các đường kẻ → xóa đường kẻ → cắt từng ô có mực → OCR theo lô (ô hẹp đọc số, ô rộng đọc chữ, ô không chắc đọc lại dạng khối) → nét "1" viết tay nhận theo hình → dựng bảng kiểu A (người × ngày) hoặc B (ngày × Công / Cơm) → so tổng trên giấy → **bảng xem trước** sửa được → ghi qua màn hình xem trước nhập liệu (mục 4).
 5. **Sửa dữ liệu thuộc kỳ đã chốt:** bị chặn hoặc cảnh báo "hồi tố" (period-guard). Muốn sửa phải *mở chốt* có lý do, và mở chốt sẽ tạo phiên bản mới.
 

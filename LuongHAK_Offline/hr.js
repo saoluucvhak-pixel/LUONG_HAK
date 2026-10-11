@@ -355,7 +355,9 @@
         ["TG2", "LTG", "Lương thời gian 2", 0, "Số ngày của tháng", N], ["TG3", "LTG", "Lương thời gian 3", 0, "Số ngày của tháng - 4", N],
         ["TG4", "LTG", "Lương thời gian 4", 0, "Số ngày của tháng - 2", N], ["CN1", "LTG", "Lương công nhật", 0, "Thực tế ngày công", N],
         ["CN2", "LTG", "Lương công nhật 2", 0, "Thực tế ngày công", N], ["SP", "LSP", "Lương sản phẩm", 6000, "Nhân với sản lượng", N, 200000, 15],
-        ["BD", "LSP", "Lương ban dăm", 10000, "Nhân với sản lượng", N]]),
+        ["BD", "LSP", "Lương ban dăm", 10000, "Nhân với sản lượng", N]]).map(function (o) { // α21 (R-68): Ngày giảm trừ của công chuẩn — như danh mục Power Query của CNHAK
+        var g = { TG3: 4, TG4: 2, CN2: 4 }[o["Mã lương"]]; if (g) o["Số ngày giảm trừ"] = g; return o;
+      }),
       dm_phucap: r(["Mã phụ cấp", "Tên phụ cấp", "Số tiền", "Tỷ lệ", "Tham chiếu", "Cách tính", "Hiệu lực từ"], [
         ["TN.01", "Phụ cấp trách nhiệm BP Cơ khí", 300000, 0, 0, "Tổng công >= công chuẩn tính đủ 300k, nhỏ hơn =300k/công chuẩn*tổng công", N],
         ["TN.02", "Phụ cấp trách nhiệm BP SX", 200000, 0, 5, "Tổng công >= (công chuẩn-5) tính đủ 200k , nhỏ hơn =200k/công chuẩn*tổng công", N],

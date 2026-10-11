@@ -21,6 +21,23 @@ Danh mục dùng dòng còn hiệu lực trong tháng (`Hiệu lực từ ≤ cu
 | khác (gồm "… - tất cả ngày CN", "Cố định", trống) | số ngày − số Chủ nhật |
 | kết thúc "- N" | (số ngày − số CN) − N |
 
+### 3a. Quy chế lương HAK Group 2026 (engine 1.8.0, R-68 — mặc định từ 2.0-α21)
+Chủ sở hữu duyệt 11/10/2026: **HAK, CNHAK, HAKQN cùng một quy chế**. Đối chiếu bảng lương thật (4 đơn vị): **HAK ĐN 11/2025 61/61**, **Đại Hiệp 8/2026 38/45** (7 người lệch 2đ do làm tròn chia phiếu), **CNHAK 9/2026 42/44**, **HAKQN 7/2026 31/50** — người còn lại lệch **đúng phần thuế TNCN** (Excel CNHAK / HAKQN không trừ thuế; Đại Hiệp có trừ — app trừ, xem Q-29).
+Chọn ở **Tính lương → Quy chế tính lương** (lưu theo dữ liệu; *Cách tính cũ (engine 1.7)* để đối chiếu). Kỳ đã chốt giữ nguyên số; bản chốt ghi `quyChe`.
+
+| # | Quy tắc 2026 | Cách tính cũ (1.7) |
+|---|---|---|
+| C1 | Lương TG = đơn giá × **tổng công đi làm** (không cắt ở công chuẩn) | × MIN(tổng công, công chuẩn) |
+| C2 | Công chuẩn: "… tất cả ngày CN" = số ngày − số CN; cách khác = **số ngày − Số ngày giảm trừ** (cột danh mục; không có thì số sau dấu "-"): TG3 = 26, TG4 = 28 (9/2026) | (số ngày − CN) − N |
+| C3 | Mã lương 1 = SP: lương TG = lương thỏa thuận × (**công lễ + công phép**) | × MIN(tổng công, chuẩn) |
+| C4 | Bù bình quân tổ: tiền của tổ = **chỉ tiền sản lượng** (tấn × đơn giá) | sản lượng + bơm dăm |
+| C5 | CN1 / CN2: tiền tăng ca = đơn giá ngày × hệ số công thức của mã tăng ca (TC1/TC2/TC3/TC4…), công chuẩn = số ngày − Số ngày giảm trừ | đơn giá × công TC |
+| C6 | Phụ cấp có *Cách tính* trống: công ≥ (chuẩn − Tham chiếu) → đủ, nhỏ hơn → Số tiền / chuẩn × (tổng công − công phép − công TC) | cố định |
+| C7 | BH NLĐ = BHXH + BHYT + BHTN + **KPCĐ NLĐ** (cột NLD.KPCD); thu nhập chịu thuế trừ cả phần này; bảng BH có cột *NLĐ.KPCĐ* | không trừ KPCĐ NLĐ |
+| C8 | Có mã BHXH nhưng **Lương cơ bản trống** → không tính BH / truy thu (cảnh báo) | lấy lương thỏa thuận làm mức đóng |
+| C10 | Mã tăng ca **TC5** (ca vị trí khác, trả theo đơn giá riêng): công tăng ca **không** cộng vào công lương thời gian | cộng vào tổng công |
+| C9 | Công nhật (Cách tính "thực tế"): **công chuẩn = số ngày − Số ngày giảm trừ** (dùng cho tăng ca, phụ cấp, hỗ trợ); lương = đơn giá × công | công chuẩn = tổng công thực tế |
+
 ## 4. Các khoản thu nhập
 | Khoản | Công thức |
 |---|---|

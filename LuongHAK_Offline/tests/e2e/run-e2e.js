@@ -253,6 +253,7 @@ async function launch(dataDir, opt) {
 
   // dữ liệu đã nằm trong file
   const file = path.join(DATA, "data.json"), saved = JSON.parse(fs.readFileSync(file, "utf8"));
+  ok("α21: bản chốt ghi quy chế tính lương đã dùng (mặc định Quy chế lương HAK Group 2026, engine 1.8.0)", saved.kyluong[0].quyChe === "2026" && saved.kyluong[0].engineVersion === "1.8.0", saved.kyluong[0].quyChe + " / " + saved.kyluong[0].engineVersion);
   ok("data.json có nhân viên + kỳ đã chốt v2 + lịch sử v1", saved.nhanvien.length === 1 && saved.kyluong.length === 1 && saved.kyluong[0].checksum && saved.kyluong[0].version === 2 && saved.kyluong_lichsu.length === 1 && saved.kyluong_lichsu[0].moChot.lyDo === "Kiểm thử mở chốt");
   ok("Lương thỏa thuận lưu đúng 12000000", saved.chitiethd[0]["Lương thỏa thuận"] === "12000000", saved.chitiethd[0]["Lương thỏa thuận"]);
   const bks = fs.readdirSync(path.join(DATA, "backups"));
@@ -499,6 +500,25 @@ async function launch(dataDir, opt) {
     ok("Tải file mẫu Sản lượng = mẫu công cụ (Phiếu cân | Ngày cân 1 | Biển số 1 | Cân lần 1 | Cân lần 2 | KL hàng (Tấn) | Mã phòng ban | NV vắng)", mh === "Phiếu cân|Ngày cân 1|Biển số 1|Cân lần 1|Cân lần 2|KL hàng (Tấn)|Mã phòng ban|NV vắng", mh);
     await w.click("#nav button[data-k=luong]"); await w.selectOption('select[aria-label="Cách bù lương sản lượng"]', "false");
     ok("Không lỗi JavaScript ở phân bổ khối lượng (ExcelJS chạy được với CSP)", errs.length === 0, errs.join(" | "));
+    await app.close();
+  }
+
+  // α21: Quy chế tính lương — chọn ở Tính lương, lưu theo dữ liệu (hồ sơ công ty), ghi nhật ký; đổi lại cách cũ được để đối chiếu
+  {
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=luong]");
+    const q0 = await w.locator('select[aria-label="Quy chế tính lương"]').inputValue();
+    // Chờ tới khi data.json đã ghi xong (máy CI chậm: chờ cố định 400 ms có lúc chưa kịp ghi lần 2)
+    const qcOf = (d) => (((d && d.congty) || [])[0] || {})["Quy chế tính lương"];
+    const qcLogs = (d) => ((d && d.auditlog) || []).filter((a) => a.thaoTac === "Đổi quy chế tính lương").length;
+    const waitData = async (pred) => { let d = null; for (let i = 0; i < 50; i++) { await w.waitForTimeout(100); try { d = JSON.parse(fs.readFileSync(path.join(DATA, "data.json"), "utf8")); } catch (e) { continue; } if (pred(d)) break; } return d; };
+    await w.selectOption('select[aria-label="Quy chế tính lương"]', "1.7");
+    const d1 = await waitData((d) => qcOf(d) === "1.7" && qcLogs(d) >= 1);
+    await w.selectOption('select[aria-label="Quy chế tính lương"]', "2026");
+    const d2 = await waitData((d) => qcOf(d) === "2026" && qcLogs(d) >= 2);
+    const logs = qcLogs(d2);
+    ok("Quy chế tính lương: mặc định 2026; đổi sang cách cũ / quay lại được, lưu vào dữ liệu, ghi nhật ký", q0 === "2026" && qcOf(d1) === "1.7" && qcOf(d2) === "2026" && logs >= 2, q0 + " · " + qcOf(d1) + "→" + qcOf(d2) + " · " + logs + " dòng nhật ký");
+    ok("Không lỗi JavaScript ở chọn quy chế", errs.length === 0, errs.join(" | "));
     await app.close();
   }
 

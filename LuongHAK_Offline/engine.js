@@ -96,12 +96,25 @@
     }
   }
 
-  function congChuan(dmLuongInfo, thang, nam, congThucTe) {
+  /** Số ngày giảm trừ của mã lương: cột "Số ngày giảm trừ" (Excel HAK Group: "Ngày giảm trừ"), không có thì lấy số sau dấu "-" trong Cách tính */
+  function ngayGiamTru(dmLuongInfo) {
+    if (!dmLuongInfo) return 0;
+    var v = dmLuongInfo["Số ngày giảm trừ"]; if (v === "" || v == null) v = dmLuongInfo["Ngày giảm trừ"]; // tên cột cũ của Excel CNHAK
+    if (v !== "" && v != null && isFinite(+v)) return +v;
+    var m = String(dmLuongInfo["Cách tính"] || "").match(/-\s*(\d+)\s*$/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+  /**
+   * Công chuẩn. qc2026 (quy chế HAK Group 2026, chủ sở hữu duyệt 11/10/2026): "… tất cả ngày CN" = số ngày − số Chủ nhật;
+   * các cách khác = số ngày của tháng − Số ngày giảm trừ (TG3 30 − 4 = 26). Cách cũ (1.7): trừ Chủ nhật rồi trừ tiếp số sau dấu "-".
+   */
+  function congChuan(dmLuongInfo, thang, nam, congThucTe, qc2026) {
     var text = dmLuongInfo ? String(dmLuongInfo["Cách tính"] || "").toLowerCase() : "";
-    if (/thực tế/.test(text)) return congThucTe > 0 ? congThucTe : 26;
     var n = new Date(nam, thang, 0).getDate();
+    if (/thực tế/.test(text)) { if (qc2026) { var kCN = n - ngayGiamTru(dmLuongInfo); return kCN > 0 ? kCN : 26; } return congThucTe > 0 ? congThucTe : 26; } // 2026 (C9): công nhật — công chuẩn = số ngày − Số ngày giảm trừ (tăng ca, phụ cấp, hỗ trợ); lương vẫn = đơn giá × công
     if (/^\s*số ngày của tháng\s*$/.test(text)) return n;
     var cn = 0; for (var d = 1; d <= n; d++) if (new Date(nam, thang - 1, d).getDay() === 0) cn++;
+    if (qc2026 && !/ch[ủu] nh[ậa]t|ngày cn/.test(text)) { var k26 = n - ngayGiamTru(dmLuongInfo); return k26 > 0 ? k26 : 26; }
     var kq = n - cn, m = text.match(/-\s*(\d+)\s*$/);
     if (m) kq -= parseInt(m[1], 10);
     return kq > 0 ? kq : 26;
@@ -165,8 +178,13 @@
   function byKey(list, f) { var m = {}; (list || []).forEach(function (r) { m[r[f]] = r; }); return m; }
 
   /** Tính bảng lương 1 tháng. db = toàn bộ dữ liệu. */
-  function tinhBangLuong(db, nam, thang, buTheoNgay) {
+  /**
+   * opts.quyChe: "2026" = quy chế lương HAK Group (HAK, CNHAK, HAKQN — chủ sở hữu duyệt 11/10/2026, R-68; đối chiếu bảng lương CNHAK 9/2026 khớp 42/44,
+   * 2 người lệch đúng phần thuế TNCN); bỏ trống = cách tính engine 1.7 (giữ nguyên số cũ).
+   */
+  function tinhBangLuong(db, nam, thang, buTheoNgay, opts) {
     nam = +nam; thang = +thang;
+    var qc2026 = !!(opts && String(opts.quyChe) === "2026");
     ["nhansu","chamcong","sanluong","bandam","psluong","ungluong","tiencom","dm_luong","dm_phucap","dm_tangca","dm_hotro","dm_baohiem","dm_tncn","dm_bacthue","dm_giamtru","dm_phongban","dm_chucvu"].forEach(function (k) { if (!db[k]) db[k] = []; });
     var dmLuong = hieuLuc(db.dm_luong, "Mã lương", nam, thang);
     var dmPC = hieuLuc(db.dm_phucap, "Mã phụ cấp", nam, thang);
@@ -206,7 +224,7 @@
         var dm20 = dmLuong[ns["Mã tiền lương 2"]] || null, laSP20 = !!(dm20 && /SP/i.test(dm20["Mã hình thức lương"] || ""));
         var gBD = laSP20 ? money(dm20["Số tiền khoán"]) : money(dmL0["Đơn giá bơm dăm"]);
         var k = ns["Mã PB"] || "", o = toSum[k] || (toSum[k] = { tien: 0, n: 0 });
-        o.tien += (sl.tong[ma] || 0) * money(dmL0["Số tiền khoán"]) + (bd.tong[ma] || 0) * gBD; o.n++;
+        o.tien += (sl.tong[ma] || 0) * money(dmL0["Số tiền khoán"]) + (qc2026 ? 0 : (bd.tong[ma] || 0) * gBD); o.n++; // 2026 (C4): tiền tổ chỉ tính sản lượng
       });
       Object.keys(toSum).forEach(function (k) { binhQuanTo[k] = toSum[k].n ? toSum[k].tien / soNgayThang / toSum[k].n : 0; });
     }
@@ -238,12 +256,13 @@
       var maTL1 = ns["Mã tiền lương 1"] || "";
       var dmL = dmLuong[ns["Mã tiền lương 1"]] || dmLuong[ns["Mã tiền lương 2"]] || null;
       if (!dmL && maTL1) out.canhbao.push(ma + ": mã lương '" + maTL1 + "' chưa có trong Danh mục lương (hoặc hết hiệu lực)");
-      var cChuan = congChuan(dmLuong[maTL1] || null, thang, nam, c.tongCong);
+      var cChuan = congChuan(dmLuong[maTL1] || null, thang, nam, c.tongCong, qc2026);
       var laSL = !!(dmL && /SP/i.test(dmL["Mã hình thức lương"] || ""));
 
       // Lương thời gian
       var donGiaTG = cChuan > 0 ? luongTT / cChuan : 0;
       var congTinhTG = Math.min(c.tongCong, cChuan) || c.tongCong;
+      if (qc2026) congTinhTG = maTL1 === "SP" ? (c.congLe || 0) + (c.congPhep || 0) : c.tongCong - (ns["Mã tăng ca"] === "TC5" ? c.congTangCa || 0 : 0); // C10: công TC5 (ca vị trí khác) đã trả riêng — không tính lại vào lương TG // 2026: C1 trả đủ công đi làm (không cắt ở công chuẩn) · C3 công nhân SP chỉ tính lương TG cho công lễ + phép
       var luongTG;
       if (maTL1 === "CĐ") luongTG = chiaPL ? Math.round(luongTT) : luongTT;
       else if (maTL1 === "CN1" || maTL1 === "CN2" || maTL1 === "SP") luongTG = Math.round(luongTT * congTinhTG);
@@ -297,7 +316,9 @@
       // Tăng ca
       var dmT = dmTC[ns["Mã tăng ca"]] || null, tienTC = 0;
       if (cChuan > 0) {
-        if (maTL1 === "CN1" || maTL1 === "CN2") tienTC = Math.round(luongTT * c.congTangCa);
+        if ((maTL1 === "CN1" || maTL1 === "CN2") && qc2026) { // 2026 (C5): công nhật tính tăng ca theo công thức của mã tăng ca, công chuẩn = số ngày − Số ngày giảm trừ
+          if (dmT) { var ccCN = new Date(nam, thang, 0).getDate() - ngayGiamTru(dmLuong[maTL1]); tienTC = Math.round(luongTT * heSoTangCa(ns["Mã tăng ca"], c.tongCong, c.congTrungChuyen, c.congLe, ccCN, c.congChuNhat, c.congTangCa, pct(dmT["Hệ số tăng ca"]), c.congPhep, c.congDiChuyen)); }
+        } else if (maTL1 === "CN1" || maTL1 === "CN2") tienTC = Math.round(luongTT * c.congTangCa);
         else if (ns["Mã tăng ca"] === "TC5" && dmT) tienTC = Math.round(money(dmT["Tiền tăng ca (nếu tính cố định)"]) / cChuan * c.congTangCa);
         else if (dmT) tienTC = Math.round(donGiaTG * heSoTangCa(ns["Mã tăng ca"], c.tongCong, c.congTrungChuyen, c.congLe, cChuan, c.congChuNhat, c.congTangCa, pct(dmT["Hệ số tăng ca"]), c.congPhep, c.congDiChuyen));
       }
@@ -306,9 +327,13 @@
       var pc = dmPC[ns["Mã phụ cấp"]], tienPC = 0;
       if (pc) {
         var soPC = money(pc["Số tiền"]);
-        var coDinh = /cố định/i.test(String(pc["Cách tính"] || "")) || !pc["Cách tính"];
+        var trongCT = !String(pc["Cách tính"] || "").trim();
+        var coDinh = /cố định/i.test(String(pc["Cách tính"] || "")) || (trongCT && !qc2026);
         if (coDinh) tienPC = soPC || Math.round(luongTT * pct(pc["Tỷ lệ"]));
-        else if (cChuan > 0) { var du = cChuan - num(pc["Tham chiếu"]); tienPC = c.tongCong >= du ? soPC : Math.round(soPC / cChuan * c.tongCong); }
+        else if (cChuan > 0) {
+          var du = cChuan - num(pc["Tham chiếu"]), cPC = trongCT ? c.tongCong - (c.congPhep || 0) - (c.congTangCa || 0) : c.tongCong; // 2026 (C6): Cách tính trống = chia theo công (không tính phép, tăng ca)
+          tienPC = cPC >= du ? soPC : Math.round(soPC / cChuan * cPC);
+        }
       }
       // Hỗ trợ lương (Mã hỗ trợ 2) & tiền cơm (Mã hỗ trợ)
       var ht2 = dmHT[ns["Mã hỗ trợ 2"]], luongHT = 0;
@@ -324,15 +349,17 @@
       var tongTN = luongTG + luongPhu + luongSL + luongBu + luongBD + tienTC + tienPC + pcCT + luongHT + tienCom + p["Thưởng"] + p["Thu nhập khác"];
 
       // BHXH
-      var bh = dmBH[ns["Mã BHXH"]], luongBH = money(ns["Lương cơ bản"]) || luongTTMoi, bhNLD = 0, truyThu = 0; // BH theo phụ lục đang hiệu lực (không chia theo Q-22)
+      var bh = dmBH[ns["Mã BHXH"]], luongBH = money(ns["Lương cơ bản"]) || (qc2026 ? 0 : luongTTMoi), bhNLD = 0, truyThu = 0; // BH theo phụ lục đang hiệu lực (không chia theo Q-22)
       if (bh && luongBH > 0 && luongBH < 1000) out.canhbao.push(ma + ": lương đóng BH = " + luongBH + "đ — quá nhỏ, kiểm tra lại 'Lương cơ bản' trong phụ lục hợp đồng");
+      var khongLCB = !!(bh && qc2026 && !(luongBH > 0));
+      if (khongLCB) { bh = null; out.canhbao.push(ma + ": có mã BHXH nhưng chưa có Lương cơ bản (mức đóng) — quy chế 2026 không tính BH / truy thu (như bảng lương Excel)"); } // 2026 (C8)
       if (bh) {
-        var tlNLD = num(bh["NLD.BHXH"]) + num(bh["NLD.BHYT"]) + num(bh["NLD.BHTN"]);
+        var tlNLD = num(bh["NLD.BHXH"]) + num(bh["NLD.BHYT"]) + num(bh["NLD.BHTN"]) + (qc2026 ? num(bh["NLD.KPCD"]) : 0); // 2026 (C7): trừ cả KPCĐ phần NLĐ
         var ng = dmL ? num(dmL["Ngưỡng truy thu BH (công)"]) : 0;
         var du2 = !ng || c.tongCong >= ng;
         var ctyDong = Math.round(luongBH * (num(bh["DN.BHXH"]) + num(bh["DN.BHYT"]) + num(bh["DN.BHTN"]) + num(bh["DN.KPCD"])));
         if (du2) bhNLD = Math.round(luongBH * tlNLD); else truyThu = ctyDong;
-        out.bhxh.push({
+        var bhRow = {
           "Mã NV": ma, "Họ và tên": ns["Họ và tên"], "Phòng ban": (pb[ns["Mã PB"]] || {})["Tên phòng ban"] || ns["Mã PB"] || "",
           "Lương đóng BHXH": luongBH,
           "CTY.BHXH": Math.round(luongBH * num(bh["DN.BHXH"])), "CTY.BHYT": Math.round(luongBH * num(bh["DN.BHYT"])),
@@ -341,8 +368,12 @@
           "NLĐ.BHXH": Math.round(luongBH * num(bh["NLD.BHXH"])), "NLĐ.BHYT": Math.round(luongBH * num(bh["NLD.BHYT"])),
           "NLĐ.BHTN": Math.round(luongBH * num(bh["NLD.BHTN"])), "Cộng BH NLĐ đóng": bhNLD, "Truy thu bảo hiểm": truyThu,
           "Ghi chú": du2 ? "Đủ ngưỡng" : "Chưa đủ ngưỡng (" + c.tongCong + "/" + ng + " công)"
-        });
-      } else if (ns["Mã BHXH"]) out.canhbao.push(ma + ": mã BHXH '" + ns["Mã BHXH"] + "' chưa có trong Danh mục bảo hiểm");
+        };
+        if (qc2026) { // 2026 (C7): thêm cột KPCĐ NLĐ (cách cũ giữ đúng cột như 1.7)
+          var o2 = {}; Object.keys(bhRow).forEach(function (k) { if (k === "Cộng BH NLĐ đóng") o2["NLĐ.KPCĐ"] = Math.round(luongBH * num(bh["NLD.KPCD"])); o2[k] = bhRow[k]; }); bhRow = o2;
+        }
+        out.bhxh.push(bhRow);
+      } else if (ns["Mã BHXH"] && !khongLCB) out.canhbao.push(ma + ": mã BHXH '" + ns["Mã BHXH"] + "' chưa có trong Danh mục bảo hiểm");
 
       // TNCN
       var maT = ns["Mã TNCN"] || "", npt = num(ns["Người phụ thuộc"]);
@@ -404,7 +435,7 @@
     return out;
   }
 
-  var ENGINE_VERSION = "1.7.0"; // 1.5.0: Q-22 áp dụng phụ lục từ ngày hiệu lực · 1.6.0: Q-19 "Phân bổ PB" khi điều chuyển (không dùng = số tiền giống 1.4.0) · 1.7.0: thêm cách bù "daihiep" / "to" (công cụ HAK; 2 cách cũ giữ nguyên số)
-  var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, tachCong: tachCong, tongHopChamCong: tongHopChamCong, hieuLuc: hieuLuc, num: num, pct: pct };
+  var ENGINE_VERSION = "1.8.0"; // 1.8.0: quy chế lương HAK Group 2026 (opts.quyChe "2026", R-68 — C1…C10); không bật = số như 1.7.0 · 1.5.0: Q-22 áp dụng phụ lục từ ngày hiệu lực · 1.6.0: Q-19 "Phân bổ PB" khi điều chuyển (không dùng = số tiền giống 1.4.0) · 1.7.0: thêm cách bù "daihiep" / "to" (công cụ HAK; 2 cách cũ giữ nguyên số)
+  var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, ngayGiamTru: ngayGiamTru, tachCong: tachCong, tongHopChamCong: tongHopChamCong, hieuLuc: hieuLuc, num: num, pct: pct };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LuongEngine = api;
 })(typeof window !== "undefined" ? window : this);

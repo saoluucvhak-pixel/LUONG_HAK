@@ -229,6 +229,7 @@
   };
   var ALIASES = {
     sanluong: PHIEU_ALIAS,
+    dm_luong: { "ngay giam tru": "Số ngày giảm trừ" }, // α21: tên cột trong Excel / Power Query HAK Group
     bandam: Object.assign({}, PHIEU_ALIAS, { "sl xe": "KL hàng (Tấn)", "so xe": "KL hàng (Tấn)", "so luong xe": "KL hàng (Tấn)", "so xe bd": "KL hàng (Tấn)", "luong xe": "KL hàng (Tấn)" })
   };
   function headerName(table, cols, h) {

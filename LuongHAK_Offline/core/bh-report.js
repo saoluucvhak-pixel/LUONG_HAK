@@ -4,7 +4,7 @@
 (function (root) {
   "use strict";
   function n0(v) { return +v || 0; }
-  var MONEY = ["Lương đóng BHXH", "CTY.BHXH", "CTY.BHYT", "CTY.BHTN", "CTY.KPCĐ", "Cộng BH công ty đóng", "NLĐ.BHXH", "NLĐ.BHYT", "NLĐ.BHTN", "Cộng BH NLĐ đóng", "Truy thu bảo hiểm"];
+  var MONEY = ["Lương đóng BHXH", "CTY.BHXH", "CTY.BHYT", "CTY.BHTN", "CTY.KPCĐ", "Cộng BH công ty đóng", "NLĐ.BHXH", "NLĐ.BHYT", "NLĐ.BHTN", "NLĐ.KPCĐ", "Cộng BH NLĐ đóng", "Truy thu bảo hiểm"];
   var duNguong = function (r) { return !/^Chưa đủ ngưỡng/.test(String(r["Ghi chú"] || "")); };
 
   /** Chi tiết từng người (đúng bảng BHXH của kỳ) + dòng tổng */
@@ -35,7 +35,7 @@
       { "Khoản": "BHXH", "Công ty đóng": s("CTY.BHXH"), "Người lao động đóng (trừ lương)": s("NLĐ.BHXH", duNguong) },
       { "Khoản": "BHYT", "Công ty đóng": s("CTY.BHYT"), "Người lao động đóng (trừ lương)": s("NLĐ.BHYT", duNguong) },
       { "Khoản": "BHTN", "Công ty đóng": s("CTY.BHTN"), "Người lao động đóng (trừ lương)": s("NLĐ.BHTN", duNguong) },
-      { "Khoản": "KPCĐ (nộp công đoàn)", "Công ty đóng": s("CTY.KPCĐ"), "Người lao động đóng (trừ lương)": 0 }];
+      { "Khoản": "KPCĐ (nộp công đoàn)", "Công ty đóng": s("CTY.KPCĐ"), "Người lao động đóng (trừ lương)": s("NLĐ.KPCĐ", duNguong) }]; // quy chế 2026: NLĐ đóng KPCĐ (C7); kỳ tính theo cách cũ = 0
     rows.forEach(function (r) { r["Cộng"] = r["Công ty đóng"] + r["Người lao động đóng (trừ lương)"]; });
     var t = { "Khoản": "TỔNG", "Công ty đóng": 0, "Người lao động đóng (trừ lương)": 0, "Cộng": 0 };
     rows.forEach(function (r) { ["Công ty đóng", "Người lao động đóng (trừ lương)", "Cộng"].forEach(function (c) { t[c] += r[c]; }); });

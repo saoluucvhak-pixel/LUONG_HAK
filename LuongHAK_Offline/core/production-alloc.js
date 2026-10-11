@@ -9,6 +9,10 @@
   function strip(s) { return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D"); }
   function lastWord(name) { var p = String(name || "").trim().split(/\s+/); return strip(p[p.length - 1] || "").toLowerCase(); }
   function tokens(s) { return s ? String(s).split(/[,;/\s]+/).map(function (x) { return strip(x).toLowerCase(); }).filter(function (x) { return x && x !== "@"; }) : []; }
+  // α21: so CÓ DẤU trước (như công cụ / Power Query: "Tường" ≠ "Tưởng"), không ai khớp mới so không dấu
+  function low(x) { return String(x == null ? "" : x).normalize("NFC").toLowerCase(); }
+  function lastWordRaw(name) { var p = String(name || "").trim().split(/\s+/); return low(p[p.length - 1] || ""); }
+  function rawTokens(s) { return s ? String(s).split(/[,;/\s]+/).map(low).filter(function (x) { return x && x !== "@"; }) : []; }
   function num(v) { if (typeof v === "number") return v; var x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isNaN(x) ? 0 : x; }
 
   /**
@@ -31,15 +35,14 @@
         audit.push({ phieu: r.phieu, ngay: d, maPB: pb, kl: kl, soNguoi: 0, names: [], share: 0, note: "Mã phòng ban không có trong danh mục / hồ sơ" });
         dp.unallocated += kl; unalloc += kl; return;
       }
-      var tk = tokens(r.vang), hit = {};
-      var present = mem.filter(function (e) {
-        var lw = lastWord(e.hoTen), mk = strip(e.ma).toLowerCase();
-        if (tk.indexOf(lw) >= 0) { hit[lw] = (hit[lw] || 0) + 1; return false; }
-        if (mk && tk.indexOf(mk) >= 0) { hit[mk] = (hit[mk] || 0) + 1; return false; }
-        return true;
+      var vang = {}, notes = [];
+      rawTokens(r.vang).forEach(function (t) {
+        var exact = mem.filter(function (e) { return lastWordRaw(e.hoTen) === t; });
+        var f = strip(t).toLowerCase(), list = exact.length ? exact : mem.filter(function (e) { return lastWord(e.hoTen) === f || (e.ma && strip(e.ma).toLowerCase() === f); });
+        list.forEach(function (e) { vang[e.ma] = 1; });
+        if (!list.length) notes.push("\"" + f + "\" không khớp ai trong tổ"); else if (list.length > 1) notes.push("\"" + f + "\" khớp " + list.length + " người (trùng tên cuối) — đều bị coi là vắng");
       });
-      var notes = [];
-      tk.forEach(function (t) { if (!hit[t]) notes.push("\"" + t + "\" không khớp ai trong tổ"); else if (hit[t] > 1) notes.push("\"" + t + "\" khớp " + hit[t] + " người (trùng tên cuối) — đều bị coi là vắng"); });
+      var present = mem.filter(function (e) { return !vang[e.ma]; });
       if (notes.length) warnings.push("Phiếu " + r.phieu + " (ngày " + d + ", tổ " + pb + "): NV vắng " + notes.join("; "));
       if (!present.length) {
         warnings.push("Phiếu " + r.phieu + " (ngày " + d + ", tổ " + pb + ") không còn công nhân nào có mặt để nhận — " + kl + " " + dv + " chưa phân bổ");

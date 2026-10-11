@@ -137,6 +137,11 @@ Mọi báo cáo xuất được Excel.
 3. **Tính lương** → chọn cách bù: *theo ngày — bậc thang (Đại Hiệp)* hoặc *theo bình quân tổ* (mức sàn = *Đơn giá bù lương*, ngưỡng tổ = *Ngưỡng công bù theo tổ* trong Danh mục Mã lương).
 4. **Báo cáo lương → Phân bổ sản lượng**: xem chia theo tổ / công nhân / từng phiếu và cảnh báo; **⬇ Xuất Excel (mẫu công cụ phân bổ)** ra file nhiều sheet như công cụ.
 
+## Quy chế tính lương (từ 2.0-alpha.21)
+- **Tính lương → ô "Quy chế tính lương"**: mặc định *Quy chế lương HAK Group 2026* (HAK, CNHAK, HAKQN như nhau). *Cách tính cũ (engine 1.7)* chỉ để đối chiếu với số đã tính trước đây.
+- Đổi quy chế cần quyền *Sửa danh mục*, có ghi nhật ký; áp dụng cho các kỳ **chưa chốt**. Kỳ đã chốt giữ nguyên số (màn hình kỳ đã chốt ghi quy chế đã dùng).
+- Danh mục **Mã lương** có cột *Số ngày giảm trừ*: công chuẩn = số ngày của tháng − số này (TG3 4, TG4 2, CN2 4). Mã "… tất cả ngày CN" (TG1) vẫn trừ Chủ nhật.
+
 ## Đọc ảnh / PDF chấm công, chấm cơm (từ 2.0-alpha.20)
 1. **Nhập liệu hàng tháng → 📷 Đọc ảnh chấm công → 📂 Chọn ảnh / PDF…** (chọn được nhiều file). App đọc lần lượt từng trang, chạy hoàn toàn trên máy.
    - Đang đọc mà muốn ngừng (chọn nhầm file, PDF dài): bấm **■ Dừng đọc**. Trang đã đọc xong giữ nguyên; trang chưa đọc có dấu ■ — mở thẻ đó, bấm **Đọc lại** khi cần.

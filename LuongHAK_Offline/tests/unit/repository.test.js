@@ -113,7 +113,7 @@ test("U-REPO-08 app.js không ghi thẳng vào bảng nghiệp vụ ngoài các 
   // trợ lý thêm nhân viên mới (chưa có kỳ chốt); xóa nhân viên (references + chỉ Admin nếu đã chốt); nạp danh mục mẫu (chỉ bảng trống);
   // tạo bảng thiếu khi mở dữ liệu; hoàn tác gộp chấm công khi lưu lỗi.
   const allowed = {
-    "db.auditlog.push(": 1, "db.auditlog.splice(": 1, "db.auditlog.pop(": 3, "db.baomat =": 2, "db.nguoidung =": 1, "db.nguoidung.push(": 2, "db.congty =": 1,
+    "db.auditlog.push(": 1, "db.auditlog.splice(": 1, "db.auditlog.pop(": 3, "db.baomat =": 2, "db.nguoidung =": 1, "db.nguoidung.push(": 2, "db.congty =": 2,
     "db.nhanvien.push(": 1, "db.canhan.push(": 1, "db.hopdong.push(": 1, "db.chitiethd.push(": 1, "db.thanhtoan.push(": 1,
     "db.hocvan.push(": 1, // α18: trợ lý thêm nhân viên mới ghi luôn Trình độ (sổ lao động) — cùng ngoại lệ trợ lý ở trên
     "db[k] =": 3, "db.chamcong =": 1

@@ -110,3 +110,13 @@ test("U-PA-08 đọc file theo mẫu công cụ: bỏ dòng tiêu đề, nhận 
   assert.equal(p.items[0].action, "add"); assert.equal(p.items[0].row["Ngày cân"], "2026-06-01"); assert.equal(p.items[0].line, 5, "báo đúng dòng Excel");
   assert.match(p.items[1].warn, /77\.77 chưa có trong Danh mục phòng ban/);
 });
+
+test("U-PA-09 NV vắng so CÓ DẤU trước: 'Tưởng' vắng không kéo theo 'Tường'; gõ không dấu vẫn nhận (trùng thì cảnh báo)", () => {
+  const mem = [{ ma: "A", hoTen: "Lê Văn Tường" }, { ma: "B", hoTen: "Trần Tưởng" }, { ma: "C", hoTen: "Ngô Đào" }];
+  const r1 = PA.allocate([{ phieu: "1", ngay: "2026-07-01", kl: 30, maPB: "02.02", vang: "Tưởng" }], () => mem);
+  const got = {}; r1.shares.forEach((x) => { got[x.ma] = x.kl; });
+  assert.deepStrictEqual(got, { A: 15, C: 15 });
+  const r2 = PA.allocate([{ phieu: "2", ngay: "2026-07-01", kl: 30, maPB: "02.02", vang: "tuong" }], () => mem); // không dấu → cả 2 vắng + cảnh báo
+  assert.deepStrictEqual(r2.shares.map((x) => x.ma), ["C"]);
+  assert.ok(r2.warnings.some((w) => /khớp 2 người/.test(w)));
+});
