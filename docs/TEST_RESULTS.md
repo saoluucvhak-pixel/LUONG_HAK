@@ -1,5 +1,13 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.3 — Hướng dẫn & Quy chế (10/10/2026, nhánh `claude/v2-guide`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint (thêm `ui/`) | ✅ 0/0 |
+| `npm test` | ✅ **90/90** (+3 U-GUIDE) |
+| E2E Electron | ✅ **40/40** (+1: 5 phần hướng dẫn, quy chế từ danh mục, tải Word) |
+| In thử Quy chế ra PDF (A4, Chromium) | ✅ 7 chương, bảng đủ cột, ẩn menu/nút |
+
 ## 2.0.0-alpha.2 — Đăng nhập & phân quyền (10/10/2026, nhánh `claude/v2-auth-rbac`)
 | Nhóm | Kết quả |
 |---|---|

@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [2.0.0-alpha.3] — 10/10/2026 — Hướng dẫn trong app, Quy trình tính lương, Dự thảo Quy chế trả lương
+- Menu mới **Hướng dẫn & Quy chế** (`ui/guide.js`) gồm:
+  - Bắt đầu nhanh;
+  - **Quy trình tính lương hằng tháng**: 9 bước, ghi vai trò phụ trách, kèm cách điều chỉnh sau chốt;
+  - **Dự thảo Quy chế trả lương**;
+  - Hướng dẫn từng màn hình;
+  - Câu hỏi thường gặp.
+- **Dự thảo Quy chế trả lương**:
+  - Gồm 7 chương: căn cứ, nguyên tắc, hình thức lương, chấm công, phụ cấp/hỗ trợ/tăng ca, BH/KPCĐ, thuế TNCN, khấu trừ/thực lĩnh/kỳ hạn trả, chốt và điều chỉnh, hiệu lực.
+  - Bảng số liệu sinh **trực tiếp từ danh mục có hiệu lực của kỳ đang chọn**; cách tính mô tả **đúng công thức engine** (có test đối chiếu).
+  - Đánh dấu rõ các điểm **[cần quyết định]** (Q-01…Q-10, Q-17).
+  - **In** được (định dạng văn bản, ẩn menu) và **tải file Word (.doc)** để chỉnh sửa rồi ban hành.
+- Câu hỏi mới **Q-17**: đối chiếu hệ số tăng ca với mức tối thiểu ở Điều 98 Bộ luật Lao động 2019.
+- `docs/QUY_TRINH_TINH_LUONG.md`. Lint bao phủ thêm thư mục `ui/`.
+- Test: 90 unit/integration/regression (+3 U-GUIDE), E2E 40/40 (+1).
+
 ## [2.0.0-alpha.2] — 10/10/2026 — Đăng nhập & phân quyền (Q-14, Q-16) · quy tắc chấm công Q-12
 ### Thêm mới
 - **Đăng nhập** bắt buộc.
