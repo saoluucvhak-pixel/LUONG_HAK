@@ -66,7 +66,9 @@
     left: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
     stop: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
     eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
-    key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>'
+    key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',
+    moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>'
   };
   // Emoji/ký hiệu đứng đầu nhãn → icon
   var MAP = {
@@ -76,7 +78,7 @@
     "⚠": "warn", "✔": "check", "✓": "check", "🖨": "printer", "📂": "folder", "📁": "folder", "🗂": "folder", "🛡": "shield", "🚑": "medical", "🗑": "trash", "🏢": "building",
     "📋": "clipboard", "📒": "book", "↔": "swap", "🧾": "receipt", "🌴": "leaf", "🏖": "sun", "🤒": "thermo", "🎂": "cake",
     "🩺": "steth", "❤": "heart", "📞": "phone", "🪪": "id", "🎓": "cap", "👪": "family", "🏦": "bank", "💼": "case", "🔀": "shuffle",
-    "🏆": "award", "📎": "clip", "＋": "plus", "✕": "close", "←": "left", "⛔": "stop", "👁": "eye", "🔑": "key", "📖": "book", "🖨️": "printer"
+    "🏆": "award", "📎": "clip", "＋": "plus", "✕": "close", "←": "left", "⛔": "stop", "👁": "eye", "🔑": "key", "📖": "book", "🖨️": "printer", "🌙": "moon", "📶": "trend"
   };
   var LEAD = /^\s*([←-⯿＋]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDC00-\uDFFF])️?\s*/;
   var NS = "http://www.w3.org/2000/svg";
@@ -93,7 +95,7 @@
     if (!m || !MAP[m[1]]) return null;
     return { icon: MAP[m[1]], rest: text.slice(m[0].length) };
   }
-  var SEL = "button, h3, .ic, .warn, .warn b, .ok, .locked, .fh, .step b, .dlg header h3";
+  var SEL = "button, h3, .ic, .qi, .ti, .warn, .warn b, .ok, .locked, .fh, .step b, .dlg header h3";
   /** Đổi emoji đầu nhãn trong `rootEl` thành icon SVG. Gọi lại an toàn (đã đổi thì bỏ qua). */
   function iconize(rootEl) {
     if (!rootEl || !rootEl.querySelectorAll) return;

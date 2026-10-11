@@ -5,6 +5,8 @@
   "use strict";
 
   // t: text | date | dt (ngày giờ) | num | money | pct | sel | ref | multi | yesno | area
+  // Loại biến động nhân sự ghi trên phụ lục (2.0-α15) — chỉ để theo dõi / báo cáo, KHÔNG dùng trong công thức lương
+  var BIEN_DONG = ["Tăng lương", "Giảm lương", "Điều chuyển phòng ban", "Bổ nhiệm / đổi chức vụ", "Điều chỉnh mức đóng BH", "Khác"];
   var HR = {
     nhanvien: { ten: "Nhân viên", icon: "👤", f: [
       { k: "Mã NV", req: 1 }, { k: "Họ và tên", req: 1 }, { k: "Số CCCD" }, { k: "Ngày tạo hồ sơ", t: "date" },
@@ -45,6 +47,7 @@
     // ---- Bảng thuộc hợp đồng ----
     chitiethd: { ten: "Lương & phụ lục HĐ", icon: "📑", lv: "hd", f: [
       { k: "Mã công tác", hint: "Số hiệu phụ lục, VD: HD001-PL01" }, { k: "Loại phụ lục", t: "sel", o: ["Hợp đồng gốc", "Phụ lục sửa đổi"], req: 1 },
+      { k: "Loại biến động", t: "sel", o: BIEN_DONG, hint: "Để trống: báo cáo biến động tự nhận biết khi so với phụ lục trước" }, { k: "Số quyết định" },
       { k: "Hiệu lực từ", t: "date", req: 1, hint: "Lương từ tháng này trở đi lấy theo dòng này" },
       { k: "Cách áp dụng trong tháng hiệu lực", t: "sel", o: ["Cả tháng", "Từ ngày hiệu lực"], hint: "Q-22: hiệu lực giữa tháng — 'Cả tháng' = cả tháng theo mức mới; 'Từ ngày hiệu lực' = công trước ngày hiệu lực tính mức cũ, từ ngày hiệu lực tính mức mới. Để trống = Cả tháng" },
       { k: "Phòng ban", t: "ref", ref: "dm_phongban", req: 1 }, { k: "Chức vụ", t: "ref", ref: "dm_chucvu" },
@@ -207,6 +210,16 @@
       if (ml.length > 2) warn.push(ma + ": có " + ml.length + " mã lương, app chỉ dùng 2 mã đầu (" + ml.slice(0, 2).join(", ") + ")");
       if (tc.length > 1) warn.push(ma + ": có nhiều mã tăng ca, app dùng mã đầu " + tc[0]);
       var tk = latestBy(rowsOf(db, "thanhtoan", ma, ix), "Hiệu lực từ", b.cuoi);
+      // Có công SAU ngày chấm dứt hợp đồng trong kỳ → chỉ cảnh báo (app vẫn tính đúng công đã nhập, không tự xóa / trừ)
+      var cdt = d10(hd["Ngày chấm dứt"]);
+      if (cdt && cdt >= b.dau && cdt < b.cuoi) {
+        var sauCd = [];
+        rowsOf(db, "chamcong", ma, ix).forEach(function (r) {
+          if (String(r["Kỳ"] || "").slice(0, 7) !== b.dau.slice(0, 7)) return;
+          for (var dd = +cdt.slice(8, 10) + 1; dd <= 31; dd++) { var cv = r[("0" + dd).slice(-2)]; if (cv !== "" && cv != null && sauCd.indexOf(dd) < 0) sauCd.push(dd); }
+        });
+        if (sauCd.length) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): có công sau ngày chấm dứt hợp đồng " + cdt.slice(8, 10) + "/" + cdt.slice(5, 7) + " (ngày " + sauCd.sort(function (x, y) { return x - y; }).join(", ") + ") — kiểm tra lại chấm công; app VẪN tính các công này");
+      }
       if (nv["Trạng thái"] === "Đã nghỉ việc" && !hd["Ngày chấm dứt"]) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trạng thái 'Đã nghỉ việc' nhưng hợp đồng " + hd["Số HĐLĐ"] + " chưa có Ngày chấm dứt — vẫn đang được tính lương");
       if (ct["HTTT"] === "Chuyển khoản" && !(tk && tk["Số tài khoản"])) warn.push(ma + " (" + (nv["Họ và tên"] || "") + "): trả lương chuyển khoản nhưng chưa có số tài khoản");
       var cn = latestBy(rowsOf(db, "canhan", ma, ix), "Hiệu lực từ", b.cuoi);
@@ -411,6 +424,49 @@
         return rows.sort(function (a, b) { return a["Ngày sinh"].slice(8) < b["Ngày sinh"].slice(8) ? -1 : 1; });
       },
       /** Sổ quản lý lao động — đủ nội dung khoản 2 Điều 3 Nghị định 145/2020/NĐ-CP; số liệu "trong năm" theo năm nam (mặc định năm nay). */
+      /**
+       * Biến động nhân sự trong khoảng kỳ [tuKy, denKy] ("YYYY-MM"): tăng mới, nghỉ việc, tăng / giảm lương, điều chuyển, đổi chức vụ, mức đóng BH.
+       * Tự nhận biết bằng cách so mỗi phụ lục với phụ lục liền trước của cùng nhân viên (dữ liệu cũ không cần nhập lại "Loại biến động").
+       */
+      biendong: function (tuKy, denKy) {
+        var ix = buildIndex(db), a = String(tuKy || t.slice(0, 7)), b = String(denKy || a), out = [];
+        var inR = function (v) { var k = d10(v).slice(0, 7); return k && k >= a && k <= b; };
+        var mny = function (v) { return +String(v == null ? "" : v).replace(/[^\d-]/g, "") || 0; };
+        var pay = function (v) { return hidePay ? PAY_HIDDEN : (v ? mny(v) : ""); };
+        var pct = function (x, y) { return x ? Math.round((y - x) / x * 1000) / 10 : null; };
+        var push = function (ngay, n, loai, truoc, sau, cl, ct, pb) { out.push({ "Hiệu lực": d10(ngay), "Mã NV": n["Mã NV"], "Họ và tên": n["Họ và tên"] || "", "Phòng ban": pb || "", "Loại biến động": loai, "Trước": truoc, "Sau": sau, "Chênh lệch": cl, "Chứng từ": ct || "" }); };
+        nvs.forEach(function (n) {
+          var ma = n["Mã NV"], hds = rowsOf(db, "hopdong", ma, ix).slice().sort(function (x, y) { return d10(x["Ngày vào làm"]) < d10(y["Ngày vào làm"]) ? -1 : 1; });
+          var pbOf = function (r) { return r ? refName(db, "dm_phongban", r["Phòng ban"], ix) : ""; }, cvOf = function (r) { return r ? refName(db, "dm_chucvu", r["Chức vụ"], ix) : ""; };
+          hds.forEach(function (hd, i) {
+            // phụ lục có hiệu lực tại 1 ngày (lúc vào làm / lúc nghỉ); chưa có thì lấy phụ lục sớm nhất của hợp đồng
+            var ctAt = function (ngay) { return chiTietHD(db, ma, hd["Số HĐLĐ"], d10(ngay) || "9999-12-31", ix) || rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return r["Số HĐLĐ"] === hd["Số HĐLĐ"]; }).sort(function (x, y) { return d10(x["Hiệu lực từ"]) < d10(y["Hiệu lực từ"]) ? -1 : 1; })[0]; };
+            if (i === 0 && inR(hd["Ngày vào làm"])) { var cv = ctAt(hd["Ngày vào làm"]); push(hd["Ngày vào làm"], n, "Tăng mới", "", pay(cv && cv["Lương thỏa thuận"]), "", hd["Số HĐLĐ"], pbOf(cv)); }
+            // Nghỉ việc: hợp đồng chấm dứt mà không có hợp đồng nào bắt đầu sau đó
+            if (hd["Ngày chấm dứt"] && inR(hd["Ngày chấm dứt"]) && !hds.some(function (x) { return x !== hd && d10(x["Ngày vào làm"]) >= d10(hd["Ngày chấm dứt"]); }))
+              push(hd["Ngày chấm dứt"], n, "Nghỉ việc", "Đang làm", hd["Lý do chấm dứt"] || "Nghỉ việc", "", hd["Số HĐLĐ"], pbOf(ctAt(hd["Ngày chấm dứt"])));
+          });
+          var pls = rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return d10(r["Hiệu lực từ"]); }).sort(function (x, y) { return d10(x["Hiệu lực từ"]) < d10(y["Hiệu lực từ"]) ? -1 : 1; });
+          pls.forEach(function (r, k) {
+            if (!k || !inR(r["Hiệu lực từ"])) return;
+            var p = pls[k - 1], ct = [r["Mã công tác"], r["Số quyết định"]].filter(Boolean).join(" · "), found = 0;
+            var l0 = mny(p["Lương thỏa thuận"]), l1 = mny(r["Lương thỏa thuận"]);
+            if (l1 !== l0) { found++; var pc = pct(l0, l1); push(r["Hiệu lực từ"], n, l1 > l0 ? "Tăng lương" : "Giảm lương", pay(l0), pay(l1), hidePay ? PAY_HIDDEN : (l1 - l0 > 0 ? "+" : "") + (l1 - l0).toLocaleString("vi-VN") + (pc == null ? "" : " (" + (pc > 0 ? "+" : "") + String(pc).replace(".", ",") + "%)"), ct, pbOf(r)); }
+            if (String(p["Phòng ban"] || "") !== String(r["Phòng ban"] || "")) { found++; push(r["Hiệu lực từ"], n, "Điều chuyển phòng ban", pbOf(p), pbOf(r), "", ct, pbOf(r)); }
+            if (String(p["Chức vụ"] || "") !== String(r["Chức vụ"] || "")) { found++; push(r["Hiệu lực từ"], n, "Bổ nhiệm / đổi chức vụ", cvOf(p), cvOf(r), "", ct, pbOf(r)); }
+            var b0 = mny(p["Lương cơ bản"]), b1 = mny(r["Lương cơ bản"]);
+            if (b1 !== b0 || String(p["Mức đóng bảo hiểm"] || "") !== String(r["Mức đóng bảo hiểm"] || "")) { found++; push(r["Hiệu lực từ"], n, "Điều chỉnh mức đóng BH", hidePay ? PAY_HIDDEN : [p["Mức đóng bảo hiểm"], b0 ? b0.toLocaleString("vi-VN") : ""].filter(Boolean).join(" · "), hidePay ? PAY_HIDDEN : [r["Mức đóng bảo hiểm"], b1 ? b1.toLocaleString("vi-VN") : ""].filter(Boolean).join(" · "), hidePay || !(b1 - b0) ? "" : (b1 - b0 > 0 ? "+" : "") + (b1 - b0).toLocaleString("vi-VN"), ct, pbOf(r)); }
+            if (!found && r["Loại biến động"]) push(r["Hiệu lực từ"], n, r["Loại biến động"], "", "", "", ct, pbOf(r));
+          });
+        });
+        return out.sort(function (x, y) { return x["Hiệu lực"] < y["Hiệu lực"] ? -1 : x["Hiệu lực"] > y["Hiệu lực"] ? 1 : String(x["Mã NV"]).localeCompare(String(y["Mã NV"])); });
+      },
+      /** Quá trình lương 1 người: các phụ lục theo thời gian + mức thay đổi so với phụ lục trước. */
+      quaTrinhLuong: function (ma) {
+        var pls = (db.chitiethd || []).filter(function (r) { return r["Mã NV"] === ma && d10(r["Hiệu lực từ"]); }).sort(function (x, y) { return d10(x["Hiệu lực từ"]) < d10(y["Hiệu lực từ"]) ? -1 : 1; });
+        var prev = null;
+        return pls.map(function (r) { var v = +String(r["Lương thỏa thuận"] || "").replace(/[^\d-]/g, "") || 0, o = { "Hiệu lực từ": d10(r["Hiệu lực từ"]), "Phụ lục": r["Mã công tác"] || "", "Loại": r["Loại biến động"] || r["Loại phụ lục"] || "", "Lương thỏa thuận": hidePay ? PAY_HIDDEN : v, "Thay đổi (%)": prev && !hidePay ? Math.round((v - prev) / prev * 1000) / 10 : "" }; prev = v || prev; return o; });
+      },
       soLaoDong: function (nam) {
         var ix = buildIndex(db), y = String(nam || t.slice(0, 4)), inY = function (v) { return d10(v).slice(0, 4) === y; };
         var congOf = function (v) { var m = String(v == null ? "" : v).trim().match(/^(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : 0; };
@@ -460,7 +516,7 @@
     };
   }
 
-  var api = { HR: HR, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll,
+  var api = { HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll,
     seedDanhMuc: seedDanhMuc, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.HRM = api;
 })(typeof window !== "undefined" ? window : this);

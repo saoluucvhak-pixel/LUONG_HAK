@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [2.0.0-alpha.15] — 11/10/2026 — Giao diện 2.0 + tăng lương / biến động nhân sự
+- **Giao diện mới** cùng bộ màu với app *Quản lý xuất hàng* (xanh ngọc #0e7c86, menu xanh than, nền #f3f6fa) — chủ sở hữu duyệt bản mẫu. **Chế độ sáng / tối** (nhớ theo máy).
+- Thanh trên cùng: **Tìm kiếm Ctrl+K** (màn hình, nhân viên, báo cáo; gõ không dấu), kỳ lương, vai trò, đăng xuất, nút sáng / tối. Menu nhóm lại.
+- **Tổng quan** mới: banner kỳ lương, các bước, ô Mở nhanh, *Cần xử lý trước khi chốt*, *An toàn dữ liệu* (giữ đủ lời nhắc sao lưu).
+- **Chấm công** tô màu ô theo số công / loại dòng (PN, CL, TC, có nhãn, không đọc được số) — chỉ hiển thị.
+- **Hồ sơ**: sửa trong ngăn kéo bên phải có khung **"Sẽ lưu N thay đổi"** (cũ → mới, ô đã đổi viền vàng). Thông tin cá nhân / tài khoản: chọn **Thông tin mới** (thêm bản mới, giữ bản cũ) hoặc **Sửa lỗi nhập sai**. Bản ghi bị khóa (Q-15, kỳ chốt) báo ngay khi mở.
+- **Tăng lương / biến động**: lập phụ lục mới từ phụ lục hiện tại, chọn loại biến động, % thay đổi, ghi chú điều chỉnh mức đóng BH. Phụ lục có thêm *Loại biến động*, *Số quyết định* (không bắt buộc, không dùng trong công thức).
+- **Lịch sử nhân viên**: quá trình lương + dòng thời gian thay đổi từ nhật ký (lọc theo phần; che số tiền khi không có quyền xem lương).
+- **Báo cáo Biến động nhân sự** theo khoảng tháng: tăng mới, nghỉ việc (lý do), tăng / giảm lương (+%), điều chuyển, đổi chức vụ, mức đóng BH — tự nhận biết, dữ liệu cũ không phải nhập lại.
+- **Cảnh báo có công sau ngày chấm dứt hợp đồng** khi tính lương (chỉ cảnh báo, số tiền không đổi).
+- **Không đổi công thức lương** — hồi quy v1.3.0 / alpha.4 trùng 100%. Test: 143 (+3 U-BD, +1 I-23), E2E 64/64 (+6).
+
 ## [Chưa phát hành] — Q-26
 - Chủ sở hữu chọn **phương án A** cho BH tháng nghỉ việc: giữ nguyên quy tắc R-57 (quy chế R-60). **Không đổi công thức**; thêm test I-22 khóa hành vi.
 

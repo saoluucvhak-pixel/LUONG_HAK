@@ -142,6 +142,55 @@ async function launch(dataDir, opt) {
   dialogs = []; await w.click('.dlg footer button:has-text("Lưu")'); await w.waitForTimeout(700);
   const auE = (await auditOf()).slice(au1);
   ok("Lỗi 2: đồng ý → lưu + nhật ký HỒI TỐ", (await nvCCCD()) === "001099000111" && auE.some((a) => /Sửa thông tin cơ bản/.test(a.thaoTac) && /HỒI TỐ/.test(a.chiTiet)), auE.map((a) => a.thaoTac).join(", "));
+  // UI 2.0 (α15): sáng / tối, Ctrl+K, sửa hồ sơ "Thông tin mới" giữ bản cũ, tăng lương lập phụ lục mới, lịch sử, báo cáo biến động
+  {
+    const dbNow = () => w.evaluate(() => window.hakStore.load()).then((t) => JSON.parse(t.text));
+    await w.click("#nav button[data-k=home]");
+    await w.click('#top button[aria-label="Đổi giao diện sáng / tối"]');
+    const th1 = await w.evaluate(() => document.documentElement.getAttribute("data-theme"));
+    await w.click('#top button[aria-label="Đổi giao diện sáng / tối"]');
+    const th2 = await w.evaluate(() => document.documentElement.getAttribute("data-theme"));
+    ok("UI: nút sáng / tối đổi giao diện (tối → sáng)", th1 === "dark" && th2 === "light", th1 + " → " + th2);
+    await w.keyboard.press("Control+k"); await w.waitForSelector(".cmdk input"); await w.fill(".cmdk input", "e2e nhan"); await w.press(".cmdk input", "Enter"); await w.waitForTimeout(300);
+    ok("UI: Ctrl+K gõ không dấu tìm nhân viên → Enter mở hồ sơ", (await w.locator("#top h2").innerText()) === "Hồ sơ nhân viên" && /E2E Nhân Viên/.test(await w.locator("#main").innerText()));
+    // Thông tin cá nhân: thêm 1 bản, rồi sửa kiểu "Thông tin mới" → có 2 bản, bản cũ giữ nguyên
+    await w.click('.subtabs button:has-text("Thông tin cá nhân")'); await w.click('#main button:has-text("Thêm")'); await w.waitForSelector("#modal.drawer .dlg");
+    const D = (l) => w.locator(".dlg .fld", { hasText: l }).first();
+    await D("Số CCCD").locator("input").fill("049095001234"); await D("Ngày sinh").locator("input").fill("1990-05-02");
+    await D("Giới tính").locator("select").selectOption("Nam"); await D("Hiệu lực từ").locator("input").fill("2025-01-01");
+    await D("Số điện thoại").locator("input").fill("0905000999");
+    await w.click(".dlg footer button.pri"); await w.waitForTimeout(500);
+    await w.locator("#main table tbody tr").first().click(); await w.waitForSelector("#modal.drawer .dlg");
+    const modeNew = await w.locator('.dlg input[name=hrmode][value=new]').isChecked();
+    await D("Số điện thoại").locator("input").fill("0905111222"); await D("Số điện thoại").locator("input").dispatchEvent("input");
+    const diffTxt = await w.locator(".dlg .diff").innerText();
+    await w.click(".dlg footer button.pri"); await w.waitForTimeout(600);
+    const cn = (await dbNow()).canhan.filter((r) => r["Mã NV"] === "NV001").sort((a, b) => a["Hiệu lực từ"] < b["Hiệu lực từ"] ? -1 : 1);
+    ok("UI: sửa Thông tin cá nhân mặc định 'Thông tin mới' → thêm bản mới từ hôm nay, bản cũ giữ làm lịch sử; khung xem trước nêu thay đổi",
+      modeNew && /Sẽ lưu/.test(diffTxt) && /0905000999/.test(diffTxt) && /0905111222/.test(diffTxt) && cn.length === 2 && cn[0]["Số điện thoại"] === "0905000999" && cn[1]["Số điện thoại"] === "0905111222" && cn[1]["Số CCCD"] === "049095001234",
+      cn.map((r) => r["Hiệu lực từ"] + ":" + r["Số điện thoại"]).join(" | ") + " · " + diffTxt.replace(/\n/g, " "));
+    // Tăng lương: lập phụ lục mới (không sửa phụ lục cũ), có % thay đổi
+    const nPL0 = (await dbNow()).chitiethd.length;
+    await w.click('#main button:has-text("Tăng lương / biến động")'); await w.waitForSelector("#modal.drawer .dlg");
+    await w.locator('.dlg label.chip', { hasText: "Tăng lương" }).click();
+    await D("Hiệu lực từ").locator("input").fill("2026-11-01");
+    await D("Lương thỏa thuận").locator("input").fill("13.200.000"); await D("Lương thỏa thuận").locator("input").dispatchEvent("input");
+    const pctTxt = await w.locator(".dlg .ok").innerText();
+    await w.click(".dlg footer button.pri"); await w.waitForTimeout(600);
+    const pls = (await dbNow()).chitiethd.filter((r) => r["Mã NV"] === "NV001");
+    const plNew = pls.filter((r) => r["Hiệu lực từ"] === "2026-11-01")[0];
+    ok("UI: Tăng lương → lập phụ lục mới (+10%), phụ lục cũ giữ nguyên",
+      (await dbNow()).chitiethd.length === nPL0 + 1 && plNew && plNew["Lương thỏa thuận"] === "13200000" && plNew["Loại biến động"] === "Tăng lương" && pls.some((r) => r["Lương thỏa thuận"] === "12000000") && /\+1\.200\.000 \(\+10%\)/.test(pctTxt),
+      pctTxt + " · " + pls.map((r) => r["Hiệu lực từ"] + ":" + r["Lương thỏa thuận"]).join(" | "));
+    await w.click('#main button:has-text("Lịch sử")'); await w.waitForSelector("#modal.drawer .tl");
+    const ls = await w.locator(".dlg").innerText();
+    ok("UI: Lịch sử nhân viên có quá trình lương + dòng thời gian thay đổi (trước → sau)", /Quá trình lương/.test(ls) && /Biến động: Tăng lương/.test(ls) && /0905000999/.test(ls), ls.slice(0, 200).replace(/\n/g, " "));
+    await w.click('.dlg footer button:has-text("Đóng")');
+    await w.click("#nav button[data-k=baocao]"); await w.click('#main button:has-text("Biến động nhân sự")');
+    await w.locator('#main input[type=month]').nth(1).fill("2026-12"); await w.locator('#main input[type=month]').nth(1).dispatchEvent("change"); await w.waitForTimeout(300);
+    const bd = await w.locator("#main").innerText();
+    ok("UI: Báo cáo biến động nhân sự liệt kê tăng lương 12.000.000 → 13.200.000", /Tăng lương/.test(bd) && /13\.200\.000|13200000/.test(bd), bd.slice(0, 160).replace(/\n/g, " "));
+  }
   await w.waitForTimeout(800);
   ok("Không có lỗi JavaScript (lần chạy 1)", errs.length === 0, errs.join(" | "));
   await app.close();
@@ -206,8 +255,10 @@ async function launch(dataDir, opt) {
   await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
   const plCard = w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') });
   const nPL = await plCard.locator("tbody tr").count();
-  await plCard.locator("tbody tr").first().click(); await w.waitForSelector(".dlg"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
-  const blocked15 = dialogs.some((d) => /Q-15/.test(d) && /PHỤ LỤC MỚI/.test(d));
+  await plCard.locator("tbody tr", { hasText: "01/01/2025" }).first().click(); await w.waitForSelector(".dlg"); // phụ lục đã dùng cho kỳ chốt 9/2026 (phụ lục 11/2026 thêm ở bước UI nằm trên cùng)
+  const lock15 = await w.locator(".dlg .locked").innerText().catch(() => "");
+  await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
+  const blocked15 = dialogs.some((d) => /Q-15/.test(d) && /PHỤ LỤC MỚI/.test(d)) && /Q-15/.test(lock15);
   if (await w.locator(".dlg").count()) await w.click(".dlg header button");
   await plCard.locator('button:has-text("Thêm")').click(); await w.waitForSelector(".dlg");
   const q22Opts = await w.locator(".dlg .fld", { hasText: "Cách áp dụng trong tháng hiệu lực" }).locator("option").allInnerTexts();
@@ -334,7 +385,7 @@ async function launch(dataDir, opt) {
     await w.click("#nav button[data-k=home]"); await w.waitForTimeout(200);
     const homeAfter = await w.locator("main").first().innerText();
     ok("(D) Trang chủ nhắc khi CHƯA có bản sao lưu ra ngoài máy", /Chưa có bản sao lưu nào ra ngoài máy/.test(homeBefore));
-    ok("(A) Chọn thư mục thứ hai → chép ngay các bản sau chốt kỳ (+ file kiểm tra SHA-256); hết lời nhắc", card.includes(USB) && mir.filter((f) => /^sau-chot-2026-09_.*\.json$/.test(f)).length === 2 && mir.some((f) => /\.sha256$/.test(f)) && !/ra ngoài máy/.test(homeAfter.split("Nhớ sao lưu")[0]), mir.join(", "));
+    ok("(A) Chọn thư mục thứ hai → chép ngay các bản sau chốt kỳ (+ file kiểm tra SHA-256); hết lời nhắc", card.includes(USB) && mir.filter((f) => /^sau-chot-2026-09_.*\.json$/.test(f)).length === 2 && mir.some((f) => /\.sha256$/.test(f)) && !/Chưa có bản sao lưu nào ra ngoài máy|ngày chưa sao lưu ra ngoài máy|Không chép được/.test(homeAfter) && /Đã sao lưu ra ngoài máy/.test(homeAfter), mir.join(", "));
     ok("Không lỗi JavaScript ở sao lưu ra ngoài máy", errs.length === 0, errs.join(" | "));
     await app.close();
   }

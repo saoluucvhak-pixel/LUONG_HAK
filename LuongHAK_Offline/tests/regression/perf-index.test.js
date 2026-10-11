@@ -28,7 +28,9 @@ test("R-PERF-01 staffForPayroll (có chỉ mục) = bản alpha.4 (quét) cho 3 
   for (const db of [regressionDataset(80), edgeDb()])
     for (const [y, m] of [[2026, 8], [2026, 9], [2026, 10], [2025, 12]]) {
       const a = HR.staffForPayroll(db, y, m), b = OLD.staffForPayroll(db, y, m);
-      assert.deepEqual(a, b, y + "-" + m);
+      assert.deepEqual(a.list, b.list, y + "-" + m);
+      // 2.0-α15 thêm 1 loại cảnh báo (có công sau ngày chấm dứt HĐ): cảnh báo cũ giữ nguyên, đúng thứ tự; chỉ được THÊM đúng loại mới
+      assert.deepEqual(a.warn.filter((w) => !/có công sau ngày chấm dứt hợp đồng/.test(w)), b.warn, y + "-" + m);
       const ka = E.tinhBangLuong(Object.assign({}, db, { nhansu: a.list }), y, m, false), kb = E.tinhBangLuong(Object.assign({}, db, { nhansu: b.list }), y, m, false);
       assert.deepEqual(ka.bangluong, kb.bangluong);
     }

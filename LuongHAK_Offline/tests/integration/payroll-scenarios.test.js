@@ -100,3 +100,13 @@ test("I-22 (Q-26 = phương án A, chủ sở hữu chọn 11/10/2026) nghỉ vi
   // tháng sau không còn trong bảng lương
   assert.equal(pay(db, 2026, 10).b, undefined);
 });
+
+test("I-23 có công SAU ngày chấm dứt hợp đồng (nghỉ 20/09, vẫn chấm 21, 22/09) → cảnh báo nêu ngày; số tiền KHÔNG đổi (vẫn tính công đã nhập)", () => {
+  const db = one(); db.hopdong[0]["Ngày chấm dứt"] = "2026-09-20"; db.chamcong = [keep(ccRow("NV001", 2026, 9), 1, 22)];
+  const { b, warn } = pay(db, 2026, 9);
+  assert.ok(warn.some((w) => /có công sau ngày chấm dứt hợp đồng 20\/09 \(ngày 21, 22\).*VẪN tính/.test(w)), warn.join("\n"));
+  assert.equal(b["Tổng công"], 19); // 1–22/09 trừ 2 Chủ nhật (06, 13, 20 → 3 CN: 06, 13, 20) = 19
+  // không có công sau ngày chấm dứt → không cảnh báo (I-17)
+  db.chamcong = [keep(ccRow("NV001", 2026, 9), 1, 20)];
+  assert.ok(!pay(db, 2026, 9).warn.some((w) => /sau ngày chấm dứt/.test(w)));
+});

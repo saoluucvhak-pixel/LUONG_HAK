@@ -21,7 +21,7 @@ File `%APPDATA%\Tinh Luong HAK\data.json` là một object; mỗi khóa là mộ
 | | `canhan`, `thanhtoan` | Mã NV + Hiệu lực từ | lịch sử theo hiệu lực |
 | | `nhanthan` | Mã NV + Họ tên nhân thân | người phụ thuộc có Hiệu lực từ/đến |
 | | `hopdong` | Mã NV + Số HĐLĐ | |
-| | `chitiethd` | Mã NV + Số HĐLĐ + Hiệu lực từ | **nguồn dữ liệu tính lương**. (2.0-α11) cột mới *Cách áp dụng trong tháng hiệu lực*: `Cả tháng` (mặc định / để trống) \| `Từ ngày hiệu lực` (Q-22) |
+| | `chitiethd` | Mã NV + Số HĐLĐ + Hiệu lực từ | **nguồn dữ liệu tính lương**. (2.0-α15) cột không bắt buộc *Loại biến động* (Tăng lương / Giảm lương / Điều chuyển phòng ban / Bổ nhiệm / đổi chức vụ / Điều chỉnh mức đóng BH / Khác), *Số quyết định* — chỉ để theo dõi, không dùng trong công thức (R-61). (2.0-α11) cột mới *Cách áp dụng trong tháng hiệu lực*: `Cả tháng` (mặc định / để trống) \| `Từ ngày hiệu lực` (Q-22) |
 | | `congtac`, `hocvan`, `suckhoe`, `lienhe`, `nghenghiep`, `khamsk`, `quyenloiphep`, `nghiphep`, `nghiom`, `noiquy`, `khenthuong`, `tailieu` | xem `core/importer.js` KEYS | (2.0-α14, R-59) cột mới không bắt buộc: `hocvan` *Bậc trình độ kỹ năng nghề*; `chitiethd` *Vị trí việc làm*; `hopdong` *Lý do chấm dứt*; `nghiphep` *Loại nghỉ* (trống = Nghỉ hằng năm); `noiquy` *Hình thức kỷ luật*, *Bồi thường thiệt hại (trách nhiệm vật chất)* |
 | | `daotao` (2.0-α14) | Mã NV + Từ ngày | Từ ngày, Đến ngày, Hình thức, Nội dung, Đơn vị đào tạo, Chứng chỉ / văn bằng, Ghi chú |
 | | `tainanld` (2.0-α14) | Mã NV + Ngày | Ngày, Loại (tai nạn LĐ / bệnh nghề nghiệp), Nội dung, Mức suy giảm khả năng lao động (%), Chế độ đã giải quyết, Ghi chú |

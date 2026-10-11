@@ -1,5 +1,15 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.15 — Giao diện 2.0 + biến động nhân sự (11/10/2026, nhánh `claude/v2-ui-redesign`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **143/143** (+3 U-BD, +1 I-23; R-PERF-01: danh sách nhân sự + bảng lương giống hệt alpha.4, cảnh báo cũ giữ nguyên, chỉ thêm loại cảnh báo mới) |
+| Hồi quy công thức (v1.3.0, alpha.4) | ✅ trùng 100% |
+| E2E Electron (xvfb, Linux) | ✅ **64/64** (+6 giao diện mới) |
+| Ảnh chụp sáng / tối (Tổng quan, Chấm công, Tính lương, Hồ sơ, Ctrl+K, Tăng lương, Lịch sử, Biến động) | ✅ đã xem, không lỗi JavaScript |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.14 — Sổ quản lý lao động (11/10/2026, nhánh `claude/v2-so-lao-dong`)
 | Nhóm | Kết quả |
 |---|---|

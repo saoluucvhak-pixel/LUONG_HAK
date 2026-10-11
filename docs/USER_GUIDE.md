@@ -114,8 +114,15 @@ Theo kỳ (chọn ở ô Kỳ lương; kỳ đã chốt lấy số đã lưu, ch
 Cả năm (chỉ cộng các kỳ đã chốt): Lương 12 tháng · Thu nhập năm theo nhân viên (chọn chỉ tiêu) · Thuế TNCN cả năm (hỗ trợ quyết toán).
 Mọi báo cáo xuất được Excel.
 
+## Giao diện 2.0 (từ 2.0-alpha.15)
+- **Sáng / tối:** nút mặt trăng / mặt trời ở góc phải trên hoặc cuối menu trái (nhớ theo máy).
+- **Ctrl+K:** tìm nhanh màn hình, nhân viên (mã / tên, gõ không dấu), báo cáo — ↑ ↓ chọn, Enter mở.
+- **Sửa hồ sơ:** mở ở ngăn bên phải, khung *Sẽ lưu N thay đổi* cho thấy cũ → mới trước khi bấm Lưu. Thông tin cá nhân / tài khoản: *Thông tin mới* (đổi CCCD, địa chỉ, tài khoản — bản cũ giữ làm lịch sử) hoặc *Sửa lỗi nhập sai*.
+- **Tăng lương / biến động** (nút xanh trên hồ sơ): chọn loại, ngày hiệu lực, số quyết định, mức mới → app lập phụ lục mới, hiện % thay đổi. Không sửa phụ lục cũ.
+- **Lịch sử** (trên hồ sơ): quá trình lương + mọi thay đổi (ai, lúc nào, cũ → mới).
+
 ## Báo cáo nhân sự
-HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/ốm theo năm · Vi phạm chưa xử lý · Sinh nhật trong tháng · Sổ quản lý lao động · Lịch sử hồ sơ từng người. Tất cả xuất được Excel.
+**Biến động nhân sự** (chọn từ tháng – đến tháng; bấm ô số để lọc theo loại) · HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/ốm theo năm · Vi phạm chưa xử lý · Sinh nhật trong tháng · Sổ quản lý lao động · Lịch sử hồ sơ từng người. Tất cả xuất được Excel.
 
 ### Sổ quản lý lao động (từ 2.0-alpha.14 — NĐ 145/2020 Điều 3)
 Chọn **năm** rồi mở *Sổ quản lý lao động*: mỗi người 1 dòng, đủ nội dung luật yêu cầu. Để sổ đầy đủ, nhập thêm trong Hồ sơ:

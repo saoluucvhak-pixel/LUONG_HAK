@@ -95,6 +95,15 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α15 Biến động nhân sự (`tests/unit/bien-dong.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-BD-01 | 07–09/2026: tăng mới (lương lúc vào làm), nghỉ việc + lý do, tăng lương +1.000.000 (+6,9%) kèm chứng từ, điều chuyển, đổi chức vụ, mức đóng BH +500.000; phụ lục chỉ ghi 'Loại biến động' vẫn hiện; ngoài khoảng không có; sắp theo ngày |
+| U-BD-02 | Q-24: không có quyền xem lương → che số tiền, vẫn biết ai tăng lương |
+| U-BD-03 | Quá trình lương 1 người: các phụ lục theo thời gian, % so với lần trước; che khi không có quyền |
+
+E2E (α15): nút sáng / tối · Ctrl+K tìm nhân viên không dấu · sửa Thông tin cá nhân kiểu *Thông tin mới* giữ bản cũ + khung xem trước · Tăng lương lập phụ lục mới (+10%) · Lịch sử (quá trình lương + thay đổi) · báo cáo Biến động. Q-15: form phụ lục đã khóa báo ngay khi mở.
+
 ## Unit — 2.0-α14 Sổ quản lý lao động (`tests/unit/so-lao-dong.test.js`)
 | ID | Nội dung |
 |---|---|
@@ -172,6 +181,7 @@ R-PERF-02 (cập nhật): báo cáo nghỉ và sổ lao động mới phải gi�
 | I-16 | Vào làm 15/09: lương theo 14/26 công, thuế 0, BH trừ đủ vì danh mục chưa khai ngưỡng (dữ liệu) |
 | I-21 | (R-57) Cùng dữ liệu, khai ngưỡng 15 công cho TG1 → công thức tự truy thu 1.410.000, không trừ BH NLĐ; khai 14 → đóng bình thường |
 | I-22 | (R-60, Q-26 = A) Nghỉ việc 02/09, ngưỡng 14: 2 công → BH NLĐ 0, truy thu 1.410.000, thực lĩnh 128.000; 0 công → vẫn có dòng lương, thực lĩnh 0 + cảnh báo thiếu 1.410.000 không chuyển kỳ sau; tháng 10 không còn |
+| I-23 | (R-63) Nghỉ 20/09 nhưng còn chấm công 21, 22/09 → cảnh báo nêu ngày, số công vẫn tính (19); không có công sau ngày chấm dứt → không cảnh báo |
 | I-17 | Nghỉ việc 20/09: 17 công; tháng 10 không có lương |
 | I-18 | Nhiều tạm ứng + thưởng + thu nhập khác + trừ khác cộng dồn; tạm ứng kỳ sau không trừ |
 | I-19 | Khoản trừ vượt thu nhập → thực lĩnh 0 + cảnh báo số còn thiếu |
