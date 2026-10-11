@@ -112,7 +112,7 @@
     list.forEach(function (row) {
       var ma = row["Mã NV"]; if (!ma) return;
       var k = kyChamCong(row); if (!k || k.y !== nam || k.m !== thang) return;
-      var r = res[ma] || (res[ma] = { tongCong: 0, congChuNhat: 0, congTangCa: 0, congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0, nhanTheoNgay: {}, congChinhTheoNgay: {} });
+      var r = res[ma] || (res[ma] = { tongCong: 0, congChuNhat: 0, congTangCa: 0, congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0, nhanTheoNgay: {}, congChinhTheoNgay: {}, congBT: 0, congBTTheoNgay: {} });
       var ht = String(row["Hình thức công"] || "BT").trim().toUpperCase();
       var laCong = ht !== "CC", laTC = /TC/.test(ht), tong = 0;
       for (var d = 1; d <= 31; d++) {
@@ -125,6 +125,7 @@
           if (dt.getMonth() === thang - 1 && dt.getDay() === 0) r.congChuNhat += t.soCong;
           r.congChinhTheoNgay[ten] = (r.congChinhTheoNgay[ten] || 0) + t.soCong;
         }
+        if (ht === "BT") { r.congBTTheoNgay[ten] = (r.congBTTheoNgay[ten] || 0) + t.soCong; r.congBT += t.soCong; } // α19: công BT riêng (cơ chế bù kiểu công cụ HAK)
       }
       if (laCong) r.tongCong += tong;
       if (laTC) r.congTangCa += tong;
@@ -190,12 +191,38 @@
 
     var out = { bangluong: [], bhxh: [], tncn: [], canhbao: [] };
     var dauKy = new Date(nam, thang - 1, 1);
+    // Cách bù lương sản lượng: false = theo tháng (từng người) · true = theo ngày (liên tục) — 2 cách cũ, giữ nguyên;
+    // α19 (chủ sở hữu duyệt "làm như công cụ"): "daihiep" = theo ngày bậc thang (công cụ HAK, mẫu Đại Hiệp) · "to" = theo bình quân tổ
+    var cheDoBu = buTheoNgay === "daihiep" || buTheoNgay === "to" ? buTheoNgay : (buTheoNgay ? "ngay" : "thang");
+    var soNgayThang = new Date(nam, thang, 0).getDate(), binhQuanTo = {};
+    if (cheDoBu === "to") {
+      // Tổng tiền sản lượng (tấn × đơn giá + xe bơm dăm × đơn giá) cả tổ / số ngày của tháng / số người của tổ (người hưởng lương sản phẩm)
+      var toSum = {};
+      (db.nhansu || []).forEach(function (ns) {
+        var ma = ns["Mã nhân viên"]; if (!ma) return;
+        var nghi = ns["Ngày nghỉ/thay đổi"]; if (nghi && new Date(nghi) < dauKy) return;
+        var dmL0 = dmLuong[ns["Mã tiền lương 1"]] || dmLuong[ns["Mã tiền lương 2"]] || null;
+        if (!(dmL0 && /SP/i.test(dmL0["Mã hình thức lương"] || ""))) return;
+        var dm20 = dmLuong[ns["Mã tiền lương 2"]] || null, laSP20 = !!(dm20 && /SP/i.test(dm20["Mã hình thức lương"] || ""));
+        var gBD = laSP20 ? money(dm20["Số tiền khoán"]) : money(dmL0["Đơn giá bơm dăm"]);
+        var k = ns["Mã PB"] || "", o = toSum[k] || (toSum[k] = { tien: 0, n: 0 });
+        o.tien += (sl.tong[ma] || 0) * money(dmL0["Số tiền khoán"]) + (bd.tong[ma] || 0) * gBD; o.n++;
+      });
+      Object.keys(toSum).forEach(function (k) { binhQuanTo[k] = toSum[k].n ? toSum[k].tien / soNgayThang / toSum[k].n : 0; });
+    }
+    // Bậc thang "SL tham chiếu" theo công BT của ngày (công cụ HAK / Power Query + DAX Đại Hiệp): hệ số × mức sàn
+    function bacThang(cong, chuNhat) {
+      if (cong < 0.5) return 0;
+      if (cong < 1) return 0.5;
+      if (!chuNhat || cong < 1.5) return 1;
+      return 1.5;
+    }
 
     (db.nhansu || []).forEach(function (ns) {
       var ma = ns["Mã nhân viên"]; if (!ma) return;
       var nghi = ns["Ngày nghỉ/thay đổi"];
       if (nghi && new Date(nghi) < dauKy) return;
-      var c = cc[ma] || { tongCong: 0, congChuNhat: 0, congTangCa: 0, congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0, nhanTheoNgay: {}, congChinhTheoNgay: {} };
+      var c = cc[ma] || { tongCong: 0, congChuNhat: 0, congTangCa: 0, congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0, nhanTheoNgay: {}, congChinhTheoNgay: {}, congBT: 0, congBTTheoNgay: {} };
       var luongTT = money(ns["Lương thỏa thuận"]), luongTTMoi = luongTT, chiaPL = false;
       // Q-22 (R-56): phụ lục mới hiệu lực từ ngày tuNgay trong kỳ, chọn "Từ ngày hiệu lực" → lương thỏa thuận của kỳ =
       // bình quân theo công: (mức cũ × công chính trước ngày + mức mới × công chính từ ngày) / tổng công chính. Không có trường này = như cũ.
@@ -229,7 +256,23 @@
       if (laSL) {
         luongSL = Math.round(tan * donGiaSL);
         var nguong = num(dmL["ĐK_Bù lương (công tối thiểu)"]), giaBu = money(dmL["Đơn giá bù lương"]);
-        if (buTheoNgay) {
+        if (cheDoBu === "daihiep") {
+          // Mỗi NGÀY có sản lượng: tiền ngày = MAX(tấn ngày × đơn giá, bậc thang(công BT ngày) × mức sàn); bù = tổng phần chênh. Không xét ngưỡng.
+          if (giaBu > 0) {
+            var snD = sl.ngay[ma] || {}, buF = 0;
+            Object.keys(snD).forEach(function (t) {
+              var tanN = snD[t] || 0; if (tanN <= 0) return;
+              var payN = tanN * donGiaSL, chuNhatN = new Date(nam, thang - 1, +t).getDay() === 0;
+              var th = bacThang(c.congBTTheoNgay[t] || 0, chuNhatN) * giaBu;
+              if (th > payN) buF += th - payN;
+            });
+            luongBu = Math.round(buF);
+          }
+        } else if (cheDoBu === "to") {
+          // Bình quân tổ < mức sàn → người đủ ngưỡng công (công BT ≥ "Ngưỡng công bù theo tổ") được bù (mức sàn − bình quân tổ) × công BT
+          var bq = binhQuanTo[ns["Mã PB"] || ""] || 0, ngTo = num(dmL["Ngưỡng công bù theo tổ"]);
+          if (giaBu > 0 && c.congBT >= ngTo && c.congBT > 0 && bq < giaBu) luongBu = Math.round((giaBu - bq) * c.congBT);
+        } else if (cheDoBu === "ngay") {
           if (nguong > 0 && giaBu > 0) {
             var cn = c.congChinhTheoNgay, sn = sl.ngay[ma] || {};
             for (var d = 1; d <= 31; d++) {
@@ -361,7 +404,7 @@
     return out;
   }
 
-  var ENGINE_VERSION = "1.6.0"; // 1.5.0: Q-22 áp dụng phụ lục từ ngày hiệu lực · 1.6.0: Q-19 "Phân bổ PB" khi điều chuyển (không dùng = số tiền giống 1.4.0)
+  var ENGINE_VERSION = "1.7.0"; // 1.5.0: Q-22 áp dụng phụ lục từ ngày hiệu lực · 1.6.0: Q-19 "Phân bổ PB" khi điều chuyển (không dùng = số tiền giống 1.4.0) · 1.7.0: thêm cách bù "daihiep" / "to" (công cụ HAK; 2 cách cũ giữ nguyên số)
   var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, tachCong: tachCong, tongHopChamCong: tongHopChamCong, hieuLuc: hieuLuc, num: num, pct: pct };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LuongEngine = api;
 })(typeof window !== "undefined" ? window : this);

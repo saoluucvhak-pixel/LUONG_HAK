@@ -1,6 +1,6 @@
 # THIẾT KẾ HỆ THỐNG — Tính Lương HAK (bản offline cho Windows)
 
-> Phiên bản: **2.0.0-alpha.18**, ngày 11/10/2026, nhánh `claude/v2-solaodong-bh-phieuluong` (PR #20).
+> Phiên bản: **2.0.0-alpha.19** (cập nhật phân bổ khối lượng; nội dung khác như alpha.18), ngày 11/10/2026, nhánh `claude/v2-phan-bo-khoi-luong`.
 > File này tổng hợp các tài liệu chi tiết sau, mỗi chủ đề xem thêm ở file tương ứng:
 > - Kiến trúc: `ARCHITECTURE.md`
 > - Cấu trúc dữ liệu: `DATABASE_SCHEMA.md`
@@ -43,6 +43,7 @@
 │ │ core/permissions  vai trò, quyền, mật khẩu PBKDF2, chống dò mật khẩu                        │    │
 │ │ core/allocation   chia chi phí lương theo phòng ban khi điều chuyển                         │    │
 │ │ core/bh-report    báo cáo bảo hiểm (chỉ cộng số engine đã tính)                             │    │
+│ │ core/production-alloc  chia phiếu cân theo tổ + NV vắng (như công cụ phân bổ khối lượng, α19)│    │
 │ └─────────────────────────────────────────────────────────────────────────────────────────────┘    │
 │        │ window.hakStore / window.hakFiles (preload.js — contextBridge, sendSync)                │
 └────────┼─────────────────────────────────────────────────────────────────────────────────────────┘
@@ -67,9 +68,10 @@ LuongHAK_Offline/
 ├─ hr.js              mô hình hồ sơ nhân sự (HR.*), báo cáo nhân sự, cảnh báo khi tính lương
 ├─ engine.js          công thức lương (KHÔNG sửa nếu chưa được chủ sở hữu duyệt)
 ├─ xlsx.full.min.js   SheetJS: đọc / ghi Excel
+├─ exceljs.min.js     ExcelJS 4.4.0 (MIT): biểu mẫu Excel có định dạng như công cụ phân bổ khối lượng (α19)
 ├─ core/              nghiệp vụ dùng chung (mục 2)
 ├─ main/              storage.js, exports.js (chạy ở tiến trình chính)
-├─ ui/                icons.js, guide.js, fonts/, icon.png
+├─ ui/                icons.js, guide.js, pbkl-xlsx.js (biểu mẫu phân bổ khối lượng), fonts/, icon.png
 ├─ build/             icon.ico / icon.png cho bộ cài
 ├─ tests/             unit · integration · regression · perf · e2e · fixtures (dữ liệu giả)
 └─ package.json       electron 43, electron-builder (NSIS), script test

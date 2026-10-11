@@ -107,6 +107,7 @@
     var emp = {}; (db.nhanvien || []).forEach(function (n) { emp[n["Mã NV"]] = 1; });
     Object.keys(opts.extraEmployees || {}).forEach(function (k) { emp[k] = 1; });
     var needRef = MONTHLY[table] || HR_SUB[table];
+    var pbCodes = {}; (db.dm_phongban || []).forEach(function (p) { if (p && p["Mã phòng ban"]) pbCodes[String(p["Mã phòng ban"]).trim()] = 1; });
     var pcCodes = {}; (db.dm_phucap || []).forEach(function (p) { if (p && p["Mã phụ cấp"]) pcCodes[String(p["Mã phụ cấp"]).trim()] = 1; });
 
     (rawRows || []).forEach(function (src, idx) {
@@ -135,7 +136,11 @@
         });
       }
       if (table === "nhanvien" && !r["Trạng thái"]) r["Trạng thái"] = "Đang làm việc";
-      var item = { line: idx + 2, row: r, action: "add", reason: "" };
+      var item = { line: src.__line || idx + 2, row: r, action: "add", reason: "" };
+      if (table === "sanluong" || table === "bandam") { // α19: phiếu ghi Mã NV (giao đúng người) hoặc Mã phòng ban (chia đều cho tổ)
+        if (!r["Mã NV"] && !r["Mã phòng ban"]) warns.push("Chưa có Mã NV hoặc Mã phòng ban — phiếu không tính lương cho ai");
+        else if (!r["Mã NV"] && !pbCodes[String(r["Mã phòng ban"]).trim()]) warns.push("Mã phòng ban " + r["Mã phòng ban"] + " chưa có trong Danh mục phòng ban — phiếu sẽ không chia được");
+      }
       if ((table === "psluong" || table === "ungluong") && !r["Số chứng từ"]) warns.push("Chưa có Số chứng từ — nhập lại file sẽ không nhận ra dòng đã nhập (Q-20)");
       if (warns.length) item.warn = warns.join("; ");
       (REQUIRED[table] || []).forEach(function (c) { if (!r[c]) errs.push("Thiếu " + c); });
@@ -210,7 +215,51 @@
   }
 
   var LABEL = { add: "Thêm mới", update: "Cập nhật", merged: "Gộp vào dòng khác", duplicate: "Trùng (bỏ qua)", conflict: "Xung đột (không ghi)", invalid: "Lỗi dữ liệu", refError: "Sai tham chiếu", locked: "Kỳ đã chốt" };
-  var api = { KEYS: KEYS, REQUIRED: REQUIRED, keyOf: keyOf, plan: plan, apply: apply, mergeCells: mergeCells, sameCell: sameCell, LABEL: LABEL };
+  // ---- (α19) Đọc file theo MẪU CÔNG CỤ PHÂN BỔ KHỐI LƯỢNG: có dòng tiêu đề / kỳ phía trên, tên cột khác mẫu app ----
+  function fold(s) { return String(s == null ? "" : s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+  var PHIEU_ALIAS = {
+    "phieu can": "Phiếu cân", "so phieu can": "Phiếu cân", "phieu": "Phiếu cân", "so phieu": "Phiếu cân",
+    "ngay can 1": "Ngày cân", "ngay can": "Ngày cân", "ngay": "Ngày cân", "ngay thang": "Ngày cân",
+    "bien so 1": "Biển số", "bien so": "Biển số", "bien so xe": "Biển số",
+    "can lan 1": "Cân lần 1", "can lan 2": "Cân lần 2",
+    "kl hang tan": "KL hàng (Tấn)", "kl hang": "KL hàng (Tấn)", "khoi luong tan": "KL hàng (Tấn)", "khoi luong": "KL hàng (Tấn)", "san luong": "KL hàng (Tấn)", "kl": "KL hàng (Tấn)",
+    "ma phong ban": "Mã phòng ban", "phong ban": "Mã phòng ban", "ma to": "Mã phòng ban",
+    "nv vang": "NV vắng", "vang": "NV vắng", "nhan vien vang": "NV vắng", "cong nhan vang": "NV vắng",
+    "ma nv": "Mã NV", "ma nhan vien": "Mã NV"
+  };
+  var ALIASES = {
+    sanluong: PHIEU_ALIAS,
+    bandam: Object.assign({}, PHIEU_ALIAS, { "sl xe": "KL hàng (Tấn)", "so xe": "KL hàng (Tấn)", "so luong xe": "KL hàng (Tấn)", "so xe bd": "KL hàng (Tấn)", "luong xe": "KL hàng (Tấn)" })
+  };
+  function headerName(table, cols, h) {
+    var t = String(h == null ? "" : h).trim(); if (!t) return "";
+    if (cols.indexOf(t) >= 0) return t;
+    var f = fold(t), al = ALIASES[table] || {};
+    for (var i = 0; i < cols.length; i++) if (fold(cols[i]) === f) return cols[i];
+    return al[f] && cols.indexOf(al[f]) >= 0 ? al[f] : "";
+  }
+  /**
+   * Bảng dạng mảng 2 chiều (sheet_to_json header:1) → các dòng {cột: giá trị} của bảng `table`.
+   * Tìm dòng tiêu đề trong 15 dòng đầu (dòng khớp nhiều cột nhất, ≥ 2) → bỏ qua tiêu đề / "Kỳ báo cáo" phía trên.
+   * Mỗi dòng có thêm __line = số dòng Excel thật (để báo lỗi đúng dòng).
+   */
+  function rowsFromAoa(aoa, table, cols) {
+    var best = -1, bestN = 1, map = null;
+    for (var i = 0; i < Math.min(15, (aoa || []).length); i++) {
+      var m = (aoa[i] || []).map(function (h) { return headerName(table, cols, h); });
+      var used = {}, n = 0; m.forEach(function (c, j) { if (c && !used[c]) { used[c] = 1; n++; } else if (c) m[j] = ""; });
+      if (n > bestN) { bestN = n; best = i; map = m; }
+    }
+    if (best < 0) return { rows: [], headerRow: 0, matched: [] };
+    var rows = [];
+    for (var r = best + 1; r < aoa.length; r++) {
+      var src = aoa[r] || [], o = {}, any = false;
+      map.forEach(function (c, j) { if (!c) return; var v = src[j]; o[c] = v == null ? "" : v; if (v !== "" && v != null) any = true; });
+      if (any) { Object.defineProperty(o, "__line", { value: r + 1, enumerable: false }); rows.push(o); }
+    }
+    return { rows: rows, headerRow: best + 1, matched: map.filter(Boolean) };
+  }
+  var api = { KEYS: KEYS, REQUIRED: REQUIRED, keyOf: keyOf, plan: plan, apply: apply, mergeCells: mergeCells, sameCell: sameCell, LABEL: LABEL, rowsFromAoa: rowsFromAoa, headerName: headerName, ALIASES: ALIASES };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.importer = api; }
 })(typeof window !== "undefined" ? window : this);

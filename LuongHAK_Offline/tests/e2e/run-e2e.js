@@ -446,11 +446,67 @@ async function launch(dataDir, opt) {
     await app.close();
   }
 
+  // α19: phân bổ khối lượng NHƯ CÔNG CỤ — phiếu ghi Mã phòng ban + NV vắng chia đều cho tổ; bù lương theo ngày bậc thang (Đại Hiệp); biểu mẫu Excel
+  {
+    const f = path.join(DATA, "data.json"), d0 = JSON.parse(fs.readFileSync(f, "utf8"));
+    const T = [["T1", "Trần Văn Long"], ["T2", "Lê Văn Định"], ["T3", "Phan Văn Hùng"], ["T4", "Ngô Minh"]];
+    T.forEach(([ma, ten], i) => {
+      d0.nhanvien.push({ _id: "pbn" + i, "Mã NV": ma, "Họ và tên": ten, "Trạng thái": "Đang làm việc" });
+      d0.hopdong.push({ _id: "pbh" + i, "Mã NV": ma, "Số HĐLĐ": ma + "/HĐ", "Hình thức HĐLĐ": "Xác định thời hạn", "Ngày vào làm": "2025-01-01", "Ngày chấm dứt": ma === "T4" ? "2026-10-05" : "" });
+      d0.chitiethd.push({ _id: "pbc" + i, "Mã NV": ma, "Số HĐLĐ": ma + "/HĐ", "Hiệu lực từ": "2025-01-01", "Loại phụ lục": "Hợp đồng gốc", "Phòng ban": "02.02", "Mã hình thức lương": "LSP", "Mã lương": "SP", "Lương thỏa thuận": "0", "HTTT": "Tiền mặt", "Thuế TNCN": "MT00" });
+      d0.chamcong.push({ _id: "pbcc" + i, "Kỳ": "2026-10", "Mã NV": ma, "Hình thức công": "BT", "01": "1", "02": ma === "T3" ? "0,5" : "" });
+    });
+    fs.writeFileSync(f, JSON.stringify(d0)); // app đang đóng (khối trước đã đóng)
+    ({ app, w, errs } = await launch());
+    // Nhập file đúng MẪU CÔNG CỤ (dòng tiêu đề phía trên, cột "Ngày cân 1", "Mã phòng ban", "NV vắng")
+    const ExcelJS = require(path.join(APP, "exceljs.min.js")), X = require(path.join(APP, "ui/pbkl-xlsx.js"));
+    const twb = X.template(ExcelJS, "sanluong", { mau: "01/10/2026" }), tws = twb.worksheets[0];
+    [[1, ["P1", "01/10/2026", "43A-1", "", "", 30, "02.02", "Long"]], [2, ["P2", "06/10/2026", "43A-2", "", "", 9, "02.02", ""]], [3, ["P3", "02/10/2026", "43A-3", "", "", 6, "02.02", "Hùng"]]]
+      .forEach(([i, v]) => { tws.getRow(4 + i).values = v; });
+    tws.getRow(8).values = ["P4", "01/10/2026", "43A-4", "", "", 5, "09.99", ""];
+    const tfile = path.join(DL, "..", "phieu_can_mau_cong_cu.xlsx"); fs.writeFileSync(tfile, new Uint8Array(await twb.xlsx.writeBuffer()));
+    await w.click("#nav button[data-k=sanluong]");
+    await w.selectOption("#top select", "10"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change"); await w.waitForTimeout(200);
+    const [fc] = await Promise.all([w.waitForEvent("filechooser"), w.locator('#main button:has-text("Nhập Excel")').first().click()]);
+    await fc.setFiles(tfile); await w.waitForSelector(".dlg footer button.pri");
+    const pv = await w.locator(".dlg").innerText();
+    await w.click(".dlg footer button.pri"); await w.waitForTimeout(500);
+    const slNow = JSON.parse(fs.readFileSync(f, "utf8")).sanluong.filter((r) => /^P\d$/.test(r["Phiếu cân"]));
+    ok("Nhập phiếu cân theo MẪU CÔNG CỤ (tiêu đề phía trên, Ngày cân 1, Mã phòng ban, NV vắng) — 4 phiếu, mã tổ lạ được cảnh báo", slNow.length === 4 && slNow.find((r) => r["Phiếu cân"] === "P1")["NV vắng"] === "Long" && slNow.find((r) => r["Phiếu cân"] === "P1")["Ngày cân"] === "2026-10-01" && /09\.99/.test(pv), slNow.length + " phiếu · " + pv.replace(/\s+/g, " ").slice(0, 160));
+    // Bù theo ngày bậc thang (Đại Hiệp) → báo cáo phân bổ + file Excel mẫu công cụ
+    await w.click("#nav button[data-k=luong]"); await w.selectOption('select[aria-label="Cách bù lương sản lượng"]', "daihiep");
+    await w.click("#nav button[data-k=baocaoluong]"); await w.click('#main button:has-text("Phân bổ sản lượng")'); await w.waitForTimeout(300);
+    const pbTxt = await w.locator("main").first().innerText();
+    await w.click('#main button:has-text("mẫu công cụ phân bổ")');
+    let xf2 = null; for (let i = 0; i < 40 && !xf2; i++) { await w.waitForTimeout(200); xf2 = fs.readdirSync(DL).filter((x) => /^Phan_bo_khoi_luong_2026-10\.xlsx$/.test(x))[0]; }
+    let tan = {}, bu = {}, sheets = "";
+    if (xf2) {
+      await w.waitForTimeout(300);
+      const XLSX = require(path.join(APP, "xlsx.full.min.js")), wb2 = XLSX.read(fs.readFileSync(path.join(DL, xf2)), { type: "buffer" }); sheets = wb2.SheetNames.join("|");
+      XLSX.utils.sheet_to_json(wb2.Sheets["Chi tiet cong nhan"], { header: 1 }).forEach((r) => { if (/^T\d$/.test(r[2])) tan[r[2]] = r[r.length - 1]; });
+      XLSX.utils.sheet_to_json(wb2.Sheets["Tien luong va bu luong"], { header: 1 }).forEach((r) => { if (/^T\d$/.test(r[2])) bu[r[2]] = r[r.length - 2]; });
+    }
+    ok("Chia phiếu theo tổ như công cụ: trừ NV vắng, người đã nghỉ việc không nhận — T1 5 · T2 15 · T3 13 · T4 12 tấn; phiếu mã tổ lạ chưa phân bổ",
+      tan.T1 === 5 && tan.T2 === 15 && tan.T3 === 13 && tan.T4 === 12 && /09\.99/.test(pbTxt) && /chưa phân bổ/.test(pbTxt), JSON.stringify(tan));
+    ok("Bù lương theo ngày bậc thang (Đại Hiệp): T2, T3 ngày 01 (1 công BT, 10 tấn) bù 140.000; T1 không có công BT ngày có SL → 0",
+      bu.T2 === 140000 && bu.T3 === 140000 && bu.T1 === 0, JSON.stringify(bu));
+    ok("File Excel đủ sheet như công cụ", sheets === "Huong dan su dung|Tong hop phong ban|Phan bo theo phong ban|Chi tiet cong nhan|Doi soat phieu can|Tien luong va bu luong|Du lieu - Khoi luong", sheets);
+    // File mẫu tải từ app = mẫu công cụ
+    await w.click("#nav button[data-k=sanluong]"); await w.click('#main button:has-text("Tải file mẫu")');
+    let mf = null; for (let i = 0; i < 30 && !mf; i++) { await w.waitForTimeout(200); mf = fs.readdirSync(DL).filter((x) => x === "mau_bang_khoi_luong.xlsx")[0]; }
+    let mh = "";
+    if (mf) { await w.waitForTimeout(300); const XLSX = require(path.join(APP, "xlsx.full.min.js")), wm = XLSX.read(fs.readFileSync(path.join(DL, mf)), { type: "buffer" }); mh = (XLSX.utils.sheet_to_json(wm.Sheets[wm.SheetNames[0]], { header: 1 })[3] || []).join("|"); }
+    ok("Tải file mẫu Sản lượng = mẫu công cụ (Phiếu cân | Ngày cân 1 | Biển số 1 | Cân lần 1 | Cân lần 2 | KL hàng (Tấn) | Mã phòng ban | NV vắng)", mh === "Phiếu cân|Ngày cân 1|Biển số 1|Cân lần 1|Cân lần 2|KL hàng (Tấn)|Mã phòng ban|NV vắng", mh);
+    await w.click("#nav button[data-k=luong]"); await w.selectOption('select[aria-label="Cách bù lương sản lượng"]', "false");
+    ok("Không lỗi JavaScript ở phân bổ khối lượng (ExcelJS chạy được với CSP)", errs.length === 0, errs.join(" | "));
+    await app.close();
+  }
+
   // α17: Lịch sao lưu — Admin đổi chu kỳ / số ngày giữ / khi đóng app; lưu vào settings.json của máy; đóng app → bản "khi-dong"
   {
     ({ app, w, errs } = await launch());
     await w.click("#nav button[data-k=backup]"); await w.waitForSelector("[data-schedule] select");
-    const before = fs.readdirSync(path.join(DATA, "backups")).filter((f) => /^khi-dong_.*\.json$/.test(f)).length;
+    const beforeSet = fs.readdirSync(path.join(DATA, "backups")).filter((f) => /^khi-dong_.*\.json$/.test(f)), before = beforeSet.length;
     await w.locator("[data-schedule] select").first().selectOption("1"); await w.waitForTimeout(200);
     await w.locator("[data-schedule] select").nth(1).selectOption("90"); await w.waitForTimeout(200);
     const sc = JSON.parse(fs.readFileSync(path.join(DATA, "settings.json"), "utf8")).backupSchedule;
@@ -458,8 +514,8 @@ async function launch(dataDir, opt) {
     ok("Lịch sao lưu: chọn mỗi 1 giờ + giữ bản đầu ngày 90 ngày → lưu cấu hình máy", sc && sc.everyHours === 1 && sc.keepDaily === 90 && sc.onClose === true && /Lịch sao lưu tự động/.test(cardS), JSON.stringify(sc));
     ok("Không lỗi JavaScript ở lịch sao lưu", errs.length === 0, errs.join(" | "));
     await app.close(); // dữ liệu đã đổi (nhật ký "Đổi lịch sao lưu") → khi đóng app có bản khi-dong
-    const after = fs.readdirSync(path.join(DATA, "backups")).filter((f) => /^khi-dong_.*\.json$/.test(f)).length;
-    ok("Đóng app khi dữ liệu đã đổi → tự sao lưu 'khi-dong' (kèm file kiểm tra)", after === before + 1 && fs.readdirSync(path.join(DATA, "backups")).some((f) => /^khi-dong_.*\.json\.sha256$/.test(f)), before + " → " + after);
+    const afterSet = fs.readdirSync(path.join(DATA, "backups")).filter((f) => /^khi-dong_.*\.json$/.test(f)), after = afterSet.length, moi = afterSet.filter((x) => beforeSet.indexOf(x) < 0);
+    ok("Đóng app khi dữ liệu đã đổi → tự sao lưu 'khi-dong' (kèm file kiểm tra; giữ tối đa 10 bản)", moi.length === 1 && after <= 10 && fs.existsSync(path.join(DATA, "backups", moi[0] + ".sha256")), before + " → " + after);
   }
 
   // Quên mật khẩu Admin → mã khôi phục (mã sai bị từ chối; dùng xong cấp mã mới)
@@ -476,6 +532,7 @@ async function launch(dataDir, opt) {
   await app.close();
 
   // làm hỏng file dữ liệu → màn hình khôi phục, không ghi đè
+  const nvTruocHong = JSON.parse(fs.readFileSync(file, "utf8")).nhanvien.length; // khôi phục phải ra đúng dữ liệu ngay trước khi hỏng
   fs.writeFileSync(file, "{hỏng");
   ({ app, w, errs } = await launch());
   const txt = await w.locator("main").innerText();
@@ -485,7 +542,7 @@ async function launch(dataDir, opt) {
   if (hasBackup) {
     await w.locator("text=Khôi phục bản này").first().click(); await w.waitForTimeout(800);
     const after = JSON.parse(fs.readFileSync(file, "utf8"));
-    ok("Khôi phục từ bản sao lưu tự động", after.nhanvien && after.nhanvien.length === 1, "nhân viên: " + (after.nhanvien || []).length);
+    ok("Khôi phục từ bản sao lưu tự động", after.nhanvien && after.nhanvien.length === nvTruocHong, "nhân viên: " + nvTruocHong + " → " + (after.nhanvien || []).length);
     ok("File hỏng được giữ lại (không xóa)", fs.readdirSync(DATA).some((f) => /^data\.corrupt_/.test(f)));
   } else ok("Có bản sao lưu để khôi phục", false);
   await app.close();

@@ -131,6 +131,12 @@ Mọi báo cáo xuất được Excel.
 - Nút **📂 File đã tải** ở thanh trên (hoặc Ctrl+K gõ "file"): xem các file đã tải, mở từng file, đổi thư mục lưu (ví dụ thư mục Drive / ổ mạng), tắt *Tự mở thư mục* nếu không muốn cửa sổ thư mục bật lên.
 - **Sao lưu ra file** cũng lưu vào thư mục này — nhớ chép file `.json` sang USB / Drive.
 
+## Phân bổ khối lượng theo tổ (từ 2.0-alpha.19 — như công cụ "Phân bổ khối lượng tính lương")
+1. **Sản lượng** (hoặc **Bơm dăm**) → **📄 Tải file mẫu** (đúng mẫu công cụ) → mỗi phiếu ghi *Mã phòng ban* (tổ) và *NV vắng* (tên cuối, VD "Long, Định", hoặc Mã NV) → **⬆ Nhập Excel**. File mẫu cũ của công cụ cũng nhập được.
+2. Người nghỉ **nguyên ngày** phải có tên trong NV vắng của **tất cả** phiếu của tổ hôm đó.
+3. **Tính lương** → chọn cách bù: *theo ngày — bậc thang (Đại Hiệp)* hoặc *theo bình quân tổ* (mức sàn = *Đơn giá bù lương*, ngưỡng tổ = *Ngưỡng công bù theo tổ* trong Danh mục Mã lương).
+4. **Báo cáo lương → Phân bổ sản lượng**: xem chia theo tổ / công nhân / từng phiếu và cảnh báo; **⬇ Xuất Excel (mẫu công cụ phân bổ)** ra file nhiều sheet như công cụ.
+
 ## Phiếu lương, Báo cáo bảo hiểm (từ 2.0-alpha.18)
 - **🧾 Phiếu lương** (menu Kỳ lương): chọn kỳ ở góc trên → lọc phòng ban / tìm nhân viên → **In** (tích *In gọn* để in nhiều phiếu trên 1 tờ) hoặc **Xuất Excel**. Nên **chốt kỳ** trước khi gửi phiếu: kỳ chưa chốt app ghi rõ "tính tạm".
 - **Báo cáo lương → 🛡 Báo cáo bảo hiểm**: số công ty / người lao động đóng từng khoản, người tăng / giảm / đổi mức đóng so với tháng trước, theo phòng ban, chi tiết. Dùng để đối chiếu trước khi kê khai — mẫu nộp cơ quan BHXH vẫn lập trên phần mềm BHXH.

@@ -181,6 +181,41 @@
   }
 
   /** Dựng danh sách nhân sự tính lương của kỳ (dạng cột mà engine.js dùng) từ hồ sơ + hợp đồng. */
+  /**
+   * (α19) Sản lượng / bơm dăm của kỳ sau khi chia phiếu theo tổ — đầu vào cho engine + báo cáo phân bổ.
+   * - Dòng có Mã NV: giữ nguyên (cách nhập cũ).
+   * - Dòng KHÔNG có Mã NV nhưng có "Mã phòng ban": chia đều cho người của tổ đang làm việc NGÀY CÂN
+   *   (tổ theo phụ lục lương hiệu lực ngày đó, hợp đồng đã vào làm và chưa chấm dứt), trừ người có tên trong "NV vắng".
+   * - Không có cả hai: "chưa gán", không tính lương cho ai.
+   * table: "sanluong" | "bandam". Không sửa dữ liệu gốc.
+   */
+  function sanLuongKy(db, nam, thang, table) {
+    var PA = (typeof module !== "undefined" && module.exports) ? require("./core/production-alloc.js") : root.HAKCore.palloc;
+    var b = kyBounds(nam, thang), ky = b.dau.slice(0, 7), ix = buildIndex(db), direct = [], toRows = [], chuaGan = [];
+    (db[table] || []).forEach(function (r) {
+      if (!r || d10(r["Ngày cân"]).slice(0, 7) !== ky) return;
+      if (r["Mã NV"]) direct.push(r);
+      else if (String(r["Mã phòng ban"] || "").trim()) toRows.push({ phieu: r["Phiếu cân"] || "", ngay: d10(r["Ngày cân"]), kl: r["KL hàng (Tấn)"], maPB: String(r["Mã phòng ban"]).trim(), vang: r["NV vắng"] || "" });
+      else chuaGan.push(r);
+    });
+    var known = {}; (db.dm_phongban || []).forEach(function (p) { if (p && p["Mã phòng ban"]) known[String(p["Mã phòng ban"]).trim()] = p["Tên phòng ban"] || ""; });
+    var cache = {};
+    var membersOf = function (ngay, pb) {
+      var key = ngay + "\u0001" + pb;
+      if (cache[key]) return cache[key];
+      var out = [];
+      (db.nhanvien || []).forEach(function (n) {
+        var ma = n["Mã NV"], hd = activeHD(db, ma, ngay, ngay, ix); if (!hd) return;
+        var ct = chiTietHD(db, ma, hd["Số HĐLĐ"], ngay, ix);
+        if (ct && String(ct["Phòng ban"] || "").trim() === pb) out.push({ ma: ma, hoTen: n["Họ và tên"] || ma });
+      });
+      if (!out.length && !(pb in known)) out = null; // mã tổ lạ
+      cache[key] = out; return out;
+    };
+    var al = PA.allocate(toRows, membersOf, { donVi: table === "bandam" ? "xe" : "tấn", tenPB: function (pb) { return known[pb]; } });
+    var rows = direct.concat(al.shares.map(function (x) { return { "Phiếu cân": x.phieu, "Ngày cân": x.ngay, "KL hàng (Tấn)": x.kl, "Mã NV": x.ma, "Mã phòng ban": x.maPB, _chia: 1 }; }));
+    return { rows: rows, direct: direct, alloc: al, chuaGan: chuaGan };
+  }
   /** Ô chấm công có công (> 0) không — "1", "0,5", "1QC"… */
   function coCong(v) { var x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return x > 0; }
   var LEAVE_TAG = "[Nghỉ phép/ốm]";
@@ -314,11 +349,12 @@
         ["01", "Văn phòng", "01.09", "Cơ giới", N], ["01", "Văn phòng", "01.10", "Thủ kho", N], ["01", "Văn phòng", "01.11", "Ben hàng", N],
         ["02", "Sản xuất", "02.01", "Tổ 1 - Công nhân sản xuất", N], ["02", "Sản xuất", "02.02", "Tổ 2 - Công nhân sản xuất", N],
         ["02", "Sản xuất", "02.03", "Tổ 1 - Công nhân công nhật", N], ["02", "Sản xuất", "02.04", "Tổ 2 - Công nhân công nhật", N]]),
-      dm_luong: r(["Mã lương", "Mã hình thức lương", "Hình thức lương", "Số tiền khoán", "Cách tính", "Hiệu lực từ"], [
+      // α19: SP có mức sàn bù 200.000đ/công + ngưỡng tổ 15 công (giá trị mặc định của công cụ phân bổ khối lượng HAK)
+      dm_luong: r(["Mã lương", "Mã hình thức lương", "Hình thức lương", "Số tiền khoán", "Cách tính", "Hiệu lực từ", "Đơn giá bù lương", "Ngưỡng công bù theo tổ"], [
         ["CĐ", "LTG", "Lương cố định", 0, "Cố định", N], ["TG1", "LTG", "Lương thời gian 1", 0, "Số ngày của tháng - tất cả ngày CN", N],
         ["TG2", "LTG", "Lương thời gian 2", 0, "Số ngày của tháng", N], ["TG3", "LTG", "Lương thời gian 3", 0, "Số ngày của tháng - 4", N],
         ["TG4", "LTG", "Lương thời gian 4", 0, "Số ngày của tháng - 2", N], ["CN1", "LTG", "Lương công nhật", 0, "Thực tế ngày công", N],
-        ["CN2", "LTG", "Lương công nhật 2", 0, "Thực tế ngày công", N], ["SP", "LSP", "Lương sản phẩm", 6000, "Nhân với sản lượng", N],
+        ["CN2", "LTG", "Lương công nhật 2", 0, "Thực tế ngày công", N], ["SP", "LSP", "Lương sản phẩm", 6000, "Nhân với sản lượng", N, 200000, 15],
         ["BD", "LSP", "Lương ban dăm", 10000, "Nhân với sản lượng", N]]),
       dm_phucap: r(["Mã phụ cấp", "Tên phụ cấp", "Số tiền", "Tỷ lệ", "Tham chiếu", "Cách tính", "Hiệu lực từ"], [
         ["TN.01", "Phụ cấp trách nhiệm BP Cơ khí", 300000, 0, 0, "Tổng công >= công chuẩn tính đủ 300k, nhỏ hơn =300k/công chuẩn*tổng công", N],
@@ -591,7 +627,7 @@
     };
   }
 
-  var api = { HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll, leaveCheck: leaveCheck, LEAVE_TAG: LEAVE_TAG,
+  var api = { HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll, sanLuongKy: sanLuongKy, leaveCheck: leaveCheck, LEAVE_TAG: LEAVE_TAG,
     seedDanhMuc: seedDanhMuc, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.HRM = api;
 })(typeof window !== "undefined" ? window : this);

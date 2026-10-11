@@ -31,6 +31,9 @@ Danh mục dùng dòng còn hiệu lực trong tháng (`Hiệu lực từ ≤ cu
 | **Lương sản lượng** (mã có "SP" trong Mã hình thức lương) | ROUND(Tấn × Số tiền khoán) |
 | Bù SL theo tháng | nếu Tấn/Tổng công < ĐK_Bù: max(0, ROUND(Đơn giá bù × Tổng công) − Lương SL) |
 | Bù SL theo ngày | Σ ngày có công: nếu tấn ngày/công ngày < ĐK_Bù: max(0, ROUND(Đơn giá bù × công ngày) − ROUND(tấn ngày × Số tiền khoán)) |
+| (α19) Bù SL theo ngày — bậc thang (công cụ HAK / Đại Hiệp) | Σ ngày CÓ sản lượng: max(0, bậc(công BT ngày) × Đơn giá bù − tấn ngày × Số tiền khoán); bậc ngày thường: <0,5→0 · 0,5–<1→0,5 · ≥1→1; Chủ nhật thêm ≥1,5→1,5. Chỉ công BT; không xét ngưỡng; không áp dụng bơm dăm. Làm tròn tổng tháng |
+| (α19) Bù SL theo bình quân tổ (công cụ HAK) | BQ tổ = Σ(tấn × Số tiền khoán + xe × đơn giá BD) của người lương SP cùng Mã PB ÷ số ngày của tháng ÷ số người đó. Nếu BQ < Đơn giá bù và công BT ≥ "Ngưỡng công bù theo tổ": ROUND((Đơn giá bù − BQ) × công BT) |
+| (α19) Chia phiếu theo tổ | Phiếu ghi Mã phòng ban (không Mã NV): KL ÷ số người của tổ có mặt ngày cân (hợp đồng hiệu lực, phụ lục ngày đó thuộc tổ, không có trong NV vắng — so từ cuối họ tên hoặc Mã NV). Không ai nhận → "chưa phân bổ" + cảnh báo |
 | Lương bơm dăm | ROUND(Số xe × đơn giá) — đơn giá = Số tiền khoán của mã lương 2 (nếu là SP) hoặc "Đơn giá bơm dăm" |
 | **Tăng ca** (khi Công chuẩn > 0) | CN1/CN2: ROUND(LTT × Công TC) · TC5: ROUND(Tiền cố định / Công chuẩn × Công TC) · khác: ROUND(Đơn giá TG × Công tính TC) |
 | Công tính TC | TC1: max(0, CTL − Lễ − TrCh − Phép − TC − Chuẩn)×HS + TC×HS · TC2: như TC1 nhưng trừ thêm DC · TC3: (TC + CN)×HS · TC4/khác: TC×HS · TC6: max(0, CTL − TrCh − Lễ − Chuẩn) (không hệ số) |
@@ -90,6 +93,8 @@ Biểu thuế và mức giảm trừ lấy theo hiệu lực của kỳ (12/2025
 | TG1, 13/26 công | 4.500.000 | `engine.test` |
 | CN1 300.000 × 20 công + 2 công TC | LTG 6.600.000 (22 công), TC 600.000 | `engine.test` |
 | SP 30 tấn × 6.000, ĐK 5 tấn/công, bù 300.000 | SL 180.000, bù 7.620.000 | `engine.test` |
+| (α19) 0,7 công BT, 20 tấn · 1 công BT, 20 tấn · 1 công không SL (bậc thang, 6.000đ, sàn 200.000) | 0 · 80.000 · 0 (= công cụ) | `production-alloc.test` U-PA-05 |
+| (α19) Tổ 3 người 900 tấn, tháng 30 ngày, sàn 200.000, ngưỡng 15: công BT 20 / 10 / 16 | bù 2.800.000 / 0 / 2.240.000 | U-PA-06 |
 | BH01, LCB 5tr | 525.000; dưới ngưỡng 14 công: truy thu 1.175.000 | `engine.test` |
 | Lũy tiến 2026, TN tính thuế 40tr | 4.500.000 | `engine.test` |
 | 12/2025 TN 20tr → 650.000; 01/2026 → 225.000 | đổi biểu theo hiệu lực | `engine.test` |

@@ -34,7 +34,7 @@
     var inp = { staff: clone(staff || []), data: input, danhmuc: dm };
     return {
       ky: ky, version: history(db, ky).length + 1, ngayChot: meta.now || new Date().toISOString(), nguoiChot: meta.user || "", ghiChu: meta.note || "",
-      buTheoNgay: !!meta.buTheoNgay, engineVersion: meta.engineVersion || "", kq: result, totals: totals(kq), checksum: checksum(result),
+      buTheoNgay: meta.buTheoNgay === "daihiep" || meta.buTheoNgay === "to" ? meta.buTheoNgay : !!meta.buTheoNgay, engineVersion: meta.engineVersion || "", kq: result, totals: totals(kq), checksum: checksum(result),
       input: inp, inputChecksum: checksum(inp)
     };
   }

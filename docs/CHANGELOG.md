@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [2.0.0-alpha.19] — 11/10/2026 — Phân bổ khối lượng như công cụ HAK (engine 1.7.0)
+- **Chia phiếu cân theo tổ** như công cụ "Phân bổ khối lượng tính lương": phiếu ghi **Mã phòng ban** + **NV vắng** → chia đều cho người của tổ có mặt ngày cân (đã vào làm, chưa nghỉ việc, đúng tổ theo phụ lục ngày đó), trừ người vắng (tên cuối hoặc Mã NV). Phiếu ghi Mã NV vẫn giao trực tiếp. Phiếu không chia được → "chưa phân bổ" + cảnh báo. Áp dụng cho Sản lượng và Bơm dăm.
+- **2 cách bù lương của công cụ** (chọn ở Tính lương): **theo ngày — bậc thang (Đại Hiệp)** và **theo bình quân tổ**. Đối chiếu từng trường hợp với công thức của công cụ: trùng 100%. 2 cách bù cũ giữ nguyên số. Danh mục Mã lương thêm cột *Ngưỡng công bù theo tổ*; danh mục chuẩn: SP mức sàn 200.000đ/công, ngưỡng 15 công (như công cụ).
+- **Biểu mẫu như công cụ** (ExcelJS 4.4.0): *Tải file mẫu* ở Sản lượng / Bơm dăm = đúng mẫu công cụ; *Nhập Excel* đọc được file mẫu công cụ (dòng tiêu đề phía trên, "Ngày cân 1", "Biển số 1", "Số xe", "Mã phòng ban", "NV vắng"). **Báo cáo lương → Phân bổ sản lượng → Xuất Excel (mẫu công cụ phân bổ)**: Hướng dẫn, Tổng hợp phòng ban, Phân bổ theo ngày, Chi tiết công nhân, Đối soát phiếu cân, BD…, Tiền lương và bù lương, Dữ liệu gốc — tiêu đề, màu, khối chữ ký như công cụ.
+- Kỳ đã chốt giữ nguyên số (lưu cả cách bù đã dùng). Test: 170 (+8 U-PA), E2E 82/82 (+6).
+
 ## [2.0.0-alpha.18] — 11/10/2026 — Sổ lao động đủ thông tin + Báo cáo bảo hiểm + Phiếu lương
 - **Thêm nhân viên** có đủ trường của sổ quản lý lao động: Quốc tịch (điền sẵn "Việt Nam", sửa được), Dân tộc, Mã số thuế, Số sổ BHXH, mục **Trình độ** (trình độ học vấn / chuyên môn, bậc kỹ năng nghề, bằng cấp). Vị trí việc làm vẫn ở phần Lương.
 - **Sổ quản lý lao động** báo **ai còn thiếu thông tin bắt buộc** (giới tính, ngày sinh, quốc tịch, CCCD, nơi cư trú, trình độ, HĐLĐ, lý do chấm dứt, vị trí việc làm, mức đóng BH, số sổ BHXH) — bấm mục để mở đúng tab hồ sơ bổ sung. Mục "nếu có" (bậc nghề, nâng lương, đào tạo, kỷ luật, tai nạn) không coi là thiếu.

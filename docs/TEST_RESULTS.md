@@ -1,5 +1,16 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.19 — Phân bổ khối lượng như công cụ HAK (11/10/2026, nhánh `claude/v2-phan-bo-khoi-luong`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **170/170** (+8 U-PA) |
+| Hồi quy công thức (v1.3.0, alpha.4) | ✅ trùng 100% — 2 cách bù cũ không đổi |
+| Đối chiếu với công cụ "Phân bổ khối lượng" (công thức viết lại từ code công cụ) | ✅ bù bậc thang trùng 12/12 trường hợp; bù bình quân tổ đúng công thức công cụ |
+| E2E Electron (xvfb, Linux) | ✅ **82/82** (+6; 2 test cũ sửa điều kiện cho đúng ý: khôi phục = đúng dữ liệu trước khi hỏng; bản khi-dong mới khi đã đủ 10 bản) |
+| Ảnh chụp Phân bổ sản lượng, Sản lượng (1366px) | ✅ đã xem, không lỗi JavaScript |
+| Mở file Excel xuất ra bằng Excel thật trên Windows | ⏳ chưa (đã đọc lại file bằng SheetJS trong E2E) |
+
 ## 2.0.0-alpha.18 — Sổ lao động đủ thông tin + Báo cáo bảo hiểm + Phiếu lương (11/10/2026, nhánh `claude/v2-solaodong-bh-phieuluong`)
 | Nhóm | Kết quả |
 |---|---|

@@ -95,6 +95,20 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α19 Phân bổ khối lượng như công cụ (`tests/unit/production-alloc.test.js`)
+| ID | Nội dung |
+|---|---|
+| U-PA-01 | Chia đều người có mặt; NV vắng theo từ cuối không dấu; nhận Mã NV |
+| U-PA-02 | Trùng tên cuối → cả hai vắng + cảnh báo; tên vắng không khớp → cảnh báo |
+| U-PA-03 | Mã tổ lạ / không ai có mặt → chưa phân bổ, cảnh báo |
+| U-PA-04 | Tổ theo ngày cân từ hồ sơ: chưa vào làm / đã nghỉ / đã điều chuyển không nhận; phiếu Mã NV giữ nguyên; không sửa dữ liệu gốc |
+| U-PA-05 | Bù theo ngày bậc thang = công thức công cụ ở 12 trường hợp (lẻ công, Chủ nhật, ngày không SL, PN) |
+| U-PA-06 | Bù bình quân tổ như công cụ (ngưỡng công, tổ khác không ảnh hưởng) |
+| U-PA-07 | 2 cách bù cũ không đổi số |
+| U-PA-08 | Đọc file mẫu công cụ: bỏ dòng tiêu đề, alias cột, "Số xe", báo đúng dòng Excel, cảnh báo mã tổ lạ |
+
+E2E (α19): nhập file mẫu công cụ (4 phiếu) · chia T1 5 · T2 15 · T3 13 · T4 12 tấn (vắng, đã nghỉ việc) · bù bậc thang 140.000 · file Excel đủ sheet như công cụ · Tải file mẫu = mẫu công cụ · ExcelJS chạy với CSP.
+
 ## Unit — 2.0-α18 Báo cáo bảo hiểm (`tests/unit/bh-report.test.js`) · Sổ lao động thiếu thông tin (U-SLD-05)
 | ID | Nội dung |
 |---|---|
