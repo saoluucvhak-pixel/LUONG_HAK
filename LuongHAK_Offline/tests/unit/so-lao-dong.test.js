@@ -63,3 +63,22 @@ test("U-SLD-04 báo cáo nghỉ phép: chỉ 'Nghỉ hằng năm' (hoặc để 
   assert.equal(r["Phép được cấp"], 12); assert.equal(r["Đã nghỉ phép"], 3); assert.equal(r["Phép còn lại"], 9);
   assert.equal(r["Nghỉ việc riêng có lương"], 1); assert.equal(r["Nghỉ không hưởng lương"], 2);
 });
+
+test("U-SLD-05 (α18) người thiếu thông tin bắt buộc của sổ: chỉ rõ mục + tab hồ sơ; 'nếu có' (bậc nghề, đào tạo…) không coi là thiếu", () => {
+  const HR = require("../../hr.js");
+  const db = {
+    nhanvien: [{ "Mã NV": "A1", "Họ và tên": "Đủ" }, { "Mã NV": "A2", "Họ và tên": "Thiếu" }],
+    canhan: [{ "Mã NV": "A1", "Hiệu lực từ": "2024-01-01", "Số CCCD": "001", "Ngày sinh": "1990-01-01", "Giới tính": "Nam", "Quốc tịch": "Việt Nam", "Thường trú": "Đà Nẵng", "Số sổ BHXH": "123" },
+      { "Mã NV": "A2", "Hiệu lực từ": "2024-01-01", "Số CCCD": "002", "Ngày sinh": "1991-01-01", "Giới tính": "Nữ" }],
+    hocvan: [{ "Mã NV": "A1", "Trình độ học vấn": "12/12" }],
+    hopdong: [{ "Mã NV": "A1", "Số HĐLĐ": "H1", "Hình thức HĐLĐ": "Xác định thời hạn", "Ngày vào làm": "2024-01-01" },
+      { "Mã NV": "A2", "Số HĐLĐ": "H2", "Hình thức HĐLĐ": "Thử việc", "Ngày vào làm": "2024-01-01", "Ngày chấm dứt": "2026-08-31" }],
+    chitiethd: [{ "Mã NV": "A1", "Số HĐLĐ": "H1", "Hiệu lực từ": "2024-01-01", "Vị trí việc làm": "Kế toán", "Mức đóng bảo hiểm": "BH01" },
+      { "Mã NV": "A2", "Số HĐLĐ": "H2", "Hiệu lực từ": "2024-01-01", "Mức đóng bảo hiểm": "BH01" }]
+  };
+  const t = HR.reports(db).soLaoDongThieu();
+  assert.equal(t.length, 1); assert.equal(t[0]["Mã NV"], "A2");
+  const f = t[0].thieu.map((m) => m.tab + ":" + m.field);
+  assert.deepEqual(f, ["canhan:Quốc tịch", "canhan:Nơi cư trú (Thường trú / Địa chỉ hiện tại)", "hocvan:Trình độ học vấn / chuyên môn kỹ thuật",
+    "hopdong:Lý do chấm dứt hợp đồng", "chitiethd:Vị trí việc làm (phụ lục lương)", "canhan:Số sổ BHXH"]);
+});

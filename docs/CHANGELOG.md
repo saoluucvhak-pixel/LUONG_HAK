@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [2.0.0-alpha.18] — 11/10/2026 — Sổ lao động đủ thông tin + Báo cáo bảo hiểm + Phiếu lương
+- **Thêm nhân viên** có đủ trường của sổ quản lý lao động: Quốc tịch (điền sẵn "Việt Nam", sửa được), Dân tộc, Mã số thuế, Số sổ BHXH, mục **Trình độ** (trình độ học vấn / chuyên môn, bậc kỹ năng nghề, bằng cấp). Vị trí việc làm vẫn ở phần Lương.
+- **Sổ quản lý lao động** báo **ai còn thiếu thông tin bắt buộc** (giới tính, ngày sinh, quốc tịch, CCCD, nơi cư trú, trình độ, HĐLĐ, lý do chấm dứt, vị trí việc làm, mức đóng BH, số sổ BHXH) — bấm mục để mở đúng tab hồ sơ bổ sung. Mục "nếu có" (bậc nghề, nâng lương, đào tạo, kỷ luật, tai nạn) không coi là thiếu.
+- **Báo cáo lương → 🛡 Báo cáo bảo hiểm** theo kỳ: tổng hợp theo khoản (BHXH, BHYT, BHTN, KPCĐ — công ty / NLĐ), tăng / giảm / điều chỉnh mức đóng so với kỳ trước, theo phòng ban, chi tiết từng người; xuất Excel 4 sheet. Chỉ cộng số engine đã tính (không tính lại); báo cáo nội bộ, **không thay mẫu chính thức** D02-LT / C12-TS.
+- **🧾 Phiếu lương** thành mục riêng trong menu: kỳ đã chốt lấy đúng bảng đã chốt (chưa chốt → báo tính tạm), lọc phòng ban, tìm mã / tên (không dấu), in mỗi phiếu 1 trang hoặc **in gọn** nhiều phiếu / trang, **xuất Excel** phiếu lương. Nhật ký ghi lần in / xuất.
+- **Không đổi công thức lương.** Test: 162 (+3 U-BHR, +1 U-SLD-05), E2E 76/76 (+4).
+
 ## [2.0.0-alpha.17] — 11/10/2026 — Lịch sao lưu + đối chiếu nghỉ phép / ốm
 - **Lịch sao lưu tự động** (Công ty & Sao lưu, Admin đổi): sao lưu **định kỳ** khi app đang mở (tắt / 1 / 2 / 4 / 8 giờ, mặc định 2 giờ), **sao lưu khi đóng app** (mặc định bật), **số ngày giữ bản đầu ngày** (30 / 60 / 90 / 180 / 365, mặc định 60). Chỉ sao lưu khi dữ liệu đã đổi so với bản gần nhất (không tạo bản trùng); có thư mục thứ hai thì tự chép sang. Cấu hình theo máy (`settings.json`). Bản định kỳ giữ 48, bản khi đóng app giữ 10; bản sau chốt kỳ vẫn giữ vĩnh viễn.
 - **Q-27 = phương án A — đối chiếu đơn nghỉ với chấm công** (R-64): khi tính lương, khung *Hồ sơ cần bổ sung* báo đơn phép có lương đã duyệt mà chưa chấm PN / vẫn chấm công thường, đơn nghỉ không lương / nghỉ ốm đã duyệt mà vẫn có công, chấm PN không có đơn, đơn còn *Chờ duyệt*. **Chỉ cảnh báo — lương vẫn tính theo chấm công, không đổi công thức.**

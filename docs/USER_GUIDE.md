@@ -131,10 +131,15 @@ Mọi báo cáo xuất được Excel.
 - Nút **📂 File đã tải** ở thanh trên (hoặc Ctrl+K gõ "file"): xem các file đã tải, mở từng file, đổi thư mục lưu (ví dụ thư mục Drive / ổ mạng), tắt *Tự mở thư mục* nếu không muốn cửa sổ thư mục bật lên.
 - **Sao lưu ra file** cũng lưu vào thư mục này — nhớ chép file `.json` sang USB / Drive.
 
+## Phiếu lương, Báo cáo bảo hiểm (từ 2.0-alpha.18)
+- **🧾 Phiếu lương** (menu Kỳ lương): chọn kỳ ở góc trên → lọc phòng ban / tìm nhân viên → **In** (tích *In gọn* để in nhiều phiếu trên 1 tờ) hoặc **Xuất Excel**. Nên **chốt kỳ** trước khi gửi phiếu: kỳ chưa chốt app ghi rõ "tính tạm".
+- **Báo cáo lương → 🛡 Báo cáo bảo hiểm**: số công ty / người lao động đóng từng khoản, người tăng / giảm / đổi mức đóng so với tháng trước, theo phòng ban, chi tiết. Dùng để đối chiếu trước khi kê khai — mẫu nộp cơ quan BHXH vẫn lập trên phần mềm BHXH.
+
 ## Báo cáo nhân sự
 **Biến động nhân sự** (chọn từ tháng – đến tháng; bấm ô số để lọc theo loại) · HĐLĐ sắp hết hạn / quá hạn · Tình hình nhân sự · Nghỉ phép/ốm theo năm · Vi phạm chưa xử lý · Sinh nhật trong tháng · Sổ quản lý lao động · Lịch sử hồ sơ từng người. Tất cả xuất được Excel.
 
 ### Sổ quản lý lao động (từ 2.0-alpha.14 — NĐ 145/2020 Điều 3)
+- (α18) Đầu sổ có khung **"N người còn thiếu thông tin sổ lao động"** → *Xem danh sách* → bấm mục thiếu (VD *Thông tin cá nhân: Quốc tịch, Số sổ BHXH*) để mở đúng tab hồ sơ và bổ sung. Nhiều người: dùng file mẫu Excel của Nhân sự rồi nhập lại.
 Chọn **năm** rồi mở *Sổ quản lý lao động*: mỗi người 1 dòng, đủ nội dung luật yêu cầu. Để sổ đầy đủ, nhập thêm trong Hồ sơ:
 - *Học vấn*: Bậc trình độ kỹ năng nghề · *Phụ lục HĐ*: Vị trí việc làm · *Hợp đồng*: Ngày chấm dứt + **Lý do chấm dứt**;
 - *Đơn nghỉ*: **Loại nghỉ** (để trống = nghỉ hằng năm, chỉ loại này trừ phép năm);

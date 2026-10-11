@@ -1,5 +1,15 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.18 — Sổ lao động đủ thông tin + Báo cáo bảo hiểm + Phiếu lương (11/10/2026, nhánh `claude/v2-solaodong-bh-phieuluong`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **162/162** (+3 U-BHR, +1 U-SLD-05; U-REPO-08 thêm ngoại lệ trợ lý ghi Trình độ) |
+| Hồi quy công thức (v1.3.0, alpha.4) | ✅ trùng 100% — không đổi công thức |
+| E2E Electron (xvfb, Linux) | ✅ **76/76** (+4) |
+| Ảnh chụp Phiếu lương, Báo cáo bảo hiểm, Sổ lao động (thiếu thông tin), form Thêm nhân viên (1366px) | ✅ đã xem, không lỗi JavaScript |
+| In thật ra máy in (mỗi phiếu 1 trang / in gọn) | ⏳ chưa kiểm trên Windows thật |
+
 ## 2.0.0-alpha.17 — Lịch sao lưu + đối chiếu nghỉ phép / ốm (11/10/2026, nhánh `claude/v2-backup-schedule-leave`)
 | Nhóm | Kết quả |
 |---|---|

@@ -115,6 +115,7 @@
   - đơn nghỉ không hưởng lương / nghỉ ốm **đã duyệt** mà ngày đó vẫn có công thường hoặc PN;
   - chấm PN vào ngày không có đơn phép có lương đã duyệt — chỉ với người **có** theo dõi đơn nghỉ trong app (chưa nhập đơn nào thì không cảnh báo);
   - đơn trong kỳ còn *Chờ duyệt*. Đơn *Từ chối* bỏ qua. Không tính dòng TC / CC. (test U-LV-01…05)
+- R-65 (2.0-α18) **Báo cáo bảo hiểm** chỉ cộng / so sánh bảng BHXH engine đã tính của kỳ (kỳ đã chốt lấy bảng đã chốt); phần NLĐ = phần đã trừ lương (người chưa đủ ngưỡng: 0, có dòng truy thu riêng — R-57). Báo cáo nội bộ, không thay mẫu D02-LT / C12-TS. **Phiếu lương** = đúng dòng bảng lương của kỳ (không tính khác). Sổ lao động: mục bắt buộc thiếu → liệt kê, không tự điền.
 
 ## 2. Câu hỏi mở — cần chủ sở hữu / kế toán xác nhận
 Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.

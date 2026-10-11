@@ -67,7 +67,23 @@ async function launch(dataDir, opt) {
   await F("Lương cơ bản").locator("input").fill("6.000.000");
   await F("Thuế TNCN").locator("select").selectOption("MT00");
   await F("Hình thức trả lương").locator("select").selectOption("Tiền mặt");
+  const qtDefault = await F("Quốc tịch").locator("input").inputValue();
+  await F("Trình độ học vấn").locator("input").fill("12/12");
+  await F("Vị trí việc làm").locator("input").fill("Kế toán viên");
   await w.click('button:has-text("Lưu nhân viên")');
+  await w.waitForTimeout(700);
+  { // α18: form Thêm nhân viên có đủ trường sổ lao động; sổ báo ai còn thiếu + mở đúng tab hồ sơ
+    const d0 = JSON.parse(fs.readFileSync(path.join(DATA, "data.json"), "utf8"));
+    const cn0 = (d0.canhan || []).find((r) => r["Mã NV"] === "NV001") || {}, hv0 = (d0.hocvan || []).find((r) => r["Mã NV"] === "NV001") || {};
+    ok("Thêm nhân viên: có Quốc tịch (mặc định Việt Nam), Trình độ, Vị trí việc làm → lưu Trình độ học vấn; chỉ có quốc tịch mặc định thì chưa tạo Thông tin cá nhân", qtDefault === "Việt Nam" && !cn0["Mã NV"] && hv0["Trình độ học vấn"] === "12/12" && ((d0.chitiethd || []).find((r) => r["Mã NV"] === "NV001") || {})["Vị trí việc làm"] === "Kế toán viên", JSON.stringify({ qtDefault, cn: !!cn0["Mã NV"], hv: hv0["Trình độ học vấn"] }));
+    await w.click("#nav button[data-k=baocao]"); await w.click('#main button:has-text("Sổ quản lý lao động")');
+    const nThieu = +(await w.locator("[data-sld-thieu]").getAttribute("data-sld-thieu"));
+    await w.click('[data-sld-thieu] button:has-text("Xem danh sách")');
+    const thieuTxt = await w.locator("[data-sld-thieu] table").innerText();
+    await w.locator("[data-sld-thieu] button.chipbtn", { hasText: "Thông tin cá nhân" }).first().click(); await w.waitForTimeout(200);
+    const onTab = await w.locator(".subtabs button.on").first().innerText();
+    ok("Sổ lao động: liệt kê người thiếu thông tin (CCCD, giới tính…), bấm mục → mở đúng tab hồ sơ", nThieu === 1 && /Số CCCD/.test(thieuTxt) && /Giới tính/.test(thieuTxt) && !/Trình độ học vấn/.test(thieuTxt) && !/Vị trí việc làm/.test(thieuTxt) && /Thông tin cá nhân/.test(onTab) && (await w.locator("#top h2").innerText()) === "Hồ sơ nhân viên", nThieu + " · " + thieuTxt.replace(/\s+/g, " ").slice(0, 160) + " · tab " + onTab);
+  }
   await w.evaluate(() => { const s = JSON.parse(localStorage.getItem("luonghak_db_v1_ui") || "{}"); s.nam = 2026; s.thang = 9; localStorage.setItem("luonghak_db_v1_ui", JSON.stringify(s)); });
   await w.click("#nav button[data-k=chamcong]");
   await w.selectOption("#top select", "9"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change");
@@ -130,6 +146,23 @@ async function launch(dataDir, opt) {
   let dup = null; for (let i = 0; i < 30 && !dup; i++) { await w.waitForTimeout(200); dup = fs.readdirSync(DL).filter((f) => f === "KyLuong_2026-09 (1).xlsx")[0]; }
   ok("Xuất lại cùng tên KHÔNG ghi đè file cũ (thêm (1))", !!dup && fs.readdirSync(DL).length === n0 + 1, fs.readdirSync(DL).join(", "));
   await w.waitForSelector("#dlcard"); await w.click("#dlcard .t button");
+  // α18: Phiếu lương trong menu — kỳ đã chốt, lọc / tìm, xuất Excel
+  await w.click("#nav button[data-k=slips]"); await w.waitForSelector("[data-slips]");
+  const slTxt = await w.locator("main").first().innerText(), nSl = +(await w.locator("[data-slips]").getAttribute("data-slips"));
+  await w.fill('main input[type=search]', "khong-co-ai"); await w.dispatchEvent('main input[type=search]', "change"); await w.waitForTimeout(150);
+  const nSl0 = +(await w.locator("[data-slips]").getAttribute("data-slips"));
+  await w.fill('main input[type=search]', "e2e nhan"); await w.dispatchEvent('main input[type=search]', "change"); await w.waitForTimeout(150);
+  const nSl1 = +(await w.locator("[data-slips]").getAttribute("data-slips"));
+  await w.click('main button:has-text("Xuất Excel")');
+  let pf = null; for (let i = 0; i < 30 && !pf; i++) { await w.waitForTimeout(200); pf = fs.readdirSync(DL).filter((f) => /^PhieuLuong_2026-09\.xlsx$/.test(f))[0]; }
+  let pfOk = false;
+  if (pf) { const XLSX = require(path.join(APP, "xlsx.full.min.js")), r0 = XLSX.utils.sheet_to_json(XLSX.read(fs.readFileSync(path.join(DL, pf)), { type: "buffer" }).Sheets["PhieuLuong_2026-09"])[0]; pfOk = r0 && r0["Thực lĩnh"] === 11370000 && r0["Mã NV"] === "NV001"; }
+  ok("Phiếu lương (menu riêng): kỳ đã chốt, tìm không dấu, xuất Excel khớp bảng đã chốt", /PHIẾU LƯƠNG THÁNG 9\/2026/.test(slTxt) && /đã chốt/.test(slTxt) && nSl === 1 && nSl0 === 0 && nSl1 === 1 && pfOk, [nSl, nSl0, nSl1, pf, pfOk].join(" · "));
+  await w.waitForSelector("#dlcard"); await w.click("#dlcard .t button");
+  // α18: Báo cáo bảo hiểm
+  await w.click("#nav button[data-k=baocaoluong]"); await w.click('#main button:has-text("Báo cáo bảo hiểm")'); await w.waitForTimeout(200);
+  const bhTxt = await w.locator("main").first().innerText();
+  ok("Báo cáo bảo hiểm: tổng hợp theo khoản, tăng/giảm, theo phòng ban, chi tiết; ghi rõ không thay mẫu chính thức", /Tổng hợp theo khoản/.test(bhTxt) && /BHXH/.test(bhTxt) && /KPCĐ/.test(bhTxt) && /Tăng \/ giảm/.test(bhTxt) && /Chi tiết từng người/.test(bhTxt) && /không thay mẫu chính thức/.test(bhTxt) && /đã chốt/.test(bhTxt), bhTxt.replace(/\s+/g, " ").slice(0, 200));
   // Hướng dẫn & Quy chế: 5 phần, quy chế sinh từ danh mục, tải Word
   await w.click("#nav button[data-k=huongdan]");
   const gTabs = await w.locator(".subtabs button").count();

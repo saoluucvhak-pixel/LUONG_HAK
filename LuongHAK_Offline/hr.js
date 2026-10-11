@@ -521,6 +521,27 @@
         var prev = null;
         return pls.map(function (r) { var v = +String(r["Lương thỏa thuận"] || "").replace(/[^\d-]/g, "") || 0, o = { "Hiệu lực từ": d10(r["Hiệu lực từ"]), "Phụ lục": r["Mã công tác"] || "", "Loại": r["Loại biến động"] || r["Loại phụ lục"] || "", "Lương thỏa thuận": hidePay ? PAY_HIDDEN : v, "Thay đổi (%)": prev && !hidePay ? Math.round((v - prev) / prev * 1000) / 10 : "" }; prev = v || prev; return o; });
       },
+      /**
+       * Người còn THIẾU thông tin bắt buộc của sổ quản lý lao động (NĐ 145/2020 Đ3 k2). Mỗi mục thiếu chỉ rõ nhập ở tab nào của hồ sơ.
+       * Bậc kỹ năng nghề, nâng lương, đào tạo, kỷ luật, tai nạn… chỉ ghi "nếu có" → không coi là thiếu.
+       */
+      soLaoDongThieu: function () {
+        var ix = buildIndex(db), out = [];
+        nvs.forEach(function (n) {
+          var ma = n["Mã NV"], hh = hienHanh(db, ma, null, ix), c = hh.cn || {}, hd = hh.hd || {}, ct = hh.ct || {};
+          var hv = latestBy(rowsOf(db, "hocvan", ma, ix), "Ngày cấp bằng") || {}, miss = [];
+          var need = function (tab, label, v) { if (v == null || String(v).trim() === "") miss.push({ tab: tab, field: label }); };
+          need("canhan", "Giới tính", c["Giới tính"]); need("canhan", "Ngày sinh", c["Ngày sinh"]); need("canhan", "Quốc tịch", c["Quốc tịch"]);
+          need("canhan", "Số CCCD", c["Số CCCD"] || n["Số CCCD"]); need("canhan", "Nơi cư trú (Thường trú / Địa chỉ hiện tại)", c["Thường trú"] || c["Địa chỉ hiện tại"]);
+          need("hocvan", "Trình độ học vấn / chuyên môn kỹ thuật", hv["Trình độ học vấn"]);
+          need("hopdong", "Hợp đồng lao động (loại HĐLĐ, ngày vào làm)", hd["Số HĐLĐ"] && hd["Hình thức HĐLĐ"] && hd["Ngày vào làm"] ? 1 : "");
+          if (hd["Ngày chấm dứt"]) need("hopdong", "Lý do chấm dứt hợp đồng", hd["Lý do chấm dứt"]);
+          if (hd["Số HĐLĐ"]) { need("chitiethd", "Vị trí việc làm (phụ lục lương)", ct["Vị trí việc làm"]); need("chitiethd", "Mức đóng bảo hiểm (phụ lục lương)", ct["Mức đóng bảo hiểm"]); }
+          if (ct["Mức đóng bảo hiểm"]) need("canhan", "Số sổ BHXH", c["Số sổ BHXH"]);
+          if (miss.length) out.push({ "Mã NV": ma, "Họ và tên": n["Họ và tên"] || "", "Trạng thái": n["Trạng thái"] || "", thieu: miss });
+        });
+        return out;
+      },
       soLaoDong: function (nam) {
         var ix = buildIndex(db), y = String(nam || t.slice(0, 4)), inY = function (v) { return d10(v).slice(0, 4) === y; };
         var congOf = function (v) { var m = String(v == null ? "" : v).trim().match(/^(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : 0; };

@@ -95,6 +95,16 @@ E2E: `ELECTRON_PATH=<electron> PLAYWRIGHT_MODULE=playwright xvfb-run -a npm run 
 | U-STO-17 | (2.0-α7) Đọc lại lệch đúng 1 bit (cùng cỡ file) → không báo thành công; tiếng Việt nhiều byte ghi / đọc đúng |
 | U-STO-16 | Sao lưu thất bại giữa chừng → không để lại bản dở dang |
 
+## Unit — 2.0-α18 Báo cáo bảo hiểm (`tests/unit/bh-report.test.js`) · Sổ lao động thiếu thông tin (U-SLD-05)
+| ID | Nội dung |
+|---|---|
+| U-BHR-01 | Tổng hợp theo khoản: công ty đóng đủ; NLĐ chỉ người đủ ngưỡng (= số đã trừ lương); KPCĐ tách riêng; đếm người chưa đủ ngưỡng, truy thu |
+| U-BHR-02 | Tăng / giảm / điều chỉnh mức đóng so với kỳ trước; không có kỳ trước → tất cả là tăng |
+| U-BHR-03 | Tổng các phòng = tổng chi tiết = tổng bảng BHXH; không sửa dữ liệu nguồn |
+| U-SLD-05 | Người thiếu thông tin bắt buộc của sổ: đúng mục + tab; mục "nếu có" không coi là thiếu |
+
+E2E (α18): Thêm nhân viên có Quốc tịch / Trình độ / Vị trí việc làm · Sổ lao động liệt kê người thiếu, bấm → đúng tab hồ sơ · Phiếu lương (menu): kỳ đã chốt, tìm không dấu, xuất Excel khớp bảng chốt · Báo cáo bảo hiểm.
+
 ## Unit — 2.0-α17 Lịch sao lưu (`tests/unit/backup-schedule.test.js`)
 | ID | Nội dung |
 |---|---|

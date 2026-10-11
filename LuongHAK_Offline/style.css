@@ -321,3 +321,12 @@ td input:disabled{color:var(--ink);background:transparent}
 .schedg .fld select{width:100%}
 .schedg .fld label.schk{display:flex;flex-direction:row;align-items:center;gap:8px;min-height:38px;margin:0;font-weight:500;color:var(--ink);cursor:pointer}
 .schedg label.schk input{width:18px;height:18px;margin:0;accent-color:var(--brand)}
+/* α18: sổ lao động thiếu thông tin · phiếu lương */
+button.b.chipbtn{min-height:0;padding:3px 10px;margin:2px 4px 2px 0;border-radius:14px;font-size:12.5px;background:var(--warnBg);border:1px solid var(--warnBd);color:var(--warnFg)}
+button.b.chipbtn:hover{border-color:var(--warn)}
+label.chk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13.5px}
+.slips.gon{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+@media print{.slips.gon{display:block}.slips.gon .slip{page-break-after:auto;page-break-inside:avoid}.slips.gon .card{margin:0 0 6mm;border:1px dashed #999}}
+table.sld-thieu td{white-space:normal;vertical-align:top}
+table.sld-thieu td:last-child{min-width:420px}
+table.sld-thieu button.b.chipbtn{white-space:normal;text-align:left;justify-content:flex-start}
