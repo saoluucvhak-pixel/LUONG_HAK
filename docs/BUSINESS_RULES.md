@@ -18,6 +18,10 @@
   - Mặc định **bổ sung**: ô trống trong file **không xóa** dữ liệu đang có.
   - **Ghi đè cả dòng** phải chọn rõ; app báo trước số ô sẽ bị xóa.
 - R-03c (2.0) Cùng khóa trong 1 file nhưng khác dữ liệu (các bảng khác) → xung đột cả 2 dòng, không ghi.
+- R-03d (2.0-beta.1) Ô ngày chấm công hợp lệ: trống, số công ≥ 0 (`1`, `0.5`, `1,5`), số công + nhãn (`1QC`), hoặc chỉ nhãn (`QC`). Nhãn bắt đầu bằng chữ cái.
+  - **Từ chối** (nhập Excel = Lỗi dữ liệu; lưới / dán = không ghi ô): số âm, ký tự lạ (`1.5.2`, `#`, `1/2`), ngày không có trong tháng của kỳ (VD 31/09, 29/02 năm thường). Lưới khóa các cột ngày không tồn tại.
+  - **Cảnh báo, vẫn ghi**: số công > 3/ngày (dòng tăng ca có thể nhập giờ — Q-18); nhãn chưa có mã phụ cấp trùng tên (không được tính phụ cấp công tác).
+  - Dữ liệu cũ đã có ô sai: *Kiểm tra dữ liệu* báo High, hộp chốt kỳ báo số ô sai. App **không tự xóa / sửa**; cách tính lương với ô sai giữ như cũ (chờ Q-21).
 - R-04 Dữ liệu phát sinh (chấm công, tạm ứng, thưởng…) phải có Mã NV có trong Nhân sự.
 - R-05 Nhập Excel bắt buộc qua bước **xem trước**.
   - (2.0) Luôn tự sao lưu trước khi ghi.
@@ -111,3 +115,9 @@ Phase 1 **giữ nguyên** hành vi hiện tại cho đến khi có xác nhận.
 | Q-15 | Khi đã chốt, có cấm **sửa trực tiếp phụ lục cũ** và bắt buộc lập phụ lục mới không? | ✅ **Đã trả lời: cấm sửa, phải thêm phụ lục mới.** Phụ lục đã dùng tính lương kỳ đã chốt → không ai sửa/xóa được (kể cả Admin), không đổi được Số HĐLĐ, nhập Excel không cập nhật được — R-49 |
 | Q-16 | Định dạng "người thực hiện" cho tới khi có đăng nhập: tên tự khai + tài khoản Windows có đủ cho kiểm toán nội bộ? | ✅ **Đã trả lời: cần đăng nhập + phân quyền** — triển khai PR riêng |
 | Q-17 | Tiền lương **làm thêm giờ**: hệ số tăng ca đang khai báo (VD 0,5) và việc công tăng ca được tính trong *Tổng công* có bảo đảm mức tối thiểu của Bộ luật Lao động 2019 Điều 98 (≥ 150% ngày thường, 200% ngày nghỉ hằng tuần, 300% lễ/Tết) không? | Giữ nguyên công thức bảng lương gốc — cần kế toán/pháp chế đối chiếu trước khi ban hành Quy chế |
+| Q-18 | Chấm công **theo ca**: 1 nhân viên có thể làm **2 ca trong cùng 1 ngày** (VD ca ngày + ca đêm cùng hình thức BT) không? Nếu có, cần thêm cột *Ca* vào khóa chấm công (Kỳ + Mã NV + Hình thức + Ca). Dòng tăng ca (TC) nhập **công** hay **giờ**? | Chưa có khái niệm ca: cùng ngày + cùng hình thức = nhập trùng (Q-12); TC tính như công |
+| Q-19 | 1 nhân viên làm cho **2 phòng ban trong cùng tháng** (điều chuyển giữa tháng): chi phí lương chia theo công từng phòng hay ghi toàn bộ cho phòng ở phụ lục cuối? | Lấy phòng ban của phụ lục hiệu lực trong kỳ |
+| Q-20 | Tạm ứng / thưởng **không có Số chứng từ**: 2 dòng cùng NV, cùng ngày, cùng số tiền là 2 lần chi hợp lệ hay nhập trùng? Có bắt buộc cột *Số chứng từ* để chống trùng không? | Coi là 2 dòng (cộng) nếu nhập từ form; nhập Excel trùng y hệt bị bỏ qua |
+| Q-21 | Ô chấm công **sai đã có sẵn** trong dữ liệu (ngày 31 của tháng 30 ngày, số âm kiểu số): bảng lương có nên **bỏ qua** các ô này không? (Hiện engine vẫn cộng ngày không tồn tại.) | Giữ cách tính cũ, chỉ cảnh báo High |
+| Q-22 | Phụ lục tăng lương có hiệu lực **giữa tháng** (VD 16/09): tính cả tháng theo mức mới (hiện tại), mức cũ, hay **chia theo số công trước/sau** ngày hiệu lực? | Cả tháng theo phụ lục mới nhất có hiệu lực trong kỳ |
+| Q-23 | BHXH khi **vào làm / nghỉ giữa tháng** hoặc ít công: danh mục mặc định chưa đặt *Ngưỡng truy thu BH (công)* nên 2 công vẫn trừ đủ BH. Kế toán xác nhận ngưỡng áp dụng (theo quy định: không làm việc và không hưởng lương từ 14 ngày làm việc trở lên trong tháng thì không đóng) cho từng mã lương. | Theo danh mục; mặc định không có ngưỡng |

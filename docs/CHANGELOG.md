@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [2.0.0-alpha.4] — 10/10/2026 — Audit V2: kiểm tra ô ngày chấm công, kịch bản tính lương
+### Sửa lỗi (chi tiết, bằng chứng: `AUDIT_V2.md` §2)
+- **A2-01/02 (High)**: ô chấm công số âm (`-1`), chữ lạ (`1.5.2`, `#`) trước đây được nhập không báo lỗi → nay **từ chối** khi nhập Excel, gõ trên lưới và dán Ctrl+V.
+- **A2-03 (High)**: ngày không có trong tháng (31/09, 29/02 năm thường) được nhập và **được trả lương** → nay chặn nhập; lưới khóa cột ngày không tồn tại; dữ liệu cũ được *Kiểm tra dữ liệu* báo **High** và hộp chốt kỳ báo số ô sai. Cách tính với dữ liệu cũ giữ nguyên chờ **Q-21**.
+- **A2-06 (High)**: dán Ctrl+V ô sai định dạng vẫn ghi vào dữ liệu → nay không ghi ô sai.
+- **A2-04/05 (Medium)**: xem trước nhập Excel có cột **Cảnh báo** (quá 3 công/ngày, nhãn chưa có mã phụ cấp).
+### Thêm
+- `VAL.dayCell()`, `VAL.daysInKy()` (`core/validate.js`) — 1 quy tắc dùng chung cho nhập Excel, lưới, dán, kiểm tra dữ liệu, chốt kỳ (R-03d).
+- Test kịch bản tính lương I-15…I-20 (vào/nghỉ giữa tháng, nhiều tạm ứng/thưởng, trừ vượt thu nhập, phụ lục giữa tháng) — số tính tay, **không đổi công thức**.
+- `docs/AUDIT_V2.md`: kiến trúc, danh sách vấn đề, rà soát 13 đường ghi dữ liệu, đánh giá thư viện Excel.
+- Câu hỏi mới **Q-18…Q-23** (ca làm việc, 2 phòng ban, chứng từ tạm ứng, ô sai cũ, phụ lục giữa tháng, ngưỡng BH).
+- Test: 101 unit/integration/regression (+5 U-CC, +6 I), E2E 42/42 (+2).
+
 ## [2.0.0-alpha.3] — 10/10/2026 — Hướng dẫn trong app, Quy trình tính lương, Dự thảo Quy chế trả lương
 - Menu mới **Hướng dẫn & Quy chế** (`ui/guide.js`) gồm:
   - Bắt đầu nhanh;

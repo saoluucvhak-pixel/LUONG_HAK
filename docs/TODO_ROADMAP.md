@@ -44,6 +44,13 @@
 - [ ] Mã hóa file dữ liệu (RISK-07); chặn bản cũ mở dữ liệu có tài khoản (RISK-06)
 - [ ] Chủ sở hữu duyệt ma trận quyền mặc định (`BUSINESS_RULES.md` R-45)
 
+## 2.0 tối ưu toàn diện — PR1 Audit V2 ✅ (mã + test) — nhánh `claude/v2-audit2-fixes` (2.0.0-alpha.4)
+- [x] `AUDIT_V2.md`: kiến trúc, danh sách vấn đề A2-01…A2-11, rà soát 13 đường ghi, đánh giá thư viện Excel
+- [x] Kiểm tra ô ngày chấm công (âm, chữ lạ, ngày không tồn tại, > 3 công) ở nhập Excel, lưới, dán, kiểm tra dữ liệu, chốt kỳ
+- [x] Test kịch bản tính lương I-15…I-20 (chờ Kế toán xác nhận Q-22, Q-23)
+- [ ] Chờ chủ sở hữu: Q-18…Q-23; mở mạng `cdn.sheetjs.com` (SEC-03)
+- Tiếp theo: **PR2 hiệu năng** (benchmark 100/500/1.000/5.000 NV, chỉ mục Mã NV cho `staffForPayroll`/`hienHanh`, `PERFORMANCE_REPORT.md`) → PR3 repository → PR4 SQLite → PR5 UI/HRM
+
 ## Phase 2 — Chuẩn hóa kiến trúc (bước tiếp theo)
 0. (Đã khảo sát) SQLite qua `node:sqlite` có sẵn trong Electron 43 / Node 24.21 — không cần module native.
 1. Tách `app.js` theo `ARCHITECTURE.md` §2: `src/renderer/pages/*` (mỗi trang 1 file), `src/modules/payroll/reports.js` (chuyển `bc*` ra khỏi UI, có test), `src/modules/hrm/*` (từ `hr.js`).
