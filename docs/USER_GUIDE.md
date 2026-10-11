@@ -37,6 +37,15 @@ Không cần internet, không cần Google Sheet. Cài bằng file `TinhLuongHAK
 2. **Nhân sự** → **＋ Thêm nhân viên**: 1 form gồm thông tin cơ bản, cá nhân, hợp đồng, lương/BH/thuế, tài khoản.
    Hoặc **📄 Tải file mẫu** (mỗi loại hồ sơ 1 sheet) → điền → **⬆ Nhập Excel**.
 
+## Bảng lớn, tìm kiếm, phím tắt (từ 2.0-alpha.8)
+- Bảng nhiều dòng được **chia trang**. Thanh trang ở trên (và dưới) bảng có các nút « ‹ › » và ô chọn 50 / 100 / 200 / 500 dòng mỗi trang.
+- **Ô tìm kiếm nhớ riêng từng bảng**, kể cả khi chuyển màn hình hay mở lại app. Khi đang lọc, dòng đếm ghi "đang lọc …". Xóa chữ trong ô tìm kiếm để xem lại đủ dòng.
+- **Phím tắt:**
+  - **Enter**: xuống ô cùng cột ở dòng dưới;
+  - **Shift+Enter**: lên dòng trên;
+  - **Ctrl+F**: vào ô tìm kiếm;
+  - **Ctrl+V**: dán nhiều dòng từ Excel. Dán tiếp sang trang sau nếu dài hơn 1 trang.
+
 ## Nhập Excel (v1.4)
 - Sau khi chọn file, app hiện **màn hình xem trước**: số dòng *Thêm mới · Cập nhật · Trùng (bỏ qua) · Lỗi dữ liệu · Sai tham chiếu · Kỳ đã chốt*. Chỉ dòng Thêm mới / Cập nhật được ghi. Bấm **⬇ Tải danh sách lỗi** để sửa và nhập lại.
 - Nhập lại cùng file **không tạo dòng trùng**: dòng cùng khóa (VD chấm công cùng Kỳ + Mã NV + Hình thức công) được cập nhật.

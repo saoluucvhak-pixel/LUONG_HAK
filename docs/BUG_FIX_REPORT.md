@@ -173,3 +173,10 @@ Rollback: cài lại alpha.5 (không đổi cấu trúc dữ liệu, không đ�
 
 Rollback: cài lại alpha.6 (định dạng file không đổi).
 
+## 2.0.0-alpha.8 — PR5 giao diện (nhánh `claude/v2-ui-hrm`)
+| Vấn đề | Thay đổi | File | Test |
+|---|---|---|---|
+| PERF-03 (High) lưới vẽ hết dòng: 1.000 NV mở *Chấm công* 6,9 s, gõ tìm 19 s, 5.000 NV treo | Chia trang + tìm sau khi ngừng gõ + tra tên 1 lần mỗi lượt vẽ | `app.js` (`pager`, `searchBox`, `grid`, `tabNhanSu`), `style.css` | E2E chia trang; `tests/perf/ui-bench.js` |
+
+Rollback: cài lại alpha.7 (không đổi dữ liệu).
+

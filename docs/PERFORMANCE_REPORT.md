@@ -88,7 +88,32 @@ Test:
 - Muốn SQLite thực sự nhanh hơn thì phải chỉ gửi **các dòng thay đổi**. Việc đó đòi hỏi **mọi** thao tác ghi đều đi qua repository (còn ngoại lệ: nhập Excel, gộp chấm công, trợ lý thêm NV, xóa NV… — U-REPO-08).
 - Nếu sót một chỗ ghi thì dòng thay đổi không được lưu, tức là **mất dữ liệu**. Vì vậy cần gom hết các đường ghi trước (`MIGRATION_PLAN.md` §2).
 
-## 7. Việc tiếp theo
+## 7. PR5 (2.0.0-alpha.8) — giao diện bảng lớn (PERF-03)
+
+**Đo trên Electron thật** (`xvfb-run -a node tests/perf/ui-bench.js`): mở lưới *Chấm công* kỳ 9/2026, rồi gõ "NV00" vào ô tìm kiếm.
+
+| | alpha.7, 1.000 NV | alpha.8, 1.000 NV | alpha.8, 5.000 NV |
+|---|---|---|---|
+| Dòng / ô nhập được vẽ | 1.856 / 61.248 | 100 / 3.300 | 100 / 3.300 |
+| Mở lưới | **5,6–6,9 s** | **0,28–0,38 s** | 0,28–0,35 s |
+| Gõ 4 phím | **19,3 s** (vẽ lại cả lưới sau mỗi phím) | 0,15 s | 0,11 s |
+| Từ lúc gõ tới khi hiện kết quả lọc | > 19 s | 0,41 s | 0,55 s |
+
+Ở alpha.7, với 5.000 NV, lưới không mở xong trong 30 giây.
+
+**Nguyên nhân:**
+- Lưới vẽ **tất cả** dòng của kỳ, mỗi dòng 34 ô nhập.
+- Mỗi phím gõ trong ô tìm kiếm vẽ lại cả lưới.
+- Khi lọc, tên nhân viên được tra bằng cách dò cả danh sách NV cho **từng** dòng.
+
+**Sửa:**
+- Chia trang: 50 / 100 / 200 / 500 dòng, mặc định 100, cỡ trang được nhớ.
+- Tìm kiếm chỉ chạy khi ngừng gõ 250 ms.
+- Tra tên bằng bảng tra dựng 1 lần cho mỗi lượt vẽ.
+- Dán nhiều dòng từ Excel vẫn tiếp tục đúng thứ tự sang trang sau. Thêm dòng thì tự sang trang cuối.
+- Áp dụng cho lưới nhập liệu và danh sách *Nhân sự*.
+
+## 8. Việc tiếp theo
 
 - Gom các đường ghi còn lại vào repository + theo dõi dòng thay đổi → SQLite ghi theo dòng (mục tiêu lưu < 50 ms ở 5.000 NV). Cần chủ sở hữu duyệt (`MIGRATION_PLAN.md` §2).
 - **Cần chủ sở hữu duyệt ngưỡng:** thời gian lưu chấp nhận được và cỡ dữ liệu thực tế (số NV, số năm lưu).

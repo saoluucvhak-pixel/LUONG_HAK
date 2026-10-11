@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [2.0.0-alpha.8] — 11/10/2026 — PR5 giao diện: bảng lớn, tìm kiếm, bàn phím
+- **PERF-03 (High)**: lưới nhập liệu vẽ toàn bộ dòng của kỳ. Ở 1.000 NV, mở *Chấm công* mất 5,6–6,9 giây, gõ 4 ký tự tìm kiếm mất 19 giây; ở 5.000 NV app treo. Nay:
+  - **chia trang** (50/100/200/500 dòng, mặc định 100) → mở lưới 0,3 giây, kết quả lọc 0,4–0,55 giây;
+  - tìm kiếm chỉ chạy khi ngừng gõ;
+  - áp dụng cả cho danh sách *Nhân sự*.
+- **Ô tìm kiếm nhớ riêng từng bảng**: khi chuyển màn hình hoặc mở lại app vẫn giữ; số dòng hiện "đang lọc …" để không bị nhầm là mất dữ liệu.
+- **Bàn phím**: Enter = xuống ô cùng cột dòng dưới, Shift+Enter = lên; Ctrl+F = vào ô tìm kiếm.
+- `tests/perf/ui-bench.js`: đo giao diện trên Electron thật.
+- Câu hỏi mới **Q-24** (Trưởng bộ phận đang xem được lương thỏa thuận).
+- Test: 113 unit/integration/regression, E2E 47/47 (+4).
+
 ## [2.0.0-alpha.7] — 11/10/2026 — PR4 lưu dữ liệu nhanh hơn (PERF-02)
 - Lưu dữ liệu: bước đọc lại để xác nhận đĩa ghi đúng nay **so sánh từng byte** thay vì giải mã UTF-8 + 2 lần SHA-256. Mức kiểm tra chặt như cũ.
 - 5.000 NV: lưu **243 → 110 ms**; 1.000 NV: 50 → 24 ms. Mọi kiểm tra an toàn khác giữ nguyên.

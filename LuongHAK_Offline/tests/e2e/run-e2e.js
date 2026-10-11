@@ -243,6 +243,38 @@ async function launch(dataDir, opt) {
     await app.close();
   }
 
+  // PR5: bảng lớn chia trang (PERF-03) + ô tìm kiếm nhớ theo từng bảng khi chuyển màn hình
+  {
+    const d0 = JSON.parse(fs.readFileSync(path.join(DATA, "data.json"), "utf8")), ma = d0.nhanvien[0]["Mã NV"];
+    for (let i = 1; i <= 260; i++) d0.sanluong.push({ _id: "sl" + i, "Phiếu cân": "E2E-PC" + String(i).padStart(3, "0"), "Ngày cân": "2026-11-" + String(1 + (i % 28)).padStart(2, "0"), "KL hàng (Tấn)": "1", "Mã NV": ma });
+    fs.writeFileSync(path.join(DATA, "data.json"), JSON.stringify(d0));
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=sanluong]"); await w.waitForSelector("#top select");
+    await w.selectOption("#top select", "11"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change");
+    await w.waitForSelector("main tbody tr");
+    const n1 = await w.locator("main tbody tr").count(), p1 = await w.locator(".pager span").first().innerText();
+    await w.locator('.pager button[title="Trang sau"]').first().click(); await w.waitForTimeout(150);
+    const p2 = await w.locator(".pager span").first().innerText(), first2 = await w.locator("main tbody tr").first().locator("input").first().inputValue();
+    await w.locator("input.search").fill("E2E-PC25"); await w.waitForTimeout(450);
+    const nf = await w.locator("main tbody tr").count(), hint = await w.locator("main .bar .hint").innerText();
+    await w.click("#nav button[data-k=home]"); await w.click("#nav button[data-k=sanluong]"); await w.waitForSelector("main tbody tr");
+    const kept = await w.locator("input.search").inputValue(), nk = await w.locator("main tbody tr").count();
+    ok("Bảng lớn chia trang: 260 dòng → trang 1 có 100 dòng, sang trang 2 đúng dòng 101; tìm kiếm lọc sau khi ngừng gõ",
+      n1 === 100 && /Trang 1\/3/.test(p1) && /Trang 2\/3/.test(p2) && first2 === "E2E-PC101" && nf === 10 && /đang lọc/.test(hint), n1 + " dòng · " + p1 + " → " + p2 + " · dòng đầu trang 2 " + first2 + " · lọc còn " + nf);
+    ok("Ô tìm kiếm nhớ theo từng bảng khi chuyển màn hình", kept === "E2E-PC25" && nk === 10, "'" + kept + "' · " + nk + " dòng");
+    await w.locator("input.search").fill(""); await w.waitForTimeout(400);
+    // Enter = xuống ô cùng cột dòng dưới (ô vừa gõ được ghi — giữ nguyên chữ "2,5", engine đọc 2,5 tấn); Ctrl+F = vào ô tìm kiếm
+    const klCol = 3, r0 = w.locator("main tbody tr").nth(0).locator("input").nth(klCol);
+    await r0.click(); await r0.fill("2,5"); await r0.press("Enter"); await w.waitForTimeout(150);
+    const focusRow = await w.evaluate(() => { const a = document.activeElement, tr = a && a.closest("tr"); return tr ? Array.prototype.indexOf.call(tr.parentNode.children, tr) : -1; });
+    await w.keyboard.press("Control+f"); const inSearch = await w.evaluate(() => document.activeElement && document.activeElement.classList.contains("search"));
+    await w.waitForTimeout(600);
+    const savedKL = JSON.parse(fs.readFileSync(path.join(DATA, "data.json"), "utf8")).sanluong.find((x) => x["Phiếu cân"] === "E2E-PC001");
+    ok("Bàn phím: Enter xuống dòng dưới cùng cột (ô vừa gõ đã ghi), Ctrl+F vào ô tìm kiếm", focusRow === 1 && inSearch && savedKL && savedKL["KL hàng (Tấn)"] === "2,5", "dòng đang chọn=" + focusRow + " · ô tìm kiếm=" + inSearch + " · KL đã lưu=" + (savedKL && savedKL["KL hàng (Tấn)"]));
+    ok("Không lỗi JavaScript khi chia trang", errs.length === 0, errs.join(" | "));
+    await app.close();
+  }
+
   // Quên mật khẩu Admin → mã khôi phục (mã sai bị từ chối; dùng xong cấp mã mới)
   ({ app, w, errs } = await launch(null, { noAuth: true }));
   await w.click('button:has-text("Quên mật khẩu Admin")');

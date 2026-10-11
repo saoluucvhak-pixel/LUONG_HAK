@@ -1,5 +1,14 @@
 # TEST_RESULTS — Kết quả kiểm thử
 
+## 2.0.0-alpha.8 — PR5 giao diện (11/10/2026, nhánh `claude/v2-ui-hrm`)
+| Nhóm | Kết quả |
+|---|---|
+| Lint | ✅ 0/0 |
+| `npm test` | ✅ **113/113** |
+| E2E Electron (xvfb, Linux) | ✅ **47/47** (+4: chia trang 260 dòng, ô tìm kiếm nhớ theo bảng, bàn phím Enter / Ctrl+F, không lỗi JS) |
+| Đo giao diện (`tests/perf/ui-bench.js`) | 1.000 NV mở lưới 6,9 s → 0,38 s; gõ tìm kiếm 19,3 s → 0,41 s tới khi có kết quả; 5.000 NV từ treo → 0,35 s |
+| Windows thực tế | ⏳ chưa |
+
 ## 2.0.0-alpha.7 — PR4 lưu dữ liệu (11/10/2026, nhánh `claude/v2-storage-perf`)
 | Nhóm | Kết quả |
 |---|---|
