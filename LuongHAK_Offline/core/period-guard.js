@@ -26,7 +26,8 @@
     return null;
   }
   // Bảng được engine dùng khi tính lương (thay đổi bảng khác — VD học vấn, sức khỏe — không ảnh hưởng tiền lương)
-  var PAYROLL_TABLES = { chitiethd: 1, hopdong: 1, nhanthan: 1, thanhtoan: 1, nhanvien: 1 };
+  // α22: đơn nghỉ đã duyệt loại người khỏi tổ khi chia sản lượng → ảnh hưởng tiền lương (sửa đơn trong kỳ đã chốt = hồi tố)
+  var PAYROLL_TABLES = { chitiethd: 1, hopdong: 1, nhanthan: 1, thanhtoan: 1, nhanvien: 1, nghiphep: 1, nghiom: 1 };
 
   function closedPeriods(db) { return (db.kyluong || []).map(function (k) { return k.ky; }).sort(); }
   function monthStart(ky) { return ky + "-01"; }

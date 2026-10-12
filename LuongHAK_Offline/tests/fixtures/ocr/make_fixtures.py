@@ -53,8 +53,71 @@ def vertical_img():
     put(0, days + 1, "TC"); put(1, days + 1, str(days)); put(2, days + 1, str(sum(com)))
     return im
 
+# 3) Bảng chấm công TAY của tổ (α22): ngày theo hàng, MỖI NGƯỜI 1 CỘT, 2 khối ngày 1–15 | 16–30 đặt cạnh nhau.
+#    Ô đánh dấu x (x = 1 công, xx = 2, xxx = 3), 1 ô ghi giờ "7h-15h" (= 8 giờ = 1 công). Tên giả.
+MARK_PEOPLE = ["Lê Văn An", "Trần Bình", "Ngô Cường"]
+def mark_values():
+    random.seed(11); v = {}
+    for p in range(3):
+        for dd in range(1, 31): v[(p, dd)] = [0, 1, 1, 2, 3][random.randint(0, 4)] if dd % 7 else 0
+    return v
+def draw_x(d, cx, cy, s, rnd):
+    j = lambda: rnd.randint(-2, 2)
+    d.line([(cx - s + j(), cy - s + j()), (cx + s + j(), cy + s + j())], fill=0, width=3)
+    d.line([(cx + s + j(), cy - s + j()), (cx - s + j(), cy + s + j())], fill=0, width=3)
+def marks_img():
+    vals = mark_values(); rnd = random.Random(5)
+    x0, y0, dayW, colW, rowH, gap = 40, 150, 70, 150, 46, 40
+    panelW = dayW + colW * 3; W = x0 * 2 + panelW * 2 + gap; H = y0 + rowH * 17 + 60
+    im = Image.new("L", (W, H), 255); d = ImageDraw.Draw(im)
+    d.text((x0, 40), "BẢNG CHẤM CÔNG TỔ BỐC XẾP THÁNG 09/2026", font=fb, fill=0)
+    for k, (d0, d1) in enumerate(((1, 15), (16, 30))):
+        px = x0 + k * (panelW + gap); xs = [px, px + dayW] + [px + dayW + colW * (i + 1) for i in range(3)]
+        ys = [y0 + rowH * i for i in range(d1 - d0 + 4)]
+        for x in xs: d.line([(x, ys[0]), (x, ys[-1])], fill=0, width=2)
+        for y in ys: d.line([(xs[0], y), (xs[-1], y)], fill=0, width=2)
+        def put(c, r, t, font=fs):
+            bx = d.textbbox((0, 0), t, font=font); d.text(((xs[c] + xs[c + 1] - (bx[2] - bx[0])) / 2, (ys[r] + ys[r + 1] - (bx[3] - bx[1])) / 2 - bx[1]), t, font=font, fill=0)
+        put(0, 0, "Ngày")
+        for i, nm in enumerate(MARK_PEOPLE): put(i + 1, 0, nm)
+        for r, dd in enumerate(range(d0, d1 + 1)):
+            put(0, r + 1, str(dd))
+            for p in range(3):
+                n = vals[(p, dd)]
+                if p == 1 and dd == 9: put(p + 1, r + 1, "7h-15h"); continue
+                cy = (ys[r + 1] + ys[r + 2]) / 2; cx0 = (xs[p + 1] + xs[p + 2]) / 2 - (n - 1) * 17
+                for m in range(n): draw_x(d, cx0 + m * 34 + rnd.randint(-2, 2), cy + rnd.randint(-2, 2), 11, rnd)
+        put(0, d1 - d0 + 2, "TC")
+    return im
+
+# 4) Lịch làm theo ca (α22): ngày theo hàng, mỗi người 1 cột; ô ghi số ca "1", "2", "3", "1+2"; "X" = nghỉ. Tên giả.
+CA_PEOPLE = ["Phan Thị Dung", "Hồ Văn Em"]
+CA_VALS = [["1", "2", "3", "1+2", "X", "1", "", "2", "1+2", "3", "1", "X", "2", "1", "2"], ["2", "X", "1", "1", "1+2", "", "3", "1", "2", "X", "1+2", "1", "3", "2", "1"]]
+def shifts_img():
+    x0, y0, dayW, colW, rowH = 40, 150, 80, 220, 46; days = len(CA_VALS[0])
+    xs = [x0, x0 + dayW, x0 + dayW + colW, x0 + dayW + colW * 2]; ys = [y0 + rowH * i for i in range(days + 2)]
+    W = xs[-1] + x0; H = ys[-1] + 60
+    im = Image.new("L", (W, H), 255); d = ImageDraw.Draw(im)
+    d.text((x0, 40), "LỊCH LÀM THEO CA THÁNG 10/2026", font=fb, fill=0)
+    for x in xs: d.line([(x, ys[0]), (x, ys[-1])], fill=0, width=2)
+    for y in ys: d.line([(xs[0], y), (xs[-1], y)], fill=0, width=2)
+    def put(c, r, t, font=f):
+        bx = d.textbbox((0, 0), t, font=font); d.text(((xs[c] + xs[c + 1] - (bx[2] - bx[0])) / 2, (ys[r] + ys[r + 1] - (bx[3] - bx[1])) / 2 - bx[1]), t, font=font, fill=0)
+    put(0, 0, "Ngày")
+    for i, nm in enumerate(CA_PEOPLE): put(i + 1, 0, nm, fs)
+    for r in range(days):
+        put(0, r + 1, str(r + 1))
+        for p in range(2):
+            if CA_VALS[p][r]: put(p + 1, r + 1, CA_VALS[p][r])
+    return im
+
 a = table_img(); a.save(os.path.join(OUT, "bang-cham-cong-mau.png"), optimize=True)
 b = vertical_img(); b.save(os.path.join(OUT, "lich-lam-doc-mau.png"), optimize=True)
 a.convert("RGB").save(os.path.join(OUT, "bang-cham-cong-mau.pdf"), "PDF", resolution=150)
 # bang-cham-cong-mau-pdfjs.png = trang PDF trên do app vẽ bằng pdf.js (lấy từ canvas trong app, chuyển xám) — dùng cho I-OCR-04
-print("ok", a.size, b.size)
+c = marks_img(); c.save(os.path.join(OUT, "cham-cong-tay-x-mau.png"), optimize=True)
+e = shifts_img(); e.save(os.path.join(OUT, "lich-ca-mau.png"), optimize=True)
+print("ok", a.size, b.size, c.size, e.size)
+if os.environ.get("EXPECT"):  # in giá trị mong đợi của bảng dấu x để đối chiếu với test
+    v = mark_values(); v[(1, 9)] = 1
+    for p in range(3): print(MARK_PEOPLE[p], [v[(p, dd)] for dd in range(1, 31)], sum(v[(p, dd)] for dd in range(1, 31)))

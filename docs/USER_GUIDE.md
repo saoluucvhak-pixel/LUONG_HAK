@@ -149,6 +149,11 @@ Mọi báo cáo xuất được Excel.
 3. Lưới kết quả: cột **Nhân viên** đã gợi ý theo tên (dấu ≈ = gợi ý, % = độ khớp) — chọn lại nếu sai; dòng chưa chọn nhân viên tô xám. Cột **Loại**: Chấm công BT / TC, Suất cơm, hoặc bỏ qua dòng.
 4. Ô **vàng** = OCR không chắc; ô **?** = không đọc được — sửa trực tiếp; bấm vào ô để xem ảnh gốc của ô. Dòng **đỏ** = tổng tính khác tổng ghi trên giấy → xem lại.
 5. **⬇ Xuất Excel** để lưu / gửi bảng đã đọc; **✔ Đưa vào Chấm công / Suất cơm…** → màn hình xem trước như nhập Excel → xác nhận.
+- **Cách đọc ô** (từ 2.0-alpha.22) — chọn trước khi chọn file, hoặc đổi trên từng trang (app đọc lại trang đó):
+  - *Số công*: ô ghi 1, 0,5…
+  - *Dấu x · giờ / 8*: x = 1 công, xx = 2, xxx = 3; ô ghi giờ "7h-15h" = 8 giờ / 8 = 1 công.
+  - *Số ca*: "1", "2", "3" = 1 công, "1+2" = 2 công, X = nghỉ.
+  - Bảng tay của tổ (mỗi người 1 cột, có thể 2 khối ngày 1–15 và 16–31): tên trên giấy lấy từ tiêu đề cột → chọn đúng nhân viên. Cột chưa đọc được tên thì chọn nhân viên bằng tay; cột Ghi chú để *bỏ qua dòng*.
 - Mẹo chụp: chụp thẳng, đủ sáng, bảng chiếm gần hết khung; PDF quét ≥ 200 dpi. Chữ viết tay đọc kém hơn chữ in — luôn soát lại.
 - Không đọc tự động: giấy tăng ca, xác nhận vân tay, sổ xe… (không phải bảng kẻ ô theo ngày) — nhập tay.
 
@@ -193,6 +198,9 @@ App chỉ tạo bản mới khi dữ liệu đã thay đổi. App offline nên c
 ## Nghỉ phép / nghỉ ốm (đối chiếu với chấm công từ 2.0-alpha.17)
 - Nhập đơn: **Nhân sự → nhân viên → Hợp đồng lao động → chọn hợp đồng → tab Quyền lợi phép / Nghỉ phép / Nghỉ ốm** (hoặc file mẫu Excel). Theo dõi: **Báo cáo nhân sự → Nghỉ phép / ốm** (phép được cấp, đã nghỉ, còn lại — chỉ đơn *Đã duyệt*).
 - Lương **vẫn lấy từ Chấm công**: phép có lương chấm dòng **PN**; nghỉ không lương / nghỉ ốm không chấm công.
+- **Nghỉ không lương** (từ 2.0-alpha.22): nhập đơn *Nghỉ phép* → Loại nghỉ **Nghỉ không hưởng lương**, *Đã duyệt*. **Không** cho nghỉ việc (không ghi ngày chấm dứt hợp đồng). Chưa biết ngày đi làm lại thì **để trống Đến ngày**; khi người đó đi làm lại thì nhập Đến ngày.
+- **Chia sản lượng theo chấm công** (từ 2.0-alpha.22): ngày nào người trong tổ có **công > 0** (0,3 hay 1 như nhau) thì được chia đều; **công = 0 / trống** thì không được chia và app cảnh báo khi tính lương. Vẫn trừ người ghi ở **NV vắng** trên phiếu. Nhớ **nhập chấm công trước khi tính lương** — ngày cả tổ chưa có chấm công thì app chia theo NV vắng và nhắc nhập chấm công.
+- Người có đơn nghỉ **đã duyệt** (mọi loại) **tự không nhận sản lượng / bơm dăm** của tổ những ngày nghỉ — không cần ghi NV vắng trên phiếu.
 - Khi tính lương, khung *Hồ sơ cần bổ sung* báo **[Nghỉ phép/ốm]** nếu đơn và chấm công lệch nhau (ngày cụ thể) hoặc còn đơn *Chờ duyệt* — sửa chấm công hoặc đơn rồi tính lại. App không tự sửa chấm công.
 
 ## Sao lưu ra ngoài máy (từ 2.0-alpha.13)

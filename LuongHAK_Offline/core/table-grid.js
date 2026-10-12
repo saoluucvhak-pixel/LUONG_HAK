@@ -31,16 +31,6 @@
     }
     return b;
   }
-  /** Xoay ảnh xám một góc nhỏ (độ) quanh tâm — nội suy gần nhất, nền trắng */
-  function rotate(g, w, h, deg) {
-    if (!deg) return g;
-    var a = deg * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a), cx = w / 2, cy = h / 2, o = new Uint8Array(w * h);
-    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
-      var dx = x - cx, dy = y - cy, sx = Math.round(c * dx + sn * dy + cx), sy = Math.round(-sn * dx + c * dy + cy);
-      o[y * w + x] = sx >= 0 && sx < w && sy >= 0 && sy < h ? g[sy * w + sx] : 255;
-    }
-    return o;
-  }
   /** Xoay 90° (k = 1: theo chiều kim đồng hồ, 2: 180°, 3: ngược chiều) — ảnh chụp bảng nằm ngang */
   function rotate90(g, w, h, k) {
     k = ((k % 4) + 4) % 4; if (!k) return { g: g, w: w, h: h };
@@ -51,76 +41,6 @@
       o[ny * W + nx] = g[y * w + x];
     }
     return { g: o, w: W, h: H };
-  }
-  /** Ước lượng góc nghiêng (±maxDeg) — góc làm các đường kẻ ngang "sắc" nhất (phương sai chiếu ngang lớn nhất) */
-  function skewAngle(b, w, h, maxDeg, step) {
-    maxDeg = maxDeg || 4; step = step || 0.25;
-    var best = 0, bestV = -1, cx = w / 2;
-    for (var d = -maxDeg; d <= maxDeg + 1e-9; d += step) {
-      var t = Math.tan(d * Math.PI / 180), prof = new Float64Array(h);
-      for (var y = 0; y < h; y += 1) for (var x = 0; x < w; x += 2) if (b[y * w + x]) { var yy = Math.round(y - (x - cx) * t); if (yy >= 0 && yy < h) prof[yy]++; }
-      var m = 0, v = 0; for (var i = 0; i < h; i++) m += prof[i]; m /= h; for (i = 0; i < h; i++) v += (prof[i] - m) * (prof[i] - m);
-      if (v > bestV) { bestV = v; best = d; }
-    }
-    return Math.round(best * 100) / 100;
-  }
-  /** Gom các vị trí liên tiếp có giá trị ≥ ngưỡng thành 1 đường (tâm) */
-  function peaks(prof, thr, gap) {
-    var out = [], s = -1;
-    for (var i = 0; i <= prof.length; i++) {
-      var on = i < prof.length && prof[i] >= thr;
-      if (on && s < 0) s = i;
-      if (!on && s >= 0) { out.push({ a: s, b: i - 1, c: (s + i - 1) / 2 }); s = -1; }
-    }
-    var m = [];
-    out.forEach(function (p) { var l = m[m.length - 1]; if (l && p.a - l.b <= (gap || 2)) { l.b = p.b; l.c = (l.a + l.b) / 2; } else m.push(p); });
-    return m;
-  }
-  /** Mặt nạ đường kẻ: giữ các đoạn mực liên tục dài ≥ minLen theo hướng (ngang / dọc) — như phép "mở" hình thái học */
-  function lineMask(b, w, h, horiz, minLen) {
-    var m = new Uint8Array(w * h), n = horiz ? h : w, len = horiz ? w : h;
-    for (var i = 0; i < n; i++) {
-      var run = 0;
-      for (var j = 0; j <= len; j++) {
-        var on = j < len && (horiz ? b[i * w + j] : b[j * w + i]);
-        // cho phép đứt 1–2 điểm (nét kẻ mờ)
-        if (!on && j < len - 2 && (horiz ? b[i * w + j + 1] || b[i * w + j + 2] : b[(j + 1) * w + i] || b[(j + 2) * w + i]) && run > 0) on = 1;
-        if (on) run++;
-        else { if (run >= minLen) for (var k = j - run; k < j; k++) { if (horiz) m[i * w + k] = 1; else m[k * w + i] = 1; } run = 0; }
-      }
-    }
-    return m;
-  }
-  /**
-   * Tìm lưới bảng trên ảnh nhị phân. Trả { rows: [y…], cols: [x…], cellOn(r, c) → ô (r,c) có đường dọc bên trái/phải trong dải dòng r không }.
-   */
-  function findGrid(b, w, h, opt) {
-    opt = opt || {};
-    var hm = lineMask(b, w, h, true, opt.minH || Math.max(20, Math.round(w * 0.06)));
-    var vm = lineMask(b, w, h, false, opt.minV || Math.max(10, Math.round(h * 0.015)));
-    var ph = new Float64Array(h), pv = new Float64Array(w);
-    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { if (hm[y * w + x]) ph[y]++; if (vm[y * w + x]) pv[x]++; }
-    var maxH = 0, maxV = 0; for (y = 0; y < h; y++) maxH = Math.max(maxH, ph[y]); for (x = 0; x < w; x++) maxV = Math.max(maxV, pv[x]);
-    var rows = peaks(ph, maxH * (opt.rowFrac || 0.35), 2).map(function (p) { return Math.round(p.c); });
-    var cols = peaks(pv, maxV * (opt.colFrac || 0.25), 2).map(function (p) { return Math.round(p.c); });
-    // bỏ đường quá sát nhau (nét kẻ đôi)
-    var dedupe = function (a, d) { var o = []; a.forEach(function (v) { if (!o.length || v - o[o.length - 1] > d) o.push(v); }); return o; };
-    rows = dedupe(rows, Math.max(4, h * 0.006)); cols = dedupe(cols, Math.max(4, w * 0.004));
-    // đường dọc có mặt trong dải dòng r? (ô gộp ở tiêu đề không có đường dọc)
-    var vOn = function (r, ci) {
-      var y0 = rows[r], y1 = rows[r + 1], x = cols[ci], hit = 0, tot = 0;
-      for (var yy = y0 + 2; yy < y1 - 1; yy++) { tot++; for (var dx = -2; dx <= 2; dx++) { var xx = x + dx; if (xx >= 0 && xx < w && vm[yy * w + xx]) { hit++; break; } } }
-      return tot ? hit / tot > 0.5 : false;
-    };
-    return { rows: rows, cols: cols, vOn: vOn, hMask: hm, vMask: vm };
-  }
-  /** Các ô của dải dòng r (ghép ô khi thiếu đường dọc) → [{ r, c0, c1, x0, x1, y0, y1 }] */
-  function rowCells(grid, r) {
-    var out = [], start = 0, C = grid.cols;
-    for (var ci = 1; ci < C.length; ci++) {
-      if (ci === C.length - 1 || grid.vOn(r, ci)) { out.push({ r: r, c0: start, c1: ci, x0: C[start], x1: C[ci], y0: grid.rows[r], y1: grid.rows[r + 1] }); start = ci; }
-    }
-    return out;
   }
   /** Tỷ lệ mực trong ô (bỏ viền ~inset) + hộp bao nét mực → dùng để bỏ qua ô trống, cắt sát chữ khi OCR */
   function inkBox(b, w, cell, inset) {
@@ -168,6 +88,61 @@
       if (c.n >= minN) out.push({ x0: c.x0 + box.x0, y0: c.y0 + box.y0, x1: c.x1 + box.x0 + 1, y1: c.y1 + box.y0 + 1, n: c.n });
     }
     return out;
+  }
+  /**
+   * Đếm dấu viết tay trong ô (X, ✓, /): chiếu mực theo cột, mỗi cụm mực cách nhau ≥ 12% chiều cao ô = 1 dấu
+   * (bảng chấm công tay "x" = 1 công, "xx" = 2, "xxx" = 3). Cụm quá nhỏ (chấm, vệt) bỏ qua.
+   */
+  function markGroups(b, w, box) {
+    var W = box.x1 - box.x0, H = box.y1 - box.y0; if (W <= 0 || H <= 0) return [];
+    var col = new Array(W), x, y;
+    for (x = 0; x < W; x++) { var n = 0; for (y = 0; y < H; y++) if (b[(y + box.y0) * w + x + box.x0]) n++; col[x] = n; }
+    var runs = [], s = -1, gapMax = Math.max(2, Math.round(H * 0.12));
+    for (x = 0; x <= W; x++) {
+      var on = x < W && col[x] > 0;
+      if (on && s < 0) s = x;
+      if (!on && s >= 0) { runs.push([s, x]); s = -1; }
+    }
+    var groups = [];
+    runs.forEach(function (r) { var g = groups[groups.length - 1]; if (g && r[0] - g[1] < gapMax) g[1] = r[1]; else groups.push([r[0], r[1]]); });
+    return groups.filter(function (g) {
+      var y0 = H, y1 = -1, ink = 0;
+      for (var xx = g[0]; xx < g[1]; xx++) for (var yy = 0; yy < H; yy++) if (b[(yy + box.y0) * w + xx + box.x0]) { ink++; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+      return g[1] - g[0] >= H * 0.15 && y1 - y0 >= H * 0.25 && ink >= H * 0.6;
+    });
+  }
+  /**
+   * Số dấu trong ô. unitW = bề rộng 1 dấu điển hình của cả trang (trung vị) → 2 nét của 1 dấu bị tách thì gộp lại,
+   * nhiều dấu viết dính nhau thì chia theo bề rộng (xxx dính = 3). Không có unitW = đếm cụm.
+   */
+  function countMarks(b, w, box, unitW) { return countMarksInfo(b, w, box, unitW).n; }
+  /** { n, sure }: sure = false khi không thấy dấu nào, hoặc một cụm dính có bề rộng lưng chừng giữa 2 số dấu (vd 1,5 dấu) → tô vàng để người dùng xem lại */
+  function countMarksInfo(b, w, box, unitW) {
+    var g = markGroups(b, w, box);
+    if (!unitW || !g.length) return { n: g.length, sure: g.length > 0 };
+    var merged = [], sure = true;
+    g.forEach(function (x) { var m = merged[merged.length - 1]; if (m && x[1] - m[0] <= unitW * 1.35) m[1] = x[1]; else merged.push([x[0], x[1]]); });
+    var n = merged.reduce(function (s0, x) {
+      var r = (x[1] - x[0]) / unitW, k = Math.max(1, Math.round(r)), f = r - Math.floor(r);
+      if (r > 1.3 && f > 0.3 && f < 0.7) sure = false;
+      return s0 + k;
+    }, 0);
+    return { n: n, sure: sure };
+  }
+  /** Ô "7h → 15h" / "7 - 9h" / "22h-6h": số giờ (qua đêm cộng 24), không phải khoảng giờ → null */
+  function parseHours(t) {
+    var m = String(t || "").replace(/\s+/g, "").match(/(\d{1,2})(?:[h:g](\d{0,2}))?[-–—>→~]+[>]?(\d{1,2})(?:[h:g](\d{0,2}))?/i);
+    if (!m) return null;
+    var a = +m[1] + (+m[2] || 0) / 60, b2 = +m[3] + (+m[4] || 0) / 60; if (a > 24 || b2 > 24) return null;
+    var d = b2 - a; if (d <= 0) d += 24; return d > 0 && d <= 16 ? Math.round(d * 100) / 100 : null;
+  }
+  /** Ô lịch làm theo ca: "1", "2", "3" = 1 ca; "1+2" = 2 ca … → số ca (= số công); rỗng → null; không đọc được → NaN */
+  function parseShifts(t) {
+    var s = String(t == null ? "" : t).replace(/\s+/g, "").replace(/[lI|!\]\[jJ]/g, "1");
+    if (!s) return null;
+    var parts = s.split(/[+&,;]+/).filter(Boolean);
+    if (parts.length && parts.every(function (p) { return /^[1-3]$/.test(p); })) return parts.length;
+    return NaN;
   }
   /** Ô chỉ có 1 nét đứng mảnh (cao ≥ 2,2 × rộng, cao ≥ 35% ô) → coi là số 1 viết tay */
   function looksLikeOne(comps, cellH) {
@@ -283,7 +258,7 @@
     for (var i = 0; i < g2.length; i++) if (hm[i] || vm[i]) { g2[i] = 255; b2[i] = 0; }
     return { g: g2, b: b2 };
   }
-  var api = { toGray: toGray, binarize: binarize, rotate: rotate, rotate90: rotate90, skewAngle: skewAngle, findGrid: findGrid, rowCells: rowCells, traceLines: traceLines, drawLines: drawLines, findCells: findCells, removeLines: removeLines, resize: resize, autoScale: autoScale, inkComponents: inkComponents, looksLikeOne: looksLikeOne, inkBox: inkBox, lineMask: lineMask, peaks: peaks, parseCellNumber: parseCellNumber };
+  var api = { toGray: toGray, binarize: binarize, rotate90: rotate90, traceLines: traceLines, drawLines: drawLines, findCells: findCells, removeLines: removeLines, resize: resize, autoScale: autoScale, inkComponents: inkComponents, countMarks: countMarks, countMarksInfo: countMarksInfo, markGroups: markGroups, parseHours: parseHours, parseShifts: parseShifts, looksLikeOne: looksLikeOne, inkBox: inkBox, parseCellNumber: parseCellNumber };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.grid = api; }
 })(typeof window !== "undefined" ? window : this);

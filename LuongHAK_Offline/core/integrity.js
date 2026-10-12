@@ -106,6 +106,44 @@
       var multi = Object.keys(by).filter(function (k) { return by[k].length > 1; });
       if (multi.length) push("Medium", t, multi.length + " phiếu cân được chia cho nhiều dòng (VD " + multi.slice(0, 5).join(", ") + ") — kiểm tra tổng KL các dòng không vượt KL gốc của phiếu");
     });
+    // Danh mục: 2 dòng cùng mã + CÙNG "Hiệu lực từ" → hieuLuc() (engine.js) không biết dòng nào đúng,
+    // tự chọn 1 dòng mà không báo (Master Prompt mục 4.5: "Nếu có nhiều dòng chồng lấn hiệu lực, phải
+    // báo LỖI: Trùng quy chế — không được tự động lấy dòng đầu tiên"). Chỉ bắt TRÙNG THẬT (cùng ngày
+    // hiệu lực) — nhiều dòng cùng mã nhưng Hiệu lực từ KHÁC NHAU là bình thường (tăng lương/đổi mức).
+    var DM_KEY = {
+      dm_luong: "Mã lương", dm_phucap: "Mã phụ cấp", dm_tangca: "Mã tăng ca", dm_hotro: "Mã hỗ trợ",
+      dm_baohiem: "Mã bảo hiểm", dm_tncn: "Mã thuế TNCN", dm_giamtru: "Mã giảm trừ",
+      dm_phongban: "Mã phòng ban", dm_chucvu: "Mã chức vụ"
+    };
+    Object.keys(DM_KEY).forEach(function (t) {
+      var keyCol = DM_KEY[t], seen = {};
+      (db[t] || []).forEach(function (r) {
+        var k = r[keyCol]; if (k === "" || k == null) return;
+        var tu = V.normDate(r["Hiệu lực từ"]) || "";
+        var gk = k + "|" + tu;
+        seen[gk] = (seen[gk] || 0) + 1;
+      });
+      Object.keys(seen).forEach(function (gk) {
+        if (seen[gk] < 2) return;
+        var p = gk.split("|");
+        push("High", t, "Mã " + p[0] + " có " + seen[gk] + " dòng cùng 'Hiệu lực từ'" + (p[1] ? " (" + p[1] + ")" : " (trống)") + " — không rõ dòng nào đúng, app đang tự chọn 1 dòng mà không báo. Hãy xóa dòng thừa hoặc sửa lại Hiệu lực từ.");
+      });
+    });
+    // dm_bacthue: khóa gồm Bậc + Mã thuế TNCN (PV-7c — Mã thuế TNCN trống = áp dụng chung cho mọi mã)
+    (function () {
+      var seen = {};
+      (db.dm_bacthue || []).forEach(function (r) {
+        var bac = r["Bậc"]; if (bac === "" || bac == null) return;
+        var tu = V.normDate(r["Hiệu lực từ"]) || "";
+        var gk = (r["Mã thuế TNCN"] || "") + "|" + bac + "|" + tu;
+        seen[gk] = (seen[gk] || 0) + 1;
+      });
+      Object.keys(seen).forEach(function (gk) {
+        if (seen[gk] < 2) return;
+        var p = gk.split("|");
+        push("High", "dm_bacthue", "Bậc " + p[1] + (p[0] ? " (mã thuế " + p[0] + ")" : "") + " có " + seen[gk] + " dòng cùng 'Hiệu lực từ'" + (p[2] ? " (" + p[2] + ")" : " (trống)") + " — không rõ dòng nào đúng, app đang tự chọn 1 dòng mà không báo. Hãy xóa dòng thừa hoặc sửa lại Hiệu lực từ.");
+      });
+    })();
     // Ô công bất thường
     (db.chamcong || []).forEach(function (r) {
       DAYS.forEach(function (d) {

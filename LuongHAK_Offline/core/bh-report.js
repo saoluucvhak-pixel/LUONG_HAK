@@ -35,13 +35,13 @@
       { "Khoản": "BHXH", "Công ty đóng": s("CTY.BHXH"), "Người lao động đóng (trừ lương)": s("NLĐ.BHXH", duNguong) },
       { "Khoản": "BHYT", "Công ty đóng": s("CTY.BHYT"), "Người lao động đóng (trừ lương)": s("NLĐ.BHYT", duNguong) },
       { "Khoản": "BHTN", "Công ty đóng": s("CTY.BHTN"), "Người lao động đóng (trừ lương)": s("NLĐ.BHTN", duNguong) },
-      { "Khoản": "KPCĐ (nộp công đoàn)", "Công ty đóng": s("CTY.KPCĐ"), "Người lao động đóng (trừ lương)": s("NLĐ.KPCĐ", duNguong) }]; // quy chế 2026: NLĐ đóng KPCĐ (C7); kỳ tính theo cách cũ = 0
+      { "Khoản": "KPCĐ (nộp công đoàn)", "Công ty đóng": s("CTY.KPCĐ"), "Người lao động đóng (trừ lương)": s("NLĐ.KPCĐ", duNguong) }]; // KPCĐ NLĐ trừ riêng (cột "KPCĐ trừ NLĐ" của bảng lương)
     rows.forEach(function (r) { r["Cộng"] = r["Công ty đóng"] + r["Người lao động đóng (trừ lương)"]; });
     var t = { "Khoản": "TỔNG", "Công ty đóng": 0, "Người lao động đóng (trừ lương)": 0, "Cộng": 0 };
     rows.forEach(function (r) { ["Công ty đóng", "Người lao động đóng (trừ lương)", "Cộng"].forEach(function (c) { t[c] += r[c]; }); });
     rows.push(t);
     var chua = b.filter(function (r) { return !duNguong(r); });
-    return { rows: rows, soNguoi: b.length, chuaDuNguong: chua.length, truyThu: s("Truy thu bảo hiểm"), lechNLD: s("Cộng BH NLĐ đóng") - t["Người lao động đóng (trừ lương)"] };
+    return { rows: rows, soNguoi: b.length, chuaDuNguong: chua.length, truyThu: s("Truy thu bảo hiểm"), lechNLD: s("Cộng BH NLĐ đóng") + s("NLĐ.KPCĐ", duNguong) - t["Người lao động đóng (trừ lương)"] }; // "Cộng BH NLĐ đóng" = BHXH + BHYT + BHTN; KPCĐ NLĐ là cột riêng
   }
   /** Tăng / giảm / điều chỉnh mức đóng so với kỳ trước */
   function bienDong(kq, kqTruoc) {

@@ -60,6 +60,40 @@
     }).filter(function (r) { return r.x1 > r.x0; });
   }
   /**
+   * Cách đọc ô ngày (α22, chủ sở hữu duyệt 11/10/2026):
+   *  "mark" — bảng đánh dấu: x = 1 công, xx = 2, xxx = 3; ô ghi giờ "7h→15h" = số giờ / 8
+   *  "ca"   — lịch làm theo ca: "1" / "2" / "3" = 1 công, "1+2" = 2 công, X = nghỉ
+   * Đặt c.val cho mọi ô có mực (timesheet-parse dùng c.val cho ô ngày; cột ngày vẫn nhận theo c.num).
+   */
+  function cellMode(cells, clean, r, mode, host) {
+    if (mode !== "mark" && mode !== "ca") return Promise.resolve();
+    var ink = cells.filter(function (c) { return c.ink && c.bb; });
+    var items = ink.map(function (c) { return Object.assign(crop(clean.g, r.w, r.h, c.bb, 40, 10, 0), { mode: mode === "ca" ? "ca" : "block" }); });
+    return (items.length ? host.ocr(items) : Promise.resolve([])).then(function (out) {
+      // bề rộng 1 dấu điển hình của trang (trung vị các cụm mực) — chuẩn hóa đếm "xxx"
+      var widths = []; if (mode === "mark") ink.forEach(function (c) { G.markGroups(clean.b, r.w, c.bb).forEach(function (g) { widths.push(g[1] - g[0]); }); });
+      widths.sort(function (a, b) { return a - b; });
+      var unitW = widths.length >= 5 ? widths[Math.floor(widths.length / 2)] : 0;
+      ink.forEach(function (c, i) {
+        var t = (out[i] || {}).text || "", conf = (out[i] || {}).conf || 0;
+        if (mode === "mark") {
+          var hr = G.parseHours(t) != null ? G.parseHours(t) : G.parseHours(c.text);
+          if (hr != null) { c.val = Math.round(hr / 8 * 1000) / 1000; c.valSrc = "giờ " + hr; return; }
+          var mi = G.countMarksInfo(clean.b, r.w, c.bb, unitW), n = mi.n;
+          c.val = n > 0 ? n : NaN; c.valSrc = n > 0 ? n + " dấu" : "không rõ"; c.unsure = !mi.sure;
+        } else {
+          var v = G.parseShifts(t);
+          if (!(typeof v === "number" && isFinite(v))) v = G.parseShifts(c.text);
+          if (typeof v === "number" && isFinite(v)) { c.val = v; c.valSrc = v + " ca"; return; }
+          if (/[xX×]/.test(t)) { c.val = null; c.valSrc = "X = nghỉ"; return; }
+          if (G.looksLikeOne(G.inkComponents(clean.b, r.w, c.bb), c.y1 - c.y0)) { c.val = 1; c.valSrc = "nét 1"; c.unsure = true; return; }
+          c.val = NaN; c.valSrc = "không rõ (" + t + ")";
+        }
+        c.conf = Math.min(c.conf || conf, conf);
+      });
+    });
+  }
+  /**
    * img: { g: xám Uint8Array, w, h }; host.ocr(items) → Promise<[{ text, conf }]>; opt.rotate: 0…3 (bỏ trống = tự đoán); opt.onProgress(msg)
    * Trả Promise<{ rot, scale, g, w, h, cells, table, title, period }>
    */
@@ -85,7 +119,9 @@
         var title = tl.map(function (t, i) { return out[todo.length + i].text; }).filter(Boolean);
         // ô hẹp đọc số không chắc → đọc lại dạng chữ (tiêu đề "Tổng công", nhãn "Công / Tăng ca")
         // ô rộng đọc 1 dòng không chắc (nhãn 2 dòng "Tổng / công") → đọc lại dạng khối
-        var again = todo.filter(function (c) { return c.conf < 55 || !String(c.text).trim(); });
+        // ô hẹp mà vệt mực dài như 1 dòng chữ (tên người ở tiêu đề cột) nhưng đọc số chỉ ra 1 chữ số → đọc lại dạng chữ
+        var textLike = function (c) { return !c.wide && c.bb && c.bb.x1 - c.bb.x0 > 3 * (c.bb.y1 - c.bb.y0) && String(c.text).replace(/[^0-9]/g, "").length <= 1; };
+        var again = todo.filter(function (c) { return c.conf < 55 || !String(c.text).trim() || textLike(c); });
         // ô rộng (cột "Tổng công") có thể chỉ chứa số → đọc thêm dạng số
         var items2 = [];
         again.forEach(function (c) {
@@ -105,7 +141,7 @@
               else if (t2.conf > c.conf && letters(t2.text) >= letters(c.text)) { c.text = t2.text; c.conf = t2.conf; }
               return;
             }
-            if (letters(t2.text) >= 3 && t2.conf >= 45 && !num1) { c.text = t2.text; c.conf = t2.conf; c.src = "text"; } // nhãn chữ (Tổng công, Tăng ca…) — ô số giữ kết quả số
+            if ((letters(t2.text) >= 3 || /^\s*t[cg]\s*$/i.test(t2.text)) && t2.conf >= 45 && (!num1 || (textLike(c) && letters(t2.text) >= 4))) { c.text = t2.text; c.conf = t2.conf; c.src = "text"; } // nhãn chữ (Tổng công, Tăng ca…) — ô số giữ kết quả số
           });
           cells.forEach(function (c) {
             if (!c.ink) { c.num = null; return; }
@@ -114,10 +150,12 @@
             if (!c.wide && typeof n === "number" && n > 31) n = NaN; // ô hẹp > 31 (không phải ngày, không thể là công 1 ngày) = đọc sai → "?"
             c.num = n == null ? (letters(c.text) ? null : NaN) : n;
           });
+          return cellMode(cells, clean, r, opt.cellMode, host).then(function () {
           say("Đang dựng bảng…");
           var table = TP.parse(cells.map(function (c) { return c; }));
           var period = ""; title.forEach(function (t) { period = period || TP.periodFromText(t); });
-          return { rot: k, scale: s, g: r.g, clean: clean.g, w: r.w, h: r.h, cells: cells, table: table, title: title, period: period, box: found.box };
+          return { rot: k, scale: s, g: r.g, clean: clean.g, w: r.w, h: r.h, cells: cells, table: table, title: title, period: period, box: found.box, cellMode: opt.cellMode || "so" };
+          });
         });
       });
     });

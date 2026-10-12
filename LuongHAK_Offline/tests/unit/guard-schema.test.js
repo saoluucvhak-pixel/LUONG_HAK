@@ -105,3 +105,14 @@ test("U-SCH-02 lỗi dữ liệu → báo cáo đủ loại, KHÔNG sửa/xóa g
     assert.match(txt, re);
   assert.ok(r.info.some((m) => /bang_tu_ban_moi/.test(m)));
 });
+
+test("U-GRD-06 (α22) đơn nghỉ ảnh hưởng chia sản lượng: sửa đơn phủ kỳ đã chốt → hồi tố; đơn kỳ chưa chốt → không; bản chốt lưu kèm đơn nghỉ phủ kỳ", () => {
+  const db = closedDb();
+  const r = { "Mã NV": "NV001", "Số HĐLĐ": "HD1", "Loại nghỉ": "Nghỉ không hưởng lương", "Từ ngày": "2026-09-20", "Đến ngày": "", "Trạng thái duyệt": "Đã duyệt" };
+  assert.deepEqual(GRD.impact(db, "nghiphep", r), { kind: "retro", periods: ["2026-09"] });
+  assert.equal(GRD.impact(db, "nghiom", Object.assign({}, r, { "Từ ngày": "2026-10-02", "Đến ngày": "2026-10-03" })).kind, "none");
+  db.nghiphep = [r, Object.assign({}, r, { "Từ ngày": "2026-07-01", "Đến ngày": "2026-07-05" })];
+  const staff = HR.staffForPayroll(db, 2026, 10), kq = E.tinhBangLuong(Object.assign({}, db, { nhansu: staff.list }), 2026, 10, {});
+  const snap = CLS.buildSnapshot(db, "2026-10", kq, staff.list, {});
+  assert.equal(snap.input.data.nghiphep.length, 1, "chỉ đơn phủ kỳ 10/2026 (đơn chưa biết ngày về)");
+});

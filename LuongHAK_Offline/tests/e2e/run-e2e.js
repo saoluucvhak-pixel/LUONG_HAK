@@ -105,6 +105,30 @@ async function launch(dataDir, opt) {
   await w.click("#nav button[data-k=luong]"); await w.click("button.big");
   const line = await w.locator("main tbody tr").first().innerText();
   ok("Tính lương: 12.000.000 − BH 630.000 = 11.370.000", /11\.370\.000/.test(line), line.replace(/\t/g, " | "));
+  // Master Prompt V3 mục 16.3: "Xem chi tiết cách tính" — bấm 1 dòng bảng lương → phiếu lương, chuyển sang xem công thức
+  await w.locator("main tbody tr").first().click(); await w.waitForSelector(".dlg");
+  const slipHeader = await w.locator(".dlg header h3").innerText();
+  await w.click('.dlg footer button:has-text("Xem cách tính")'); await w.waitForTimeout(150);
+  const ctTxt = await w.locator(".dlg .bd").innerText();
+  ok("Xem chi tiết cách tính (mục 16.3): hiện công chuẩn, công tính TG, BH, thuế, thực lĩnh với giá trị đã thế",
+    /Công chuẩn/.test(ctTxt) && /Công tính TG/.test(ctTxt) && /Lương thời gian/.test(ctTxt) && /Thuế TNCN/.test(ctTxt) && /Thực lĩnh/.test(ctTxt) && /11\.370\.000/.test(ctTxt),
+    ctTxt.replace(/\s+/g, " ").slice(0, 250));
+  await w.click('.dlg footer button:has-text("Xem phiếu lương")'); await w.waitForTimeout(150);
+  ok("Quay lại phiếu lương từ màn hình cách tính", (await w.locator(".dlg header h3").innerText()) === slipHeader);
+  await w.click('.dlg footer button:has-text("Đóng")');
+  // Master Prompt V3 mục XVII: Đối chiếu lương Power Query — nhập 1 Excel tham chiếu, so theo từng người/chỉ tiêu
+  await w.click("#nav button[data-k=doichieu]");
+  const dcWb = new (require(path.join(APP, "exceljs.min.js"))).Workbook(); const dcWs = dcWb.addWorksheet("BangLuongCu");
+  dcWs.getRow(1).values = ["Mã NV", "Họ và tên", "Thực lĩnh", "Tiền tăng ca"];
+  dcWs.getRow(2).values = ["NV001", "E2E Nhân Viên", 11370000 - 50000, 0]; // cố ý lệch 50.000đ so với app (11.370.000)
+  const dcFile = path.join(DL, "..", "doichieu_thamkhao.xlsx");
+  fs.writeFileSync(dcFile, new Uint8Array(await dcWb.xlsx.writeBuffer()));
+  const [fcDC] = await Promise.all([w.waitForEvent("filechooser"), w.click('button:has-text("Chọn file Excel đối chiếu")')]);
+  await fcDC.setFiles(dcFile); await w.waitForTimeout(400);
+  const dcTxt = await w.locator("main").first().innerText();
+  ok("Đối chiếu lương Power Query (mục XVII): nhận file, phát hiện 1 dòng chênh lệch Thực lĩnh (50.000đ), không báo lệch giả ở 'Tiền tăng ca' (cả 2 bên đều 0)",
+    /1 dòng chênh lệch/.test(dcTxt) && /50\.000/.test(dcTxt) && /Thực lĩnh/.test(dcTxt), dcTxt.replace(/\s+/g, " ").slice(0, 400));
+  await w.click("#nav button[data-k=luong]");
   await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForSelector(".dlg");
   await w.locator(".dlg input").fill("Chốt bởi E2E"); await w.click(".dlg footer button.pri"); await w.waitForSelector(".locked");
   ok("Chốt kỳ lương (hộp nhập của app, không dùng window.prompt)", (await w.locator(".locked").first().innerText()).indexOf("đã chốt") >= 0);
@@ -480,18 +504,22 @@ async function launch(dataDir, opt) {
     const pbTxt = await w.locator("main").first().innerText();
     await w.click('#main button:has-text("mẫu công cụ phân bổ")');
     let xf2 = null; for (let i = 0; i < 40 && !xf2; i++) { await w.waitForTimeout(200); xf2 = fs.readdirSync(DL).filter((x) => /^Phan_bo_khoi_luong_2026-10\.xlsx$/.test(x))[0]; }
-    let tan = {}, bu = {}, sheets = "";
+    let tan = {}, bu = {}, sheets = "", buNgay = {};
     if (xf2) {
       await w.waitForTimeout(300);
       const XLSX = require(path.join(APP, "xlsx.full.min.js")), wb2 = XLSX.read(fs.readFileSync(path.join(DL, xf2)), { type: "buffer" }); sheets = wb2.SheetNames.join("|");
       XLSX.utils.sheet_to_json(wb2.Sheets["Chi tiet cong nhan"], { header: 1 }).forEach((r) => { if (/^T\d$/.test(r[2])) tan[r[2]] = r[r.length - 1]; });
       XLSX.utils.sheet_to_json(wb2.Sheets["Tien luong va bu luong"], { header: 1 }).forEach((r) => { if (/^T\d$/.test(r[2])) bu[r[2]] = r[r.length - 2]; });
+      XLSX.utils.sheet_to_json(wb2.Sheets["Bu luong theo ngay - DH"], { header: 1 }).forEach((r) => { if (/^Tổng bù cả tháng/.test(String(r[0] || ""))) { const ma = /\(([^)]+)\)/.exec(r[0])[1]; buNgay[ma] = r[r.length - 1]; } });
     }
-    ok("Chia phiếu theo tổ như công cụ: trừ NV vắng, người đã nghỉ việc không nhận — T1 5 · T2 15 · T3 13 · T4 12 tấn; phiếu mã tổ lạ chưa phân bổ",
-      tan.T1 === 5 && tan.T2 === 15 && tan.T3 === 13 && tan.T4 === 12 && /09\.99/.test(pbTxt) && /chưa phân bổ/.test(pbTxt), JSON.stringify(tan));
+    // R-73: ngày 02/10 chỉ T3 có công (0,5) mà phiếu P3 ghi vắng Hùng (T3) → T1, T2, T4 công 0 = nghỉ → P3 6 tấn chưa phân bổ
+    ok("Chia phiếu theo tổ như công cụ: trừ NV vắng, người đã nghỉ việc / công = 0 không nhận — T1 3 · T2 13 · T3 13 · T4 10 tấn; P3 (không ai có công) và phiếu mã tổ lạ chưa phân bổ",
+      tan.T1 === 3 && tan.T2 === 13 && tan.T3 === 13 && tan.T4 === 10 && /09\.99/.test(pbTxt) && /chưa phân bổ/.test(pbTxt), JSON.stringify(tan));
     ok("Bù lương theo ngày bậc thang (Đại Hiệp): T2, T3 ngày 01 (1 công BT, 10 tấn) bù 140.000; T1 không có công BT ngày có SL → 0",
       bu.T2 === 140000 && bu.T3 === 140000 && bu.T1 === 0, JSON.stringify(bu));
-    ok("File Excel đủ sheet như công cụ", sheets === "Huong dan su dung|Tong hop phong ban|Phan bo theo phong ban|Chi tiet cong nhan|Doi soat phieu can|Tien luong va bu luong|Du lieu - Khoi luong", sheets);
+    ok("Sheet 'Bu luong theo ngay - DH' (mục XVII): tổng bù cả tháng mỗi người khớp đúng cột 'Bù lương' ở sheet tổng hợp",
+      buNgay.T2 === 140000 && buNgay.T3 === 140000, JSON.stringify(buNgay));
+    ok("File Excel đủ sheet như công cụ", sheets === "Huong dan su dung|Tong hop phong ban|Phan bo theo phong ban|Chi tiet cong nhan|Doi soat phieu can|Tien luong va bu luong|Bu luong theo ngay - DH|Du lieu - Khoi luong", sheets);
     // File mẫu tải từ app = mẫu công cụ
     await w.click("#nav button[data-k=sanluong]"); await w.click('#main button:has-text("Tải file mẫu")');
     let mf = null; for (let i = 0; i < 30 && !mf; i++) { await w.waitForTimeout(200); mf = fs.readdirSync(DL).filter((x) => x === "mau_bang_khoi_luong.xlsx")[0]; }
@@ -584,6 +612,17 @@ async function launch(dataDir, opt) {
       const s4 = n4 === "3" ? await w.evaluate(() => [...document.querySelectorAll(".ocrgrid tbody tr")].map((tr) => tr.children[tr.children.length - 2].textContent)) : [];
       ok("Trang đã dừng: bấm Đọc lại thì đọc được (3 dòng, đúng tổng)", n4 === "3" && s4.join("|") === "28,5|20|15", n4 + " " + s4.join("|"));
     }
+    // α22: Cách đọc ô "Dấu x (x = 1 công) · giờ / 8" — bảng tay của tổ, 2 khối ngày, mỗi người 1 cột
+    {
+      await w.selectOption('select[aria-label="Cách đọc ô cho file mới"]', "mark");
+      const [fc3] = await Promise.all([w.waitForEvent("filechooser"), w.locator('#main button:has-text("Chọn ảnh / PDF")').click()]);
+      await fc3.setFiles([path.join(FX, "cham-cong-tay-x-mau.png")]);
+      let n6 = ""; for (let i = 0; i < 240 && !/^\d+$/.test(n6); i++) { await w.waitForTimeout(500); n6 = await w.locator(".subtabs button .n").nth(5).innerText().catch(() => ""); }
+      await w.locator(".subtabs button").nth(5).click(); await w.waitForTimeout(200);
+      const pm = await w.locator('select[aria-label="Cách đọc ô của trang"]').inputValue();
+      const g6 = await w.evaluate(() => [...document.querySelectorAll(".ocrgrid tbody tr")].map((tr) => [tr.querySelector("input.i").value, tr.querySelectorAll("select")[1].value, tr.querySelector("input[data-day='9']").value, tr.children[tr.children.length - 2].textContent]));
+      ok("Cách đọc ô Dấu x: bảng tay 2 khối, mỗi người 1 cột → tên lấy từ tiêu đề cột, loại Công; xx = 2, ô '7h-15h' = 1; tổng 47 / 35 / 29", pm === "mark" && g6.map((r) => r.join(":")).join("|") === "Lê Văn An:Công:1:47|Trần Bình:Công:1:35|Ngô Cường:Công:2:29", pm + " " + JSON.stringify(g6));
+    }
     ok("Không lỗi JavaScript ở Đọc ảnh chấm công", errs.length === 0, errs.join(" | "));
     await app.close();
   }
@@ -632,6 +671,32 @@ async function launch(dataDir, opt) {
     ok("File hỏng được giữ lại (không xóa)", fs.readdirSync(DATA).some((f) => /^data\.corrupt_/.test(f)));
   } else ok("Có bản sao lưu để khôi phục", false);
   await app.close();
+
+  // ---- Checklist 20 điểm trước khi chốt kỳ (Master Prompt V3 mục XVIII) ----
+  // Đặt ở CUỐI (sau mọi test dùng chung DATA): chốt thêm kỳ 10/2026 ở đây để không ảnh hưởng các test
+  // phía trên vốn giả định chỉ kỳ 9/2026 đã chốt (VD A3-01 dùng phụ lục hiệu lực 10/2026 — chưa chốt).
+  { // Thêm NV riêng (không đụng NV001 — đã có nhiều phụ lục chồng chéo từ các test trước) với Mã tăng ca sai để lộ 1 điểm "cảnh báo"
+    const f = path.join(DATA, "data.json"), d0 = JSON.parse(fs.readFileSync(f, "utf8"));
+    d0.nhanvien.push({ _id: "zchk1", "Mã NV": "ZCHK1", "Họ và tên": "E2E Checklist", "Trạng thái": "Đang làm việc" });
+    d0.hopdong.push({ _id: "zchk1hd", "Mã NV": "ZCHK1", "Số HĐLĐ": "ZCHK1/HĐ01", "Hình thức HĐLĐ": "Xác định thời hạn", "Ngày vào làm": "2026-01-01" });
+    d0.chitiethd.push({ _id: "zchk1pl", "Mã NV": "ZCHK1", "Số HĐLĐ": "ZCHK1/HĐ01", "Hiệu lực từ": "2026-01-01", "Mã lương": "TG1", "Lương thỏa thuận": "9000000", "Thuế TNCN": "MT00", "HTTT": "Tiền mặt", "Tăng ca": "TC_KHONG_TON_TAI" });
+    d0.chamcong.push({ "Kỳ": "2026-10", "Mã NV": "ZCHK1", "Hình thức công": "BT", "01": "1" });
+    fs.writeFileSync(f, JSON.stringify(d0));
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=luong]");
+    await w.selectOption("#top select", "10"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change"); await w.waitForTimeout(200);
+    await w.click("button.big"); await w.waitForTimeout(200);
+    await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForSelector(".dlg");
+    const ckTxt = await w.locator(".dlg").innerText();
+    ok("Checklist trước khi chốt (mục XVIII): hiện đúng 20 điểm, báo mã tăng ca 'TC_KHONG_TON_TAI' chưa có trong danh mục",
+      /20 điểm|cảnh báo trên 20 điểm/.test(ckTxt) && /TC_KHONG_TON_TAI/.test(ckTxt), ckTxt.replace(/\s+/g, " ").slice(0, 300));
+    // Nút tiếp tục đổi nhãn/màu theo mức độ (còn LỖI thật từ sản lượng chưa phân bổ hết ở các test trước đó → nút đỏ)
+    await w.click('.dlg footer button:has-text("tiếp tục chốt"), .dlg footer button:has-text("Vẫn chốt dù còn LỖI")'); await w.waitForSelector(".dlg");
+    ok("Sau khi xác nhận checklist, vào đúng hộp xác nhận chốt kỳ như cũ", /Chốt Tháng 10\/2026|Chốt kỳ/.test(await w.locator(".dlg header h3").innerText()));
+    await w.locator(".dlg input").fill("Chốt E2E checklist"); await w.click(".dlg footer button.pri"); await w.waitForSelector(".locked");
+    ok("Chốt được kỳ 10/2026 sau khi xem checklist", (await w.locator(".locked").first().innerText()).indexOf("đã chốt") >= 0);
+    await app.close();
+  }
 
   // Cấu trúc dữ liệu nguy hiểm → chỉ xem/khôi phục, file KHÔNG bị đổi 1 byte (bản 1.4.0 thay bảng sai kiểu bằng bảng rỗng)
   for (const [label, bad] of [["bảng Nhân viên sai kiểu", { schemaVersion: 2, nhanvien: { NV001: { "Họ và tên": "A" } }, chamcong: [] }],

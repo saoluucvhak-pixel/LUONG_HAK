@@ -29,7 +29,7 @@ function unpacked(p) { return p.replace(/app\.asar([\\/])/, "app.asar.unpacked$1
 /**
  * opts.appDir: thư mục app (chứa ocr/lang); opts.tesseract: thư viện (mặc định require("tesseract.js"))
  * Trả { batch(items) → Promise<[{ text, conf }]>, selfTest(), terminate() }
- * items: [{ w, h, data: Uint8Array xám, mode: "digit" | "text" | "block" | "page" }]
+ * items: [{ w, h, data: Uint8Array xám, mode: "digit" | "text" | "block" | "page" | "ca" }]
  */
 function createOcrService(opts) {
   opts = opts || {};
@@ -52,7 +52,7 @@ function createOcrService(opts) {
     await text.setParameters({ tessedit_pageseg_mode: T.PSM.SINGLE_LINE, preserve_interword_spaces: "1" });
     const digit = await T.createWorker("eng", 1, o);
     await digit.setParameters({ tessedit_pageseg_mode: T.PSM.SINGLE_WORD, tessedit_char_whitelist: "0123456789.,/" });
-    workers = { text, digit, page: null, block: null };
+    workers = { text, digit, page: null, block: null, ca: null };
     return workers;
   }
   async function run(items) {
@@ -68,8 +68,9 @@ function createOcrService(opts) {
         out.push({ text: "", conf: Math.round(rp.data.confidence || 0), good: good });
         continue;
       }
+      if (it.mode === "ca" && !ws.ca) { ws.ca = await T.createWorker("eng", 1, wopts()); await ws.ca.setParameters({ tessedit_pageseg_mode: T.PSM.SINGLE_LINE, tessedit_char_whitelist: "0123456789+xX" }); } // lịch làm theo ca: "1+2", X
       if (it.mode === "block" && !ws.block) { ws.block = await T.createWorker("vie", 1, wopts()); await ws.block.setParameters({ tessedit_pageseg_mode: T.PSM.SINGLE_BLOCK }); } // nhãn 2 dòng ("Tổng / công")
-      const r = await (it.mode === "digit" ? ws.digit : it.mode === "block" ? ws.block : ws.text).recognize(encodeGrayPNG(data, it.w, it.h));
+      const r = await (it.mode === "digit" ? ws.digit : it.mode === "block" ? ws.block : it.mode === "ca" ? ws.ca : ws.text).recognize(encodeGrayPNG(data, it.w, it.h));
       out.push({ text: String(r.data.text || "").replace(/\s+$/g, "").replace(/\n+/g, " ").trim(), conf: Math.round(r.data.confidence || 0) });
     }
     return out;
@@ -86,11 +87,11 @@ function createOcrService(opts) {
       const t0 = Date.now(), r = (await this.batch([{ w, h, data: g, mode: "digit" }]))[0];
       return { ok: true, text: r.text, conf: r.conf, ms: Date.now() - t0, langPath };
     },
-    async terminate() { if (workers) { const w = workers; workers = null; await w.text.terminate(); await w.digit.terminate(); if (w.page) await w.page.terminate(); if (w.block) await w.block.terminate(); } }
+    async terminate() { if (workers) { const w = workers; workers = null; await w.text.terminate(); await w.digit.terminate(); if (w.page) await w.page.terminate(); if (w.block) await w.block.terminate(); if (w.ca) await w.ca.terminate(); } }
   };
 }
 
-const MODES = { digit: 1, text: 1, block: 1, page: 1 };
+const MODES = { digit: 1, text: 1, block: 1, page: 1, ca: 1 };
 /** Kiểm tra lô ô từ giao diện: giữ nguyên số phần tử; ô sai (kích thước, dữ liệu) → { w: 0 } (trả kết quả rỗng) */
 function sanitizeOcrItems(items) {
   return items.map((it) => {

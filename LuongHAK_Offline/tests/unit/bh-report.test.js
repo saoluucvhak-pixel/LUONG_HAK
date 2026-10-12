@@ -45,3 +45,10 @@ test("U-BHR-03 theo phòng ban + chi tiết: tổng các phòng = tổng chi ti�
   assert.equal(JSON.stringify(kq9), before);
   assert.deepEqual(BH.chiTiet({ bhxh: [] }), []); assert.deepEqual(BH.theoPhongBan({}), []);
 });
+
+test("U-BHR-04 KPCĐ NLĐ là cột riêng (không gộp trong 'Cộng BH NLĐ đóng') → tổng NLĐ có KPCĐ, KHÔNG báo chênh lệch giả", () => {
+  const k = { bhxh: kq9.bhxh.map((r) => Object.assign({}, r, { "NLĐ.KPCĐ": r["Ghi chú"] === "Đủ ngưỡng" ? r["Lương đóng BHXH"] * 0.005 : 0 })) };
+  const t = BH.tongHop(k), by = Object.fromEntries(t.rows.map((r) => [r["Khoản"], r]));
+  assert.equal(by["KPCĐ (nộp công đoàn)"]["Người lao động đóng (trừ lương)"], 11000000 * 0.005);
+  assert.ok(Math.abs(t.lechNLD) < 1e-6, "lệch " + t.lechNLD);
+});

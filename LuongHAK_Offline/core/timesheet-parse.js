@@ -56,6 +56,20 @@
     if (/cong/.test(f)) return "Công";
     return "";
   }
+  /**
+   * Vai trò cột của bảng dọc (ngày theo dòng): "Công" / "Cơm" / "Tăng ca" → loại dòng; cột Thứ, Ngày, Ghi chú, Ký tên… → bỏ qua;
+   * cột khác có chữ = TÊN NGƯỜI (bảng chấm công tay của tổ: mỗi người 1 cột) → chấm công BT của người đó.
+   * Trả { kind, person, skip } — skip: cột biết chắc không phải chấm công (Ngày, Ghi chú…); kind "" mà không skip = tiêu đề không đọc được
+   */
+  function fieldRole(label) {
+    var k = kindOf(label), f = fold(label);
+    if (k) return { kind: k, person: "", skip: false };
+    if (/^(thu|ngay|ghi chu|gc|stt|tt|ky|ky ten|ky nhan|xac nhan|noi dung|cong viec|gio|ca|so ca|ca lam|ca kip|dem|tuan|thang)\b/.test(f)) return { kind: "", person: "", skip: true };
+    if (!f || !/[a-z]{2}/.test(f) || /^cot \d+$/.test(f)) return { kind: "", person: "", skip: false };
+    return { kind: "Công", person: String(label).replace(/\s+/g, " ").trim(), skip: false };
+  }
+  /** Giá trị ô NGÀY: c.val (cách đọc ô "dấu X / giờ" hoặc "số ca", tính ở timesheet-ocr) nếu có, không thì số đọc được */
+  function vOf(c) { return c && c.val !== undefined ? c.val : c.num; }
   function valOf(c) { if (!c) return { v: null, c: null }; return { v: c.num, c: c, conf: c.conf }; }
 
   /** Kiểu A — dòng = người, cột = ngày */
@@ -81,7 +95,7 @@
     ref.forEach(function (R) {
       var nm = nameCol ? cellAt(nameCol, R.y0, R.y1) : null, ty = typeCol ? cellAt(typeCol, R.y0, R.y1) : null;
       var line = { name: nm ? String(nm.text || "").trim() : "", nameCell: nm, kind: ty ? kindOf(ty.text) : "", values: {}, cells: {}, totals: {}, y0: R.y0, y1: R.y1 };
-      dayCols.forEach(function (dc) { var c = cellAt(dc.col, R.y0, R.y1); if (c) { line.values[dc.day] = c.num; line.cells[dc.day] = c; } });
+      dayCols.forEach(function (dc) { var c = cellAt(dc.col, R.y0, R.y1); if (c) { line.values[dc.day] = vOf(c); line.cells[dc.day] = c; } });
       totals.forEach(function (t) { var c = cellAt(t.col, R.y0, R.y1); if (c) { line.totals[t.label] = c.num; line.cells["T:" + t.label] = c; } });
       var anyV = Object.keys(line.values).some(function (d) { return line.values[d] != null; });
       if (/tong cong|^tong$|cong cong/.test(fold(line.name))) { footer = line; return; }
@@ -98,6 +112,17 @@
     var f = fold(t); if (/tong/.test(f) && /cong/.test(f)) return "Tổng công"; if (/tong/.test(f) && /com/.test(f)) return "Tổng cơm";
     return String(t || "").replace(/\s+/g, " ").trim();
   }
+  /** Các ô của 1 cột nằm trong dòng ngày (ngày chia dòng con Ngày / Đêm, Ca 1 / Ca 2 → nhiều ô) */
+  function cellsIn(col, y0, y1) {
+    return col.filter(function (c) { var h = Math.max(1, c.y1 - c.y0); return overlap(c.y0, c.y1, y0, y1) / h >= 0.5; });
+  }
+  /** Giá trị ngày của cột: 1 ô = giá trị ô; nhiều ô (dòng con) = cộng (ô trống bỏ qua, có ô không đọc được → NaN) */
+  function dayValue(list) {
+    if (list.length <= 1) return list.length ? vOf(list[0]) : null;
+    var sum = 0, any = false, bad = false;
+    list.forEach(function (c) { var v = vOf(c); if (v == null) return; if (typeof v === "number" && isFinite(v)) { sum += v; any = true; } else bad = true; });
+    return bad ? NaN : any ? sum : null;
+  }
   /** Kiểu B — dòng = ngày, cột = Công / Cơm … */
   function parseB(cells, hdr) {
     var dayChain = hdr.chain, seq = hdr.seq, rows = [];
@@ -112,14 +137,18 @@
     if (!rows.length) return null;
     var first = rows[0].cell, headCell = first.up, last = rows[rows.length - 1].cell, foot = popped ? popped.cell : last.down;
     var headRow = headCell ? chain(headCell, "right") : [], fields = [];
-    headRow.slice(1).forEach(function (h) { fields.push({ label: String(h.text || "").trim() || "Cột " + (fields.length + 1), head: h, col: chain(h, "down").slice(1) }); });
+    var x0p = first.x1, x1p = hdr.stopX || Infinity; // nửa bảng: chỉ các cột giữa cột ngày này và cột ngày của nửa kế tiếp
+    headRow.slice(1).filter(function (h) { return h.cx > x0p && h.cx < x1p; }).forEach(function (h) { fields.push({ label: String(h.text || "").trim() || "Cột " + (fields.length + 1), head: h, col: chain(h, "down").slice(1) }); });
     if (!fields.length) { // không có dòng tiêu đề → các cột bên phải cột ngày
       var r1 = chain(first, "right").slice(1); r1.forEach(function (c, j) { fields.push({ label: "Cột " + (j + 1), head: null, col: chain(c, "down") }); });
     }
     var footLabel = foot && /[A-Za-zÀ-ỹ]/.test(String(foot.text || "")) ? String(foot.text).replace(/\s+/g, " ").trim() : "TC"; // ô nhãn "TC" đọc nhầm thành số → vẫn là dòng tổng
     var lines = fields.map(function (f) {
-      var line = { name: "", kind: kindOf(f.label) || f.label, label: f.label, values: {}, cells: {}, totals: {} };
-      rows.forEach(function (r) { var c = cellAt(f.col, r.cell.y0, r.cell.y1); if (c) { line.values[r.day] = c.num; line.cells[r.day] = c; } });
+      var role = fieldRole(f.label), line = { name: role.person, nameCell: role.person ? f.head : null, kind: role.kind, label: f.label, skip: role.skip, values: {}, cells: {}, totals: {} };
+      rows.forEach(function (r) {
+        var list = cellsIn(f.col, r.cell.y0, r.cell.y1), c = list[0] || cellAt(f.col, r.cell.y0, r.cell.y1);
+        if (c) { line.values[r.day] = list.length > 1 ? dayValue(list) : vOf(c); line.cells[r.day] = c; if (list.length > 1) line.sub = Object.assign(line.sub || {}, (function (o) { o[r.day] = list.length; return o; })({})); }
+      });
       if (foot) { var fc = cellAt(f.col, foot.y0, foot.y1); if (fc) { line.totals[footLabel] = fc.num; line.cells["T:TC"] = fc; } }
       return line;
     });
@@ -157,11 +186,39 @@
     }
     if (!best || (best.seq.hits < (opt.minDays || 10) && !best.positional)) return { layout: null, days: [], lines: [], warnings: ["Không nhận ra hàng / cột ngày (1…31) — kiểm tra ảnh có đúng bảng chấm công, đủ nét, đúng chiều"] };
     best.medW = medW; best.medH = medH;
+    // Bảng dọc chia 2 nửa (ngày 1–15 | 16–31): tìm thêm cột ngày khác không chồng ngang, ghép theo nhãn cột (hoặc thứ tự cột)
+    var extra = [];
+    if (best.dir === "B" && !best.positional) {
+      var used = [[best.chain[0].x0, best.chain[0].x1]];
+      cells.forEach(function (c) {
+        if (c.up) return;
+        var cv = chain(c, "down"), s3 = daySeq(cv);
+        if (!s3 || s3.hits < 8 || used.some(function (u) { return overlap(u[0], u[1], c.x0, c.x1) > 0; })) return;
+        used.push([c.x0, c.x1]); extra.push({ dir: "B", chain: cv, seq: s3 });
+      });
+      var xs = [best].concat(extra).map(function (hd) { return hd.chain[0].cx; }).sort(function (a, b) { return a - b; });
+      [best].concat(extra).forEach(function (hd) { var nx = xs.filter(function (x) { return x > hd.chain[0].cx + 1; })[0]; hd.stopX = nx == null ? Infinity : hd.chain[0].x0 + (nx - hd.chain[0].cx); });
+    }
     var res = best.dir === "A" ? parseA(cells, best) : parseB(cells, best);
     if (!res) return { layout: null, days: [], lines: [], warnings: ["Không dựng được bảng"] };
+    if (extra.length) {
+      extra.sort(function (a, b) { return a.chain[0].x0 - b.chain[0].x0; }).forEach(function (hd) {
+        var r2 = parseB(cells, hd); if (!r2) return;
+        r2.lines.forEach(function (l2, j) {
+          var key = fold(l2.label).replace(/[^a-z ]/g, "").trim(), m = res.lines.filter(function (l) { return fold(l.label).replace(/[^a-z ]/g, "").trim() === key && key; })[0] || (r2.lines.length === res.lines.length ? res.lines[j] : null);
+          if (!m) { res.lines.push(l2); return; }
+          Object.keys(l2.values).forEach(function (d) { if (!(d in m.values) || m.values[d] == null) { m.values[d] = l2.values[d]; m.cells[d] = l2.cells[d]; } });
+          // dòng tổng của từng khối (TC 1–15, TC 16–31) → cộng lại thành tổng cả tháng để so
+          Object.keys(l2.totals).forEach(function (k) { var a0 = m.totals[k], b0 = l2.totals[k]; m.totals[k] = typeof a0 === "number" && isFinite(a0) ? (typeof b0 === "number" && isFinite(b0) ? a0 + b0 : a0) : b0; });
+        });
+        r2.days.forEach(function (d) { if (res.days.indexOf(d) < 0) res.days.push(d); });
+      });
+      res.days.sort(function (a, b) { return a - b; }); res.panels = 1 + extra.length;
+    }
     res.warnings = [];
+    var hitsAll = best.seq.hits + extra.reduce(function (n, hd) { return n + hd.seq.hits; }, 0); // bảng nhiều khối: cộng số ngày đọc chắc của mọi khối
     if (best.positional) res.warnings.push("Không đọc được số ngày ở tiêu đề — app suy ra ngày 1…" + res.days.length + " theo vị trí cột (ảnh nhỏ / mờ). Kiểm tra lại cột đầu, cột cuối");
-    else if (best.seq.hits < res.days.length * 0.6) res.warnings.push("Chỉ đọc chắc được " + best.seq.hits + "/" + res.days.length + " số ngày ở tiêu đề — app suy ra các ngày còn lại theo thứ tự cột; kiểm tra lại");
+    else if (hitsAll < res.days.length * 0.6) res.warnings.push("Chỉ đọc chắc được " + hitsAll + "/" + res.days.length + " số ngày ở tiêu đề — app suy ra các ngày còn lại theo thứ tự cột; kiểm tra lại");
     res.lines.forEach(function (l) {
       var sum = 0, bad = 0; Object.keys(l.values).forEach(function (d) { var v = l.values[d]; if (typeof v === "number" && isFinite(v)) sum += v; else if (v !== null && v !== undefined) bad++; });
       l.sum = Math.round(sum * 100) / 100; l.unreadable = bad; l.check = [];
@@ -193,10 +250,10 @@
   }
   /** Kỳ "YYYY-MM" từ chữ tiêu đề ("Tháng 09/2026", "Tháng 9 năm 2026") */
   function periodFromText(s) {
-    var f = fold(s), m = f.match(/thang\s*(\d{1,2})\s*(?:\/|nam|-)\s*(\d{4})/);
+    var f = fold(s), m = f.match(/th\w{0,2}ng\s*(\d{1,2})\s*(?:\/|nam|-)\s*(\d{4})/) || f.match(/(?:^|\s)(\d{1,2})\s*\/\s*(20\d{2})(?!\d)/); // "THÁANG" (OCR thừa chữ) / chỉ có "09/2026"
     return m && +m[1] >= 1 && +m[1] <= 12 ? m[2] + "-" + ("0" + m[1]).slice(-2) : "";
   }
-  var api = { parse: parse, link: link, chain: chain, daySeq: daySeq, kindOf: kindOf, matchName: matchName, periodFromText: periodFromText, fold: fold, cellAtX: cellAtX, valOf: valOf };
+  var api = { parse: parse, link: link, chain: chain, daySeq: daySeq, kindOf: kindOf, fieldRole: fieldRole, matchName: matchName, periodFromText: periodFromText, fold: fold, cellAtX: cellAtX, valOf: valOf };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.tsparse = api; }
 })(typeof window !== "undefined" ? window : this);

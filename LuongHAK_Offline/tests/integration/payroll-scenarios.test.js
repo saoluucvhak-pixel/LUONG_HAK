@@ -109,4 +109,8 @@ test("I-23 có công SAU ngày chấm dứt hợp đồng (nghỉ 20/09, vẫn c
   // không có công sau ngày chấm dứt → không cảnh báo (I-17)
   db.chamcong = [keep(ccRow("NV001", 2026, 9), 1, 20)];
   assert.ok(!pay(db, 2026, 9).warn.some((w) => /sau ngày chấm dứt/.test(w)));
+  // ô ghi số 0 sau ngày chấm dứt (Excel CNHAK ghi 0 thay vì để trống) = không công → không cảnh báo
+  const z = keep(ccRow("NV001", 2026, 9), 1, 20); for (let d = 21; d <= 30; d++) z[String(d)] = d % 2 ? 0 : "0";
+  db.chamcong = [z];
+  assert.ok(!pay(db, 2026, 9).warn.some((w) => /sau ngày chấm dứt/.test(w)), "ô 0 không phải công");
 });

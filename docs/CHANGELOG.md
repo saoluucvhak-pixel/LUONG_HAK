@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## [2.0.0-alpha.22] — 12/10/2026 — OCR: bảng chấm công tay (dấu x, ghi giờ, số ca)
+- **Chủ sở hữu duyệt quy ước đọc** (R-69): *"x: 1 công, xx: 2 công, xxx: 3 công, ghi giờ = giờ/8"* và lịch ca *"1 ca = 1 công; "1+2" = 2 công"*.
+- Đọc ảnh chấm công → chọn **Cách đọc ô**:
+  - **Số công**: như cũ;
+  - **Dấu x · giờ / 8**: đếm số dấu x trong ô; ô ghi "7h-15h" thì lấy số giờ / 8, qua đêm được;
+  - **Số ca**: "1" / "2" / "3" = 1 công, "1+2" = 2 công, X = nghỉ.
+- Chọn cho file mới, hoặc đổi riêng từng trang thì app đọc lại trang đó.
+- Bảng dọc mỗi người 1 cột (bảng tay của tổ):
+  - tên người lấy từ tiêu đề cột, loại *Chấm công BT*;
+  - cột Ngày, Thứ, Ghi chú, Ký tên… bỏ qua;
+  - tiêu đề viết tay không đọc được nhưng cột có ≥ 5 ô có số (khi đọc dấu x / số ca) → mặc định *Chấm công BT*, chọn nhân viên bằng tay.
+- Bảng **2 khối ngày** đặt cạnh nhau (1–15 | 16–31) ghép đủ tháng theo tên cột, cộng dòng TC của các khối. Ô ngày chia 2 dòng (Ngày / Đêm) thì cộng lại.
+- Ô đếm dấu lưng chừng (cụm dính rộng 1,5 dấu, không thấy dấu) tô **vàng**. Ô xem ảnh gốc ghi cách tính ("2 dấu", "giờ 8", "X = nghỉ").
+- Sửa:
+  - nhãn "TC" ở ô hẹp không còn bị tính thành ngày 31;
+  - tiêu đề cột là tên người bị đọc thành số ("6") → đọc lại dạng chữ;
+  - kỳ nhận cả "THÁANG 09/2026" (OCR thừa chữ) và "… 10/2026".
+- **Chữ viết tay thật vẫn đọc chưa tốt** (ảnh thật của người dùng, chỉ kiểm trên máy kiểm thử): bảng dấu x rõ nét đọc đúng phần lớn, ô ghi giờ viết tay, ô có ghi chú và lịch ca viết tay còn nhiều ô "?" — **luôn soát lại trước khi ghi**.
+- **Q-29 đã trả lời** (R-70): thuế TNCN **trừ hằng tháng**; ai không trừ thì chọn mã thuế TNCN *Miễn / Không tính thuế* (TNCN0 / MT00). App vốn đã tính như vậy; thêm test U-TAX-01/02.
+- **Chia sản lượng theo chấm công** (R-73, chủ sở hữu duyệt 12/10/2026):
+  - Công > 0 ngày cân → chia đều (0,3 hay 1 như nhau). Công = 0 / trống → không chia + cảnh báo "coi như nghỉ nguyên ngày".
+  - Vẫn trừ NV vắng trên phiếu và người có đơn nghỉ. Ngày cả tổ chưa nhập chấm công → chia theo NV vắng + cảnh báo.
+  - Đối chiếu dữ liệu thật: Đại Hiệp 8/2026 không đổi. CNHAK 9/2026, HAKQN 7/2026, HAK ĐN 11/2025 có người nhận phiếu ngày công trống → số đổi so với Excel cũ (tối đa −341.953đ / người).
+- **Người nghỉ không lương / nghỉ phép / nghỉ ốm** (R-72, chủ sở hữu duyệt 12/10/2026):
+  - Đơn nghỉ **đã duyệt** tự loại người đó khỏi tổ khi chia sản lượng / bơm dăm các ngày nghỉ, không cần ghi NV vắng. Tính lương ghi rõ "… Nghỉ không hưởng lương (đơn đã duyệt) — không chia N ngày cân".
+  - Đơn nghỉ được để trống **Đến ngày** = chưa biết ngày về.
+  - Đơn nghỉ phủ kỳ đã chốt được bảo vệ như phụ lục (hồi tố). Bản chốt lưu kèm đơn nghỉ.
+- Sửa cảnh báo khi tính lương (chủ sở hữu báo 12/10/2026, CNHAK 9/2026):
+  - **NV vắng không khớp ai trong tổ**: cảnh báo ghi đúng tên trên phiếu ("Đức", trước ghi "duc"), và **gộp 1 dòng cho mỗi tổ + tên**: số phiếu, khoảng ngày, vài số phiếu. Trước đó mỗi phiếu 1 dòng, CNHAK 9/2026 có 33 dòng giống nhau. Chi tiết từng phiếu vẫn ở bảng đối soát. Thường là người đã nghỉ việc / chuyển tổ mà phiếu vẫn ghi vắng; phiếu vẫn chia đúng cho người có mặt.
+  - **"Có công sau ngày chấm dứt hợp đồng"**: ô chấm công ghi **0** không còn bị tính là có công (Excel CNHAK ghi 0 thay vì để trống).
+  - Số tiền không đổi (đối chiếu lại CNHAK 9/2026: tổng thực lĩnh như cũ).
+- **Q-31 đã trả lời** (R-71): lương sản lượng làm tròn **1 lần trên tổng tháng**, thống nhất mọi đơn vị (Excel Đại Hiệp cũ làm tròn theo ngày — lệch ≤ 2đ/người, chấp nhận).
+- **Không đổi công thức lương.** Test 211 (+6 U-OCR, +2 I-OCR, +2 U-TAX, +1 U-QC, +4 U-PA, +1 U-LV, +1 U-GRD), E2E 95/95 (+1).
+
 ## [2.0.0-alpha.21] — 11/10/2026 — Quy chế lương HAK Group 2026 (engine 1.8.0)
 - **Chủ sở hữu duyệt: HAK, CNHAK, HAKQN cùng một quy chế lương** (R-68). Engine 1.8.0 thêm *Quy chế lương HAK Group 2026* — **mặc định** cho kỳ chưa chốt: (C1) lương thời gian trả đủ công đi làm, (C2) công chuẩn = số ngày − *Số ngày giảm trừ* (TG3 = 26 thay vì 22), (C3) công nhân sản phẩm chỉ hưởng lương thời gian cho công lễ / phép, (C4) bù bình quân tổ chỉ tính tiền sản lượng, (C5) công nhật tính tăng ca theo công thức mã tăng ca (× 50%), (C6) phụ cấp không ghi cách tính thì chia theo công, (C7) trừ KPCĐ 0,5% phần người lao động, (C8) chưa có Lương cơ bản thì không tính BH / truy thu, (C9) công nhật: công chuẩn = số ngày − Số ngày giảm trừ, (C10) công tăng ca mã TC5 (ca vị trí khác) không cộng vào lương thời gian.
 - Kiểm bằng bảng lương thật (chỉ trên máy kiểm thử, không đưa vào repo): **HAK ĐN 11/2025 61/61**, **Đại Hiệp 8/2026 38/45** (7 người lệch 2đ làm tròn), **CNHAK 9/2026 42/44**, **HAKQN 7/2026 31/50** người khớp từng đồng; người còn lại lệch đúng phần thuế TNCN (Excel CNHAK / HAKQN không trừ, Đại Hiệp có trừ — app trừ, chờ xác nhận Q-29).

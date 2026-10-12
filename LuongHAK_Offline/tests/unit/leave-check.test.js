@@ -62,3 +62,9 @@ test("U-LV-05 vào cảnh báo khi tính lương; dữ liệu chấm công / dan
   assert.deepEqual(b.warn.filter((x) => !x.includes(HR.LEAVE_TAG)), a.warn);
   assert.equal(b.warn.filter((x) => x.includes(HR.LEAVE_TAG)).length, 1);
 });
+
+test("U-LV-07 (α22) đơn nghỉ không lương CHƯA BIẾT NGÀY VỀ (Đến ngày trống) = nghỉ tới hết kỳ: vẫn chấm công thường sau ngày bắt đầu → cảnh báo các ngày đó", () => {
+  const d = db({ nghiphep: [np({ "Loại nghỉ": "Nghỉ không hưởng lương", "Từ ngày": "2026-09-25", "Đến ngày": "" })], chamcong: [cc("NV001", "BT", full())] });
+  const w = HR.leaveCheck(d, B, "NV001", "A").join("\n");
+  assert.match(w, /không hưởng lương đã duyệt nhưng vẫn có công ngày 25, 26, 28, 29, 30\/09/); // 27 là Chủ nhật
+});

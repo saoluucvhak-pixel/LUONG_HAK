@@ -34,6 +34,14 @@ test("U-QC-01 (C2) công chuẩn = số ngày − Số ngày giảm trừ; 'tấ
   assert.equal(E.ngayGiamTru({ "Ngày giảm trừ": 5, "Cách tính": "" }), 5); // tên cột cũ trong Excel
 });
 
+test("U-QC-01b (C2) 'Cách tính' đúng y nguyên \"Số ngày của tháng\" (không hậu tố \"-N\") VẪN phải trừ \"Số ngày giảm trừ\" nếu cột đó có khai — lỗi thật đã phát hiện: return sớm ở nhánh literal-match khiến quy tắc qc2026 không bao giờ chạy tới cho trường hợp này", () => {
+  const L = { "Mã lương": "TG2x", "Cách tính": "Số ngày của tháng", "Số ngày giảm trừ": 2 };
+  assert.equal(E.congChuan(L, 9, 2026, 20, true), 28); // 30 − 2, đúng quy tắc "các cách khác = số ngày của tháng − Số ngày giảm trừ"
+  assert.equal(E.congChuan(L, 9, 2026, 20, false), 30); // cách cũ (1.7, không bật qc2026): không đổi, vẫn = 30
+  // Không khai "Số ngày giảm trừ" (như TG2 thật trong danh mục) → không trừ gì, vẫn = 30 (hành vi cũ giữ nguyên)
+  assert.equal(E.congChuan({ "Mã lương": "TG2", "Cách tính": "Số ngày của tháng" }, 9, 2026, 20, true), 30);
+});
+
 test("U-QC-02 (C1) lương thời gian trả đủ công đi làm, không cắt ở công chuẩn", () => {
   const s = [staff({ "Mã tiền lương 1": "TG1", "Lương thỏa thuận": "9000000" })], ex = { chamcong: [cc("NV", "BT", allDays(1))] };
   assert.equal(row(run(s, ex, Q))["Lương thời gian"], Math.round(9000000 / 26 * 30)); // 10.384.615
@@ -64,7 +72,10 @@ test("U-QC-05 (C5) công nhật tính tăng ca theo công thức mã tăng ca (n
   const s = [staff({ "Mã tiền lương 1": "CN2", "Lương thỏa thuận": "300000", "Mã tăng ca": "TC4" })];
   const ex = { chamcong: [ccRow("NV", 2026, 9, "BT", 1, 20), ccRow("NV", 2026, 9, "TC", 1, 2)] };
   assert.equal(row(run(s, ex, Q))["Tiền tăng ca"], 300000); // 2 công TC × 50% × 300.000
-  assert.equal(row(run(s, ex))["Tiền tăng ca"], 600000); // cách cũ: không nhân hệ số
+  // Chủ sở hữu xác nhận (sau khi đối chiếu M thật QR_LUONGTG."Lương tăng ca"): CN1/CN2 PHẢI nhân hệ số
+  // mã tăng ca như mọi loại lương khác — không phải trường hợp riêng, không phân biệt quy chế 2026.
+  // "cách cũ: không nhân hệ số" (600.000) từng ghi ở đây là nhận định sai của 1 phiên trước đó.
+  assert.equal(row(run(s, ex))["Tiền tăng ca"], 300000);
   // TC1: công vượt công chuẩn (30 − 4 = 26) cũng tính 50%: 29 công (27 BT + 2 TC) → (29 − 2 − 26) × 0,5 + 2 × 0,5 = 1,5 công
   const s1 = [staff({ "Mã tiền lương 1": "CN2", "Lương thỏa thuận": "300000", "Mã tăng ca": "TC1" })];
   const d = allDays(1); [6, 13, 20].forEach((x) => delete d[x]); // 27 công BT
@@ -81,16 +92,18 @@ test("U-QC-06 (C6) phụ cấp có Cách tính trống: chia theo công (không 
   assert.equal(row(run(s, full, Q))["Phụ cấp"], 200000); // đủ công chuẩn → đủ tiền
 });
 
-test("U-QC-07 (C7) BH: NLĐ đóng cả KPCĐ; thu nhập chịu thuế trừ phần này; báo cáo BH có cột NLĐ.KPCĐ", () => {
+test("U-QC-07 BH: NLĐ đóng KPCĐ tách riêng (không gộp vào Cộng BH NLĐ đóng, đúng như báo cáo RP_BHXH/RP_THLUONG thực tế của HAK_DN và Quế Sơn); áp dụng không phụ thuộc quy chế 2026", () => {
   const dm_baohiem = baseDb().dm_baohiem.concat([{ "Mã bảo hiểm": "BH_KPCD.01", "DN.BHXH": 0.175, "DN.BHYT": 0.03, "DN.BHTN": 0.01, "DN.KPCD": 0.02, "NLD.BHXH": 0.08, "NLD.BHYT": 0.015, "NLD.BHTN": 0.01, "NLD.KPCD": 0.005, "Hiệu lực từ": "2025-09-01" }]);
   const s = [staff({ "Mã tiền lương 1": "TG1", "Lương thỏa thuận": "10000000", "Lương cơ bản": "4554000", "Mã BHXH": "BH_KPCD.01" })];
   const ex = { dm_baohiem, chamcong: [ccRow("NV", 2026, 9)] };
   const k = run(s, ex, Q), r = row(k), b = k.bhxh[0];
-  assert.equal(r["BH trừ NLĐ"], 478170 + 22770); // 4.554.000 × 10,5% + 0,5% KPCĐ
-  assert.equal(b["NLĐ.KPCĐ"], 22770); assert.equal(b["Cộng BH NLĐ đóng"], 500940);
-  assert.equal(r["Thực lĩnh"], Math.round((10000000 - 500940) / 1000) * 1000);
+  assert.equal(r["BH trừ NLĐ"], 478170); // 4.554.000 × 10,5% (BHXH+BHYT+BHTN) — không gộp KPCĐ
+  assert.equal(r["KPCĐ trừ NLĐ"], 22770); // 4.554.000 × 0,5%
+  assert.equal(b["NLĐ.KPCĐ"], 22770); assert.equal(b["Cộng BH NLĐ đóng"], 478170);
+  assert.equal(r["Thực lĩnh"], Math.round((10000000 - 478170 - 22770) / 1000) * 1000);
+  // không điều kiện qc2026: dữ liệu thực tế (HAK_DN T11/2025, Quế Sơn T9/2025) đã trừ KPCĐ NLĐ trước khi quy chế 2026 được duyệt (11/10/2026)
   const k0 = run(s, ex), b0 = k0.bhxh[0];
-  assert.equal(row(k0)["BH trừ NLĐ"], 478170); assert.ok(!("NLĐ.KPCĐ" in b0), "cách cũ giữ đúng cột như 1.7");
+  assert.equal(row(k0)["BH trừ NLĐ"], 478170); assert.equal(row(k0)["KPCĐ trừ NLĐ"], 22770); assert.equal(b0["NLĐ.KPCĐ"], 22770);
 });
 
 test("U-QC-08 danh mục chuẩn có Số ngày giảm trừ (TG3 4, TG4 2, CN2 4); bản chốt ghi quy chế đã dùng", () => {
@@ -130,4 +143,12 @@ test("U-QC-11 (C10) mã tăng ca TC5: công tăng ca trả theo đơn giá ca kh
   assert.equal(r["Tiền tăng ca"], Math.round(6000000 / 26 * 10)); // TC5: 6.000.000 / công chuẩn × công TC
   const r4 = row(run([staff({ "Mã tiền lương 1": "TG1", "Lương thỏa thuận": "8500000", "Mã tăng ca": "TC4" })], ex, Q));
   assert.equal(r4["Lương thời gian"], Math.round(8500000 / 26 * 36)); // mã khác: công TC vẫn tính vào lương TG (C1) + 50% tăng ca
+});
+
+test("U-QC-12 (R-71, Q-31 'thống nhất') lương sản lượng = tổng tấn cả tháng × đơn giá, làm tròn 1 lần (không làm tròn từng ngày)", () => {
+  const s = [staff({ "Mã nhân viên": "A", "Mã tiền lương 1": "SP" })];
+  const ex = { chamcong: [ccRow("A", 2026, 9, "BT", 1, 3)],
+    sanluong: ["2026-09-01", "2026-09-02", "2026-09-03"].map((d) => ({ "Ngày cân": d, "KL hàng (Tấn)": "10.0001", "Mã NV": "A" })) };
+  // 30,0003 tấn × 6.000 = 180.001,8 → 180.002 (làm tròn từng ngày: 3 × round(60.000,6) = 180.003 — không dùng)
+  [Q, undefined].forEach((opts) => assert.equal(row(run(s, ex, opts), "A")["Lương sản lượng"], 180002));
 });

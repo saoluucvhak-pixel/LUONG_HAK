@@ -75,3 +75,32 @@ test("I-OCR-04 trang PDF do pdf.js vẽ (nền xám nhạt, nhiễu nén JPEG, k
   assert.deepStrictEqual(r.table.lines.map((l) => l.sum), [28.5, 20, 15]);
   r.table.lines.forEach((l) => assert.ok(l.check[0] && l.check[0].ok && l.unreadable === 0));
 });
+
+// α22 — giá trị mong đợi in ra bằng: EXPECT=1 python3 tests/fixtures/ocr/make_fixtures.py
+const MARKS = {
+  "Lê Văn An": [2, 3, 2, 2, 3, 3, 0, 1, 1, 3, 2, 3, 1, 0, 0, 2, 1, 1, 0, 3, 0, 0, 3, 2, 2, 3, 1, 0, 3, 0],
+  "Trần Bình": [3, 0, 0, 0, 1, 1, 0, 3, 1, 2, 1, 2, 3, 0, 1, 3, 1, 1, 2, 0, 0, 0, 2, 1, 2, 3, 0, 0, 1, 1], // ngày 9 ghi "7h-15h" = 8 giờ = 1 công
+  "Ngô Cường": [1, 3, 1, 0, 0, 3, 0, 0, 2, 0, 1, 2, 0, 0, 0, 0, 1, 1, 0, 2, 0, 2, 2, 2, 0, 3, 1, 0, 1, 1],
+};
+test("I-OCR-05 bảng chấm công tay của tổ: 2 khối ngày, mỗi người 1 cột, dấu x (x/xx/xxx = 1/2/3 công), ô '7h-15h' = 1 công", { timeout: 180000 }, async () => {
+  const r = await TO.analyze(readGrayPNG(path.join(FIX, "cham-cong-tay-x-mau.png")), host, { cellMode: "mark" });
+  const T = r.table;
+  assert.strictEqual(r.cellMode, "mark"); assert.strictEqual(r.period, "2026-09");
+  assert.strictEqual(T.layout, "B"); assert.strictEqual(T.panels, 2); assert.deepStrictEqual(T.days, Array.from({ length: 30 }, (_, i) => i + 1));
+  assert.deepStrictEqual(T.lines.map((l) => [l.name, l.kind]), Object.keys(MARKS).map((n) => [n, "Công"]));
+  T.lines.forEach((l) => MARKS[l.name].forEach((v, i) => assert.strictEqual(l.values[i + 1], v || null, l.name + " ngày " + (i + 1))));
+  assert.strictEqual(T.lines[1].cells[9].valSrc, "giờ 8");
+  assert.deepStrictEqual(T.warnings, []);
+});
+
+test("I-OCR-06 lịch làm theo ca: 1 / 2 / 3 = 1 công, '1+2' = 2 công, X = nghỉ; tên người ở tiêu đề cột", { timeout: 180000 }, async () => {
+  const r = await TO.analyze(readGrayPNG(path.join(FIX, "lich-ca-mau.png")), host, { cellMode: "ca" });
+  const T = r.table, exp = {
+    "Phan Thị Dung": [1, 1, 1, 2, null, 1, null, 1, 2, 1, 1, null, 1, 1, 1],
+    "Hồ Văn Em": [1, null, 1, 1, 2, null, 1, 1, 1, null, 2, 1, 1, 1, 1],
+  };
+  assert.strictEqual(T.layout, "B"); assert.strictEqual(T.days.length, 15);
+  assert.deepStrictEqual(T.lines.map((l) => l.name), Object.keys(exp));
+  T.lines.forEach((l) => exp[l.name].forEach((v, i) => assert.strictEqual(l.values[i + 1], v, l.name + " ngày " + (i + 1))));
+  assert.strictEqual(T.lines[0].cells[5].valSrc, "X = nghỉ");
+});

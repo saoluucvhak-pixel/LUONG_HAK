@@ -29,6 +29,12 @@
     meta = meta || {};
     var input = {};
     MONTHLY.forEach(function (t) { input[t] = clone((db[t] || []).filter(function (r) { return V.rowPeriod(t, r) === ky; })); });
+    // α22: đơn nghỉ phủ kỳ (dùng để loại người nghỉ khỏi tổ khi chia sản lượng) — "Đến ngày" trống = chưa biết ngày về
+    var dau = ky + "-01", cuoi = ky + "-31";
+    ["nghiphep", "nghiom"].forEach(function (t) {
+      var rows = (db[t] || []).filter(function (r) { var tu = V.normDate(r["Từ ngày"]) || "", den = V.normDate(r["Đến ngày"]) || ""; return tu && tu <= cuoi && (!den || den >= dau); });
+      if (rows.length) input[t] = clone(rows);
+    });
     var dm = {}; DM.forEach(function (t) { dm[t] = clone(db[t] || []); });
     var result = clone({ bangluong: kq.bangluong, bhxh: kq.bhxh, tncn: kq.tncn, canhbao: kq.canhbao });
     var inp = { staff: clone(staff || []), data: input, danhmuc: dm };

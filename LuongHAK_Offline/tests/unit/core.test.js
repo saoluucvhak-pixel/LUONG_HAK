@@ -101,6 +101,20 @@ test("integrity.check: phát hiện trùng Mã NV, chấm công trùng khóa, l�
   assert.match(msgs, /quá nhỏ/);
   assert.match(msgs, /BỎ QUA khi tính lương/);
 });
+test("integrity.check: danh mục 2 dòng cùng mã + cùng 'Hiệu lực từ' → báo trùng (Master Prompt mục 4.5 'Trùng quy chế')", () => {
+  const db = baseDb();
+  db.dm_luong.push({ "Mã lương": "TG1", "Số tiền khoán": "0", "Hiệu lực từ": "2025-09-01" }); // trùng mã + ngày với dòng seed có sẵn
+  const msgs = INT.check(db).map((i) => i.level + ":" + i.area + ":" + i.msg).join("\n");
+  assert.match(msgs, /High:dm_luong:Mã TG1 có 2 dòng cùng 'Hiệu lực từ' \(2025-09-01\)/);
+  // Nhiều dòng cùng mã nhưng Hiệu lực từ KHÁC NHAU (tăng lương theo thời gian) — không báo trùng
+  assert.doesNotMatch(msgs, /dm_bacthue/);
+});
+test("integrity.check: dm_bacthue trùng Bậc + Mã thuế TNCN + Hiệu lực từ (PV-7c) → báo trùng", () => {
+  const db = baseDb();
+  db.dm_bacthue.push({ "Bậc": 1, "Thu nhập từ": 0, "Thu nhập đến": 5000000, "Tỷ lệ": 0.05, "Hiệu lực từ": "2009-01-01", "Hiệu lực đến": "2025-12-31" });
+  const msgs = INT.check(db).map((i) => i.level + ":" + i.area + ":" + i.msg).join("\n");
+  assert.match(msgs, /High:dm_bacthue:Bậc 1 có 2 dòng cùng 'Hiệu lực từ' \(2009-01-01\)/);
+});
 
 // ---------- payroll close ----------
 function kqSample(tl) { return { bangluong: [{ "Mã NV": "NV001", "Họ và tên": "A", "Thực lĩnh": tl, "Tổng thu nhập": tl }], bhxh: [], tncn: [], canhbao: [] }; }
