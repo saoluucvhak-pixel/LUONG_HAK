@@ -152,8 +152,81 @@ TNCN thật, và giờ đã giải thích được điểm bất thường cuố
 Nơi cấp, Ngày sinh, Giới tính, Số điện thoại, Thường trú, Địa chỉ hiện tại (bảng `canhan`); Số tài
 khoản, Tên ngân hàng (bảng `thanhtoan`); Mã GT_TNCN_BT/PT và Người phụ thuộc (tính từ danh sách
 nhân thân đã khai trong bảng `nhanthan`, không lưu dạng số đếm thô — chặt hơn vì theo dõi được từng
-người phụ thuộc theo tên). Chưa tìm thấy trường cụ thể nào bị thiếu — nếu bạn thấy thiếu trường nào
-cụ thể, nói rõ tên trường giúp tôi kiểm tra tiếp.
+người phụ thuộc theo tên). ~~Chưa tìm thấy trường cụ thể nào bị thiếu~~ — **kết luận này SAI, xem
+PV-7: bạn chỉ đúng 3 trường "Mã GT_TNCN_BT, Mã GT_TNCN_PT, Số sổ BHXH", đã tìm ra lỗi thật.**
+
+---
+
+## PV-7 (MỚI — xác nhận đúng như bạn chỉ ra): Mã GT_TNCN_BT / Mã GT_TNCN_PT / Số sổ BHXH
+
+Bạn nêu đúng 3 trường này có vấn đề thật. Chi tiết từng trường:
+
+### 7a. "Số sổ BHXH" — THIẾU thật trên báo cáo BHXH (lỗi hoàn thiện dữ liệu, không phải lỗi công thức)
+
+- **File/hàm:** `hr.js` hàm `staffForPayroll()` (dòng ~349-358, object `out.push({...})`) và
+  `engine.js` object `bhRow` (dòng ~365-374, trong `tinhBangLuong`).
+- **Hiện trạng đã xác nhận:**
+  - `canhan.f` (hr.js dòng 18) CÓ khai báo field "Số sổ BHXH", form "Thêm nhân viên" (app.js dòng
+    783) CÓ cho nhập, `core/validate.js` CÓ bắt buộc nhập khi có đóng BHXH (hr.js dòng 612 `need(...)`),
+    và trường này CÓ xuất hiện ở báo cáo "Sổ lao động" (hr.js dòng 641).
+  - NHƯNG `staffForPayroll()` — hàm build ra bảng `nhansu` nạp cho `engine.js` — **không copy
+    "Số sổ BHXH" từ `cn` (bản ghi canhan) vào object nó trả về**, trong khi NGAY DÒNG KẾ BÊN nó vẫn
+    copy "Số CCCD" từ cùng `cn` (dòng 357: `"Số CCCD": (cn && cn["Số CCCD"]) || ...`).
+  - Vì vậy `ns["Số sổ BHXH"]` trong `engine.js` luôn `undefined`, và `bhRow` (báo cáo "Bảng BHXH" —
+    cả xuất Excel sheet "BHXH" lẫn hiển thị trên màn hình) **không có cột "Số sổ BHXH"** — trong khi
+    `RP_BHXH` thật của công ty (file Quế Sơn T9/2025 và HAK_DN) đều có cột này.
+- **Rủi ro:** không ảnh hưởng số tiền (BHXH/thuế vẫn tính đúng) — chỉ là thiếu 1 cột tra cứu/đối
+  chiếu trên báo cáo BHXH khi nộp cơ quan bảo hiểm.
+- **Đề xuất sửa (an toàn, KHÔNG đổi công thức/số tiền nào):**
+  1. `hr.js` dòng 357: thêm `"Số sổ BHXH": (cn && cn["Số sổ BHXH"]) || "",` vào object trả về của
+     `staffForPayroll()`.
+  2. `engine.js` dòng ~366: thêm `"Số sổ BHXH": ns["Số sổ BHXH"] || "",` vào `bhRow` (ngay sau
+     "Mã NV"/"Họ và tên" để khớp thứ tự cột như `RP_BHXH` thật).
+  3. Cột "BHXH" xuất Excel tự động lấy theo `Object.keys(bhxh[0])` (app.js hàm `excelSheets`, dòng
+     1225) nên không cần sửa thêm gì ở app.js.
+  4. Thêm test: 1 unit test cho `bhRow` có "Số sổ BHXH" đúng theo `canhan`.
+
+### 7b. "Mã GT_TNCN_BT" / "Mã GT_TNCN_PT" — tính đúng số tiền hiện tại, NHƯNG cơ chế chọn mã là lỗ hổng thiết kế (chưa phải lỗi công thức tiền)
+
+- **File/hàm:** `hr.js` hàm `staffForPayroll()` dòng 307-309 (chọn mã) + dòng 356 (gán). `engine.js`
+  dòng 379-404 (dùng mã để tra `dm_giamtru` — phần này tính tiền ĐÚNG, không đổi).
+- **Hiện trạng đã xác nhận:**
+  - `hr.js` dòng 307-309 tính `gtBT`/`gtPT` **MỘT LẦN DUY NHẤT cho TOÀN BỘ nhân viên, TOÀN BỘ kỳ**,
+    bằng cách lấy mã ĐẦU TIÊN trong `dm_giamtru` khớp regex `/^GTBT|^BT$/i` (và tương tự cho PT) —
+    rồi gán y nguyên cho mọi nhân viên ở dòng 356. Đây không phải tra cứu theo từng người — là 1 giá
+    trị đoán chung áp cho tất cả.
+  - Trong khi đó **đã có sẵn hạ tầng cho 1 field nhập/chọn riêng theo người**: `app.js` dòng 417
+    (`datalistFor`) khai báo datalist autocomplete cho đúng 2 cột tên "Mã GT_TNCN_BT"/"Mã GT_TNCN_PT"
+    (nguồn `dm_giamtru`) — nhưng **không có bảng/form nào trong app thực sự khai báo field tên này**
+    để người dùng nhập (đối chiếu `hr.js` dòng 48-61, field list đầy đủ của "chitiethd" — bảng
+    "Lương & phụ lục HĐ", nơi lẽ ra field này nên nằm cạnh "Mức đóng bảo hiểm"/"Thuế TNCN" — không có
+    "Mã GT_TNCN_BT"/"PT"). Đây là phần việc làm dở/bỏ sót: có "móc" autocomplete nhưng thiếu field
+    thật để dùng nó.
+  - Vì vậy hiện tại người dùng **không thể xem hoặc đổi riêng mã giảm trừ cho từng nhân viên** —
+    khác với `NL_CHITIET_NS` thật, nơi "Mã GT_TNCN_BT"/"Mã GT_TNCN_PT" là 2 cột riêng theo từng dòng
+    nhân viên.
+  - Số tiền tính ra hiện tại ĐÚNG với dữ liệu thật đã đối chiếu (GTBT.01/GTNPT.01, xem bảng đối chiếu
+    PV-1 dòng 47) vì trong thực tế công ty hiện chỉ dùng 1 mã GTBT và 1 mã GTNPT cho tất cả — nhưng
+    cơ chế "lấy mã đầu tiên khớp regex trong danh mục" là rất mong manh: nếu sau này `dm_giamtru` có
+    thêm 1 mã GTBT/GTNPT khác (ví dụ mức giảm trừ mới theo luật sửa đổi, đặt tên khác thay vì thêm
+    dòng hiệu lực mới cùng mã cũ), app sẽ ÂM THẦM chọn sai mã cho TẤT CẢ nhân viên mà không cảnh báo.
+- **Rủi ro:** hiện tại số tiền đúng; rủi ro là TIỀM ẨN (sai âm thầm, toàn bộ nhân viên, không cảnh
+  báo) khi danh mục giảm trừ thay đổi theo cách khác với giả định hiện tại của code.
+- **Đề xuất sửa (cần bạn duyệt trước khi làm — có đổi logic chọn mã, dù không đổi số tiền với dữ liệu
+  hiện tại):**
+  1. Thêm 2 field thật "Mã GT_TNCN_BT" / "Mã GT_TNCN_PT" (type `ref`, ref `dm_giamtru`) vào field
+     list của `chitiethd` (hr.js dòng 59, cạnh "Mức đóng bảo hiểm"/"Thuế TNCN") — cho phép nhập/sửa
+     riêng theo từng phụ lục lương như hợp đồng thật.
+  2. Sửa `hr.js` dòng 307-309 + 356: nếu phụ lục hiệu lực (`ct`) có nhập "Mã GT_TNCN_BT"/"PT" thì
+     dùng đúng giá trị đó; nếu để trống (phụ lục cũ, dữ liệu đã nhập trước khi có field này) thì GIỮ
+     hành vi auto-detect hiện tại làm mặc định (regex-match đầu tiên) — đảm bảo dữ liệu/kỳ lương đã
+     chốt trước đây không đổi số liệu.
+  3. Thêm cảnh báo trong `engine.js` nếu tìm thấy ≥2 mã khớp regex trong `dm_giamtru` cùng lúc (dấu
+     hiệu cơ chế auto-detect không còn đáng tin — nhắc người dùng chọn rõ theo từng phụ lục).
+
+**Trạng thái PV-7: đã có bằng chứng cụ thể, CHƯA SỬA — chờ bạn duyệt theo từng phần (7a an toàn/không
+đổi số tiền; 7b có đổi logic, đã thiết kế để không đổi số liệu các kỳ cũ nhưng vẫn cần bạn xác nhận
+trước khi code).**
 
 ---
 
