@@ -117,6 +117,38 @@ toán) xem mã "TNCN0" được định nghĩa thế nào, trước khi quyết 
 code trong lúc chờ**, vì có 2 tín hiệu "chủ sở hữu" trong cùng 1 ngày đang mâu thuẫn nhau — sửa vội
 sẽ lặp lại đúng bài học KPCĐ.
 
+### CẬP NHẬT 2: người dùng gửi thêm file có Danh mục Thuế TNCN thật — CỦNG CỐ Q-29, nhưng vẫn còn 1 điểm chưa giải thích được
+
+File `LuongT11_NL_DN_02.12.25_V1_S_Final.xlsx` (bản đầy đủ hơn) có 3 sheet danh mục không có trong
+bản trước: `DM_TNCN`, `DM_GT_TNCN`, `DM_BAC_TNCN`. Nội dung `DM_TNCN`:
+
+| Mã thuế TNCN | Nội dung khấu trừ | Tỷ lệ đóng thuế |
+|---|---|---|
+| TNCN1 | Khấu trừ 10% (cố định) | 0.10 |
+| **TNCN0** | **Không tính thuế** | **0** |
+
+→ **Xác nhận rõ ràng, bằng chính danh mục thật: mã "TNCN0" = không tính thuế (0%), đúng như Q-29 và
+đúng như code hiện tại (`kieu = "MIEN"`).** "TNCN2" không có dòng riêng trong `DM_TNCN` — dùng trực
+tiếp bảng bậc lũy tiến `DM_BAC_TNCN` (7 bậc, khớp 100% với `dm_bacthue` mặc định của `hr.js`: bậc 3
+10-18tr @15%, v.v.). Cấu trúc này khớp CHÍNH XÁC với thiết kế `TNCN1→VL, TNCN2→LT, TNCN0→MIEN` đã có
+trong `engine.js`. **Không cần sửa code theo hướng PV-1 ban đầu nữa.**
+
+**Nhưng vẫn còn 1 điều chưa giải thích được**: `RP_THUETNCN` (cùng 1 báo cáo, không đổi giữa 2 lần
+gửi file) vẫn cho **Võ Văn Phụng** và **Bùi Văn Hậu** — 2 người có "Mã TNCN" = `TNCN0` theo
+`NL_NHANSU` của file dữ liệu gốc (`DL_LUONG_11.2025...xlsx`) — mức thuế THẬT khác 0 (1.314.000đ và
+84.786đ, khớp đúng công thức lũy tiến TNCN2, không khớp 0% của TNCN0). Đã kiểm tra `NL_PSLUONG`
+(phát sinh lương hàng tháng) — không có trường nào ghi đè "Mã TNCN" theo tháng. Hai khả năng còn lại,
+**cần người dùng xác nhận trực tiếp** (có thể chỉ cần mở app thật, xem hồ sơ 2 người này):
+1. Trong hồ sơ nhân sự thật của Phụng/Hậu, "Mã TNCN" hiện tại KHÔNG phải "TNCN0" (có thể đã đổi
+   sau thời điểm file `NL_NHANSU` được xuất, hoặc tôi đọc nhầm dòng) — nếu vậy, không có gì mâu
+   thuẫn, chỉ là dữ liệu tham chiếu của tôi bị lệch thời điểm.
+2. Có đúng là "TNCN0" nhưng công cụ PowerQuery thật của công ty có quy tắc RIÊNG cho 2 trường hợp
+   này (ví dụ: chức vụ quản lý luôn bị tính lũy tiến bất kể mã TNCN) mà chưa thể hiện trong các
+   trường dữ liệu tôi đang có.
+
+**Kết luận PV-1: Đóng — giữ nguyên code hiện tại (TNCN0 = MIEN), đúng theo Q-29 và Danh mục Thuế TNCN
+thật.** Điểm bất thường ở Phụng/Hậu ghi lại để tham khảo, không phải lý do sửa code.
+
 ---
 
 ## PV-2 (đã kiểm tra, KHÔNG phải lỗi): Truy thu bảo hiểm (R-57/R-60)
@@ -182,10 +214,78 @@ vậy thì đây là lỗi thứ 2 (tính thuế cao hơn thực tế cho ngư�
 nguồn gốc số 4.000.000đ (xem đoạn trên), **chưa thể kết luận chắc — phụ thuộc vào câu trả lời cho
 câu hỏi "Lương hỗ trợ từ đâu ra" ở trên.**
 
+---
+
+## PV-6 (giải thích công thức, đã đối chiếu dữ liệu thật — KHÔNG phải lỗi): Phân bổ sản lượng & Bù lương sản lượng
+
+Đây là 2 cơ chế TÁCH BIỆT nhau: (A) **phân bổ sản lượng** — chia 1 phiếu cân (ghi theo TỔ, chưa biết
+đích danh ai) cho từng người trong tổ; (B) **bù lương sản lượng** — nếu tiền sản lượng tính ra thấp
+hơn một "mức sàn" quy định, bù thêm phần chênh lệch. Cả 2 đã được đối chiếu với dữ liệu PowerQuery
+thật (HAK_DN T11/2025 — chế độ "bình quân tổ"; Đại Hiệp T8/2026 — chế độ "theo ngày bậc thang") và
+khớp đúng.
+
+### (A) Phân bổ sản lượng theo tổ — `core/production-alloc.js`
+
+Một phiếu cân thường chỉ ghi "cân cho tổ nào" (Mã phòng ban), không ghi rõ cân cho cá nhân nào —
+vì nhiều người cùng làm ra 1 mẻ hàng. Quy tắc chia (đã chủ sở hữu duyệt — α19 "làm như công cụ"):
+
+1. Lấy danh sách người CỦA TỔ ĐÓ đang có mặt làm việc **đúng ngày cân** (đã vào làm, chưa nghỉ việc).
+2. Loại người có tên trong ô "NV vắng" của phiếu (so khớp theo TỪ CUỐI họ tên, có dấu trước — "Tường"
+   ≠ "Tưởng" — không ai khớp mới so bỏ dấu; app còn nhận trực tiếp Mã NV).
+3. Loại người đang nghỉ phép/nghỉ ốm có đơn đã duyệt ngày đó.
+4. Chia ĐỀU khối lượng (hoặc số xe) của phiếu cho những người CÒN LẠI: `phần mỗi người = KL phiếu / số người còn lại`.
+5. Nếu tổ không còn ai (mã tổ sai, hoặc tất cả đều vắng/nghỉ) → phiếu đó giữ trạng thái **"chưa phân bổ"** (có cảnh báo), KHÔNG bỏ sót âm thầm — khối lượng này được tính riêng vào "unallocated", cộng với tổng đã chia phải luôn bằng đúng khối lượng gốc của phiếu (bảo toàn theo đúng công thức, không có đường nào làm tổng phân bổ vượt hoặc thiếu so với phiếu gốc).
+
+Phiếu đã ghi đích danh Mã NV (cân trực tiếp cho 1 người, không qua chia tổ) thì giữ nguyên, không chia.
+
+### (B) Bù lương sản lượng — `engine.js` (trong `tinhBangLuong`)
+
+Có 3-4 cách bù khác nhau, công ty chọn 1 cách cho mỗi đơn vị (lưu trong cấu hình kỳ lương):
+
+**Cách "bình quân tổ" (`cheDoBu === "to"`, HAK_DN đang dùng):**
+```
+bình_quân_tổ = Tổng tiền sản lượng cả tổ trong tháng / số ngày trong tháng / số người trong tổ
+nếu bình_quân_tổ < "Đơn giá bù lương" (mức sàn) VÀ người đó đủ "Ngưỡng công bù theo tổ":
+    bù = (mức sàn − bình_quân_tổ) × số công BT của người đó
+```
+**Đối chiếu thật** (tổ "Tổ 1 - Công nhân sản xuất", HAK_DN T11/2025, 8 người): Tổng lương sản lượng
+cả tổ = 35.160.360đ, 30 ngày, 8 người → bình quân = 35.160.360 / 30 / 8 = **146.501,5đ**, khớp đúng
+cột "Đơn giá SL BQ" = 146.502đ trong báo cáo thật (chênh 0,5đ do làm tròn hiển thị). Tháng này
+không ai bị bù (bình quân > mức sàn cấu hình riêng của đơn vị) — khớp đúng cột "Lương bù SL" = 0
+cho cả tổ trong báo cáo thật.
+
+**Cách "theo ngày bậc thang" (`cheDoBu === "daihiep"`, Đại Hiệp đang dùng):**
+```
+mỗi ngày có sản lượng:
+    tiền_ngày_thật = tấn ngày đó × đơn giá sản lượng
+    hệ_số = 0.5 nếu công BT ngày đó < 1 công
+          = 1   nếu 1 ≤ công BT < 1.5 (ngày thường)
+          = 1.5 nếu công BT ≥ 1.5 VÀ là Chủ nhật
+    mức_sàn_ngày = hệ_số × "Đơn giá bù lương" (mức sàn 1 công/ngày thường)
+    nếu mức_sàn_ngày > tiền_ngày_thật: bù += (mức_sàn_ngày − tiền_ngày_thật)
+tổng bù cả tháng = tổng các ngày có bù
+```
+**Đối chiếu thật** (nhân viên mã `049077008794`, Đại Hiệp T8/2026, đơn giá sản lượng 6.000đ/tấn,
+mức sàn 1 công = 200.000đ — suy ra từ chính báo cáo: ngày công BT=1 → "SL Tham chiếu" = 33,333 tấn
+× 6.000 = 200.000đ): lấy đúng dữ liệu chấm công thật của người này — ngày công BT=0,5 (Chủ nhật
+9/8) → mức sàn = 0,5×200.000=100.000đ, khớp đúng "SL Tham chiếu"=16,667 tấn (=100.000/6.000) trong
+báo cáo; ngày công BT=1,5 (Chủ nhật 2/8, 16/8, 30/8) → mức sàn=1,5×200.000=300.000đ, khớp đúng
+"SL Tham chiếu"=50 tấn. Tính lại TOÀN BỘ 31 ngày của tháng theo công thức trên: tổng bù =
+**10,657 tấn × 6.000 = 63.942đ**, khớp CHÍNH XÁC với "Lương bù SL" = 63.942đ trong báo cáo thật.
+
+**Kết luận PV-6: Cả 2 cơ chế đã đối chiếu CHÍNH XÁC đến từng đồng với dữ liệu PowerQuery thật ở cả 2
+đơn vị dùng 2 chế độ khác nhau — không phát hiện lỗi.** (Lưu ý: cột "Đơn giá bù lương SL" trong báo
+cáo Excel thật của HAK thực ra là SỐ TẤN được bù trong tháng, không phải một đơn giá tiền — tên cột
+dễ gây hiểu nhầm, nhưng không ảnh hưởng vì chỉ là tên hiển thị trong file Excel của công ty, không
+phải trường dữ liệu app offline dùng.)
+
+---
+
 ## Việc tiếp theo (đề xuất)
 
-- **PV-1 (TNCN0)**: chờ người dùng kiểm tra Danh mục Thuế TNCN thật — mã "TNCN0" có định nghĩa
-  trong đó không, nội dung gì. Không sửa code cho đến khi có câu trả lời này.
+- **PV-1 (TNCN0)**: ĐÃ ĐÓNG — giữ nguyên code, xem CẬP NHẬT 2. Điểm bất thường Phụng/Hậu còn để
+  tham khảo (nếu người dùng xác nhận được hồ sơ thật của 2 người này thì ghi lại cho đủ, không bắt
+  buộc), không chặn việc đóng PV-1.
 - **PV-2 (truy thu BH)**: chưa có dữ liệu thật nào kích hoạt được trường hợp này trong 2 bộ dữ liệu
   đang có (đã kiểm tra lại, không có ai vào làm/nghỉ giữa tháng ở cả HAK_DN T11/2025 và Đại Hiệp
   T8/2026) — cần dữ liệu tháng khác có trường hợp này mới đối chiếu được.
@@ -193,5 +293,7 @@ câu hỏi "Lương hỗ trợ từ đâu ra" ở trên.**
   HAK_DN để biết mã "TG1" có cấu hình "Lương phụ" khớp con số này không.
 - Đã kiểm tra thêm (PV-4): lương thời gian (kể cả biến thể qc2026 "trả đủ công"), tiền cơm, cơ chế
   phụ cấp công tác theo nhãn chấm công — đều khớp dữ liệu thật, không phải lỗi.
-- Tăng ca (mã TC5), lương sản lượng + bù sản lượng (2 chế độ "to"/"daihiep"), KPCĐ: đã kiểm tra kỹ ở
-  các lượt trước trong phiên này (xem lịch sử hội thoại) — khớp dữ liệu thật.
+- Đã kiểm tra thêm (PV-6): phân bổ sản lượng theo tổ + bù lương sản lượng (2 chế độ "to"/"daihiep")
+  — khớp chính xác dữ liệu thật đến từng đồng.
+- Tăng ca (mã TC5), KPCĐ (webapp + offline): đã kiểm tra kỹ ở các lượt trước trong phiên này (xem
+  lịch sử hội thoại) — khớp dữ liệu thật.
