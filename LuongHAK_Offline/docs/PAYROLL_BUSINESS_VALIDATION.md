@@ -592,7 +592,7 @@ mà có bằng chứng kiểm thử tường minh. Đã chạy lại toàn bộ 
 
 ---
 
-## PV-10 (ĐÃ SỬA): Phụ cấp TN.01/TN.02 — "Công tính phụ cấp" trừ sai thành phần, điều kiện ngưỡng so sai biến
+## PV-10 (HOÀN TÁC — chờ xác nhận lại, KHÔNG được coi là đã sửa): Phụ cấp TN.01/TN.02
 
 Phát hiện khi tra lại Giai đoạn 4 (phụ cấp) trong chính M thật đã trích sẵn từ trước (`Section1.m`,
 HAK_DN) — truy ra đúng 2 query từng bị bỏ sót (`QR_CC_PHUCAP_TN`, `QR_PHUCAP_TN`), không cần thêm dữ
@@ -622,3 +622,58 @@ liệu thật mới:
   biệt có chủ đích (đã dùng cho PV-9/tăng ca) sang cột "Phụ cấp" — chỉ loại cho đúng người bị ảnh
   hưởng (xác định bằng "Phụ cấp" đổi khác giữa 2 bản), không loại hàng loạt. 251 test + 95 E2E pass
   (1 lần "Dừng đọc" OCR timeout — flake môi trường đã biết từ trước, re-run lại 95/95).
+
+**CẬP NHẬT PV-10 — HOÀN TÁC**: ngay sau khi đẩy lên, 1 session Claude khác (Opus 5.5, session
+`01RpNGnTAPSjPps7yMAFCAWf`) đã HOÀN TÁC commit `da9f0cd` bằng commit `5fc3881`, dẫn bằng chứng Excel
+THẬT CNHAK 9/2026 (`RP_THBL`): 1 nhân viên có "Tiền PCTN" (phụ cấp trách nhiệm) thật = 98.077đ — engine
+TRƯỚC `da9f0cd` ra đúng 98.077đ (khớp), SAU `da9f0cd` ra 100.000đ (lệch mới, do thay đổi của chính PV-10
+gây ra). Đây là bằng chứng thật, khác nguồn (Excel đã chốt CNHAK) với M thật HAK_DN mà PV-10 dựa vào —
+đúng kiểu mâu thuẫn như PV-9 (CN1/CN2) từng gặp.
+
+**Phân tích lại (chưa hỏi chủ sở hữu, chỉ suy luận từ số liệu đã có — CHƯA đủ để tự sửa lại)**: số tiền
+sau sửa (100.000đ) không khớp với giả thuyết "chỉ đổi phần TRỪ của nhánh 'Cách tính có mô tả'" (trừ
+thêm lễ+phép chỉ có thể làm số tiền GIẢM, không thể tăng 98.077→100.000). Khả năng cao hơn: nhân viên
+này rơi vào nhánh **"Cách tính" TRỐNG (C6)**, với "Số tiền" phụ cấp = 100.000đ (danh mục riêng của
+CNHAK, khác 200.000/300.000 của TN.01/TN.02 mẫu HAK_DN) — và chính **phần sửa điều kiện NGƯỠNG** (so
+bằng Tổng công thô thay vì giá trị đã trừ phép/tăng ca) đã làm người này bị coi là "ĐỦ NGƯỠNG" (ra
+nguyên 100.000đ) trong khi Excel thật CNHAK vẫn tính theo TỶ LỆ (98.077đ, dưới ngưỡng) — tức là cách so
+ngưỡng CŨ (dùng giá trị đã trừ phép/tăng ca) mới là cách đã được chứng minh đúng cho nhánh C6, không
+phải cách theo M thật HAK_DN như PV-10 giả định. Phần đổi "Cách tính có mô tả" (trừ lễ+phép) CHƯA có
+bằng chứng thật nào phủ nhận riêng nó — nhưng cũng chưa có bằng chứng thật nào XÁC NHẬN riêng nó (số
+liệu CNHAK ở trên nhiều khả năng không đi qua nhánh này).
+
+**Trạng thái: PV-10 coi như CHƯA xong** — không tự sửa lại / đẩy lại công thức này trong phiên này. Cần
+hỏi lại chủ sở hữu (đúng kiểu câu hỏi CÔNG THỨC/QUY CHẾ như PV-9 từng làm): (1) nhánh "Cách tính" TRỐNG
+(C6, quy chế 2026) — ngưỡng có nên tiếp tục so bằng giá trị đã trừ phép/tăng ca (cách cũ, vừa được
+Excel CNHAK xác nhận đúng) hay so bằng Tổng công thô (theo M thật HAK_DN)? (2) nhánh "Cách tính" có mô
+tả (TN.01/TN.02 kiểu HAK_DN) — phần trừ nên là lễ+phép (M thật HAK_DN) hay giữ nguyên không trừ gì
+(cách cũ)? 2 câu có thể có 2 câu trả lời khác nhau (2 công ty, 2 kiểu "Cách tính" khác nhau).
+
+---
+
+## Giai đoạn 3 — bổ sung: sheet chi tiết bù lương Đại Hiệp theo ngày (Master Prompt V3 mục XVII)
+
+Chủ sở hữu xác nhận CÓ cần thêm sheet/cột chi tiết theo ngày (công BT, hệ số bậc thang, SL
+chuẩn/tham chiếu/thực tế/bù) vào file Excel "Phân bổ khối lượng tính lương" — và KHÔNG đổi tên cột
+"Đơn giá bù lương" của DM_LUONG (giữ nguyên, không theo tên "Mức bù lương SL" của mục 4.2 prompt).
+
+Đã làm (commit `56cb5be` trên `claude/v2-ocr-ky-hieu`):
+
+- **`engine.js`**: hoist `bacThang()` ra module scope (trước đây khai báo bên trong `tinhBangLuong`,
+  không dùng lại được); thêm `chiTietBuNgayDaiHiep(db, nam, thang)` — tái tạo ĐÚNG công thức bù theo
+  ngày bậc thang của `tinhBangLuong` (nhánh `cheDoBu === "daihiep"`) thành 1 dòng/ngày có sản lượng
+  (công BT, hệ số, SL chuẩn/ngày, SL tham chiếu, SL thực tế, SL bù, tiền bù) — không tính lại bằng
+  công thức khác, chỉ bóc chi tiết từng ngày của cùng 1 công thức, nên tổng mỗi người CỘNG KHỚP đúng
+  cột "Lương bù SL" của bảng lương chính thức (có test xác nhận bằng số, không chỉ bằng mắt).
+- **`ui/pbkl-xlsx.js`**: thêm sheet "Bu luong theo ngay - DH", nhóm theo phòng ban → nhân viên → ngày,
+  có dòng "Tổng bù cả tháng" mỗi người + dòng tổng toàn file; thêm ghi chú giải thích công thức +
+  hướng dẫn đối chiếu vào sheet "Huong dan su dung".
+- **`app.js`** (`exportPBKL`): gọi `chiTietBuNgayDaiHiep` với ĐÚNG dữ liệu đã dùng để tính bảng lương
+  của kỳ (`HRM.staffForPayroll` + `HRM.sanLuongKy` đã phân bổ) — chỉ xuất sheet này khi cơ chế bù =
+  "daihiep" và có ít nhất 1 dòng.
+- Sửa 1 lỗi tự phát hiện khi viết test: dòng "Tổng bù cả tháng (Mã NV)" lúc đầu đặt nhãn ở cột bị
+  MERGE (ExcelJS tự xóa giá trị các cell bị merge trừ cell đầu) → nhãn biến mất trên file thật dù số
+  tiền vẫn đúng; đã chuyển nhãn sang cột đầu (giống cách các sheet khác trong file đã làm).
+- 1 test unit mới (`engine.test.js`, đối chiếu tổng chi tiết = "Lương bù SL") + cập nhật test E2E
+  (danh sách sheet, đối chiếu tổng bù theo ngày của T2/T3 = 140.000đ khớp sheet tổng hợp). 250 test
+  unit/integration/regression + 96 E2E pass.
