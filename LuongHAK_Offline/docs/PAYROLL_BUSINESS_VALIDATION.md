@@ -431,3 +431,26 @@ phải trường dữ liệu app offline dùng.)
   — khớp chính xác dữ liệu thật đến từng đồng.
 - Tăng ca (mã TC5), KPCĐ (webapp + offline): đã kiểm tra kỹ ở các lượt trước trong phiên này (xem
   lịch sử hội thoại) — khớp dữ liệu thật.
+
+---
+
+## PV-8 (ĐÃ SỬA): Tăng ca TC2 thiếu "Công chuẩn 2" khi chấm công có nhãn "DQ"
+
+Phát hiện khi đối chiếu trực tiếp **mã Power Query M gốc** (không chỉ dữ liệu output) — lần đầu
+trích xuất thành công toàn bộ M code từ `DataMashup` nhúng trong file `.xlsx` thật
+(`LuongĐN09_27.10.2025.v3T.xlsx`, giải nén `customXml/item1.xml` → base64 → zip nội bộ →
+`Formulas/Section1.m`, 1806 dòng, 48 query).
+
+- **Công thức M thật** (`QR_CHAMCONG2` → `QR_TH_CC`): nếu nhãn chấm công (ô ngày dạng "1DQ"...)
+  chứa chữ "DQ" (không phân biệt hoa/thường) → `Công chuẩn 2 = 40` (cố định); khi tính phần tăng ca
+  vượt chuẩn của mã **TC2**, dùng "Công chuẩn 2" này thay cho "Công chuẩn" thường nếu > 0.
+- **`engine.js` trước đây**: không có khái niệm "Công chuẩn 2" ở đâu cả — TC2 luôn trừ theo Công
+  chuẩn thường, không phân biệt có nhãn "DQ" hay không.
+- **Dữ liệu thật đã kiểm**: rà toàn bộ 8 file Excel thật đang có (HAK_DN T9 & T11/2025, Quế Sơn
+  T9/2025, Đại Hiệp T8/2026) — **không có dòng chấm công nào chứa nhãn "DQ"** ở bất kỳ đơn vị/kỳ
+  nào. Tức là quy chế này có thật trong công thức (đứng, không phụ thuộc có dữ liệu hay không — chủ
+  sở hữu xác nhận), nhưng chưa có bằng chứng số liệu thật nào đã từng kích hoạt nó.
+- **Đã sửa** (commit `518a5d1` trên `claude/v2-ocr-ky-hieu`): `heSoTangCa()` nhận thêm tham số
+  `congChuan2` (tùy chọn); `engine.js` tự nhận nhãn "DQ" từ `c.nhanTheoNgay` (cơ chế nhãn chấm công
+  dùng chung với phụ cấp công tác, đã có sẵn) → `congChuan2 = 40` nếu có, else 0 (giữ đúng hành vi
+  cũ). 3 unit test mới đối chiếu đúng công thức M thật; toàn bộ 223 test + 95 E2E pass.
