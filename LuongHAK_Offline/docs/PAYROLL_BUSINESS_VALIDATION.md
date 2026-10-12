@@ -796,6 +796,40 @@ Commit `6571012` trên `claude/v2-ocr-ky-hieu`. 11 test unit mới (đối chi�
 thật HAK_DN) + 1 test E2E (upload file, phát hiện đúng 1 dòng lệch 50.000đ, không báo lệch giả). 268
 test + 99 E2E pass.
 
+### PV-15 (ĐÃ LÀM): Checklist 20 điểm trước khi chốt kỳ lương (mục XVIII)
+
+`core/pre-close-checklist.js` (mới, chỉ ĐỌC — không tính lại bảng lương, không tự sửa dữ liệu) tổng
+hợp lại đúng 20 điểm Master Prompt V3 mục XVIII liệt kê, từ 3 nguồn đã có + 1 đối chiếu độc lập mới:
+
+- Cảnh báo có sẵn của `engine.js` (mã lương/tăng ca thiếu danh mục, công BT thiếu ngày có sản lượng,
+  thuế/BH thiếu danh mục…) — bổ sung 2 cảnh báo engine.js trước đây CHƯA phát ra: mã tăng ca của NV
+  không có trong `DM_TANGCA` (trước đây âm thầm tính Tiền tăng ca = 0đ, không báo), và nhãn công tác
+  trên chấm công không khớp mã phụ cấp nào trong danh mục (trước đây âm thầm bỏ qua nhãn đó).
+- `core/integrity.js` (trùng khóa, trùng hiệu lực danh mục).
+- `core/production-alloc.js` (sản lượng/bơm dăm chưa phân bổ hết, mã tổ lạ, NV vắng không khớp).
+- Đối chiếu độc lập theo TỪNG NGƯỜI (không chỉ tổng công ty): cộng lại đúng các cột đã có trên bảng
+  lương (Lương TG + Lương phụ + Lương SL + Lương bù SL + Lương bơm dăm + Tiền tăng ca + Phụ cấp +
+  Phụ cấp công tác + Hỗ trợ + Tiền cơm + Thưởng + Thu nhập khác) so với "Tổng thu nhập" đã xuất, và
+  "Tổng thu nhập" − (BH + KPCĐ + Thuế + Trừ khác + Tạm ứng), làm tròn 1.000đ, so với "Thực lĩnh" đã
+  xuất — lộ ra ngay nếu có lỗi làm tròn/cộng thiếu cột mà các cảnh báo khác không bắt được.
+
+4 điểm công thức đã có bộ test riêng xác nhận đúng M thật (ngưỡng công BT HAK, bậc công Đại Hiệp,
+không cộng trùng bù lương/tăng ca — xem PV-6/PV-9) được đánh "✔ ok" kèm trích dẫn test, không điều
+tra lại runtime (tránh trùng lặp — đã kiểm chứng ở nơi khác).
+
+`app.js`: `chotKy()` gọi `preChotChecklist()` trước khi vào hộp xác nhận chốt kỳ — dữ liệu sạch (0
+lỗi, 0 cảnh báo) thì bỏ qua thẳng, không thêm bước nào cho trường hợp bình thường (soft-gate, không
+chặn cứng); có lỗi/cảnh báo thì hiện modal 20 điểm (icon ✔/⚠/⛔ từng mục + chi tiết), nút tiếp tục đổi
+nhãn/màu theo mức độ nặng nhất: "Đã kiểm tra, tiếp tục chốt" (xanh) nếu chỉ có cảnh báo, "⚠ Vẫn chốt
+dù còn LỖI" (đỏ) nếu có lỗi — xác nhận xong mới vào đúng hộp xác nhận chốt kỳ như cũ (không đổi hành
+vi chốt kỳ đã có).
+
+Commit `0da59bd` trên `claude/v2-ocr-ky-hieu`. 10 test unit mới (`pre-close-checklist.test.js`,
+dữ liệu sạch + từng điểm #4/#5/#7-10/#15/#16-17/#18-20) + 2 test unit mới cho 2 cảnh báo engine.js bổ
+sung + 1 test E2E (chốt kỳ có mã tăng ca sai → modal hiện đúng mục #5 cảnh báo, xác nhận xong vẫn
+chốt được bình thường). 280 test + 102 E2E pass.
+
 ### Tiếp theo
 
-- **PV-15 (chưa làm)**: Checklist 20 điểm trước khi chốt kỳ (mục XVIII).
+Cả 3 module còn lại của Giai đoạn 5 (mục 16.3, XVII, XVIII) đã hoàn thành. Chưa còn mục nào mở của
+Giai đoạn 5.
