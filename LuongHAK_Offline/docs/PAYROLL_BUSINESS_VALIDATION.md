@@ -677,3 +677,32 @@ chuẩn/tham chiếu/thực tế/bù) vào file Excel "Phân bổ khối lượn
 - 1 test unit mới (`engine.test.js`, đối chiếu tổng chi tiết = "Lương bù SL") + cập nhật test E2E
   (danh sách sheet, đối chiếu tổng bù theo ngày của T2/T3 = 140.000đ khớp sheet tổng hợp). 250 test
   unit/integration/regression + 96 E2E pass.
+
+---
+
+## PV-11 (ĐÃ LÀM — hướng giải quyết PV-10): "Loại công thức" cho DM_PHUCAP / DM_HOTRO
+
+Thay vì chọn 1 trong 2 công thức phụ cấp (M thật HAK_DN hay cách cũ đã đối chiếu CNHAK thật) để áp
+dụng CHUNG — việc không thể quyết được chỉ bằng suy luận do có bằng chứng thật mâu thuẫn ở PV-10 —
+chủ sở hữu chỉ đạo: **thêm khả năng CHỌN công thức theo mã trong chính danh mục**, đúng mẫu đã làm
+cho DM_TANGCA ("Loại công thức", Giai đoạn 2/PV-8) và đúng tinh thần Master Prompt V3 mục IV ("không
+viết cứng công thức theo mã nguồn, quản lý qua danh mục").
+
+Đã làm (commit `38f6772` trên `claude/v2-ocr-ky-hieu`):
+
+- **DM_PHUCAP** — cột mới "Loại công thức": để trống = ĐÚNG hành vi hiện tại (sau khi PV-10 bị hoàn
+  tác, không đổi số liệu bất kỳ mã nào đang dùng, kể cả TN.01/TN.02 mẫu HAK_DN và mã của CNHAK/HAKQN).
+  4 giá trị có thể khai: `CO_DINH` (ép cố định) · `TYLE_KHONG_TRU` (tỷ lệ, không trừ gì — mặc định khi
+  "Cách tính" có mô tả) · `TYLE_TRU_PHEP_TANGCA` (tỷ lệ, trừ phép+tăng ca, ngưỡng so giá trị đã trừ —
+  mặc định khi "Cách tính" trống + quy chế 2026, ĐÃ đối chiếu CNHAK/HAKQN thật, KHÔNG đổi) ·
+  `TYLE_TRU_LE_PHEP` (tỷ lệ, trừ lễ+phép, ngưỡng so Tổng công thô — đúng M thật HAK_DN, CHỈ áp dụng
+  khi 1 mã cụ thể được khai rõ, không tự động theo "Cách tính").
+- **DM_HOTRO** — cột mới "Loại công thức": để trống = đúng công thức cũ theo VỊ TRÍ gán ("Mã hỗ trợ"
+  = theo Ngày cơm, "Mã hỗ trợ 2" = bù thiếu công chuẩn). 2 giá trị: `HT_THEO_NGAY` / `HT_THIEU_CHUAN`
+  — cho phép 1 mã hỗ trợ MỚI dùng công thức khác với vị trí gán mặc định, không cần sửa engine.
+- 5 test mới xác nhận: để trống không đổi số liệu hiện có; mỗi "Loại công thức" mới cho đúng kết quả
+  khi được khai rõ. 255 test (gồm `v130.test.js` — 0 lệch với baseline v1.3.0) + 96 E2E pass.
+
+**Vẫn còn mở**: chưa có mã phụ cấp thật nào được khai "Loại công thức" = `TYLE_TRU_LE_PHEP` — khi có
+đủ dữ liệu thật xác nhận 1 mã/công ty cụ thể cần công thức M thật HAK_DN (lễ+phép), chỉ cần khai cột
+này cho đúng mã đó trong danh mục của công ty đó, không cần sửa `engine.js` nữa.
