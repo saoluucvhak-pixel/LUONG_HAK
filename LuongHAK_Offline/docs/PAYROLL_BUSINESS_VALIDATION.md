@@ -480,3 +480,15 @@ Phát hiện khi đối chiếu `QR_LUONGTG."Lương tăng ca"` trong M thật v
   chiếu đúng số liệu thật Lê Đức Trương, 510.000đ); `v130.test.js` loại các cột cộng dồn (Tiền tăng
   ca, Tổng thu nhập, Thuế TNCN, Thực lĩnh) khỏi so sánh CHỈ cho đúng người bị ảnh hưởng (xác định bằng
   "Tiền tăng ca" đổi khác giữa 2 bản), không loại hàng loạt. Toàn bộ 225 test + 95 E2E pass.
+
+**Cập nhật PV-9**: sau khi đẩy lên, 1 session Claude khác (Opus 5.5) đã HOÀN TÁC commit này (`77dd2fb`),
+dẫn `docs/PAYROLL_FORMULAS.md` (mục C5, ở repo root — tài liệu công thức gốc) nói "nhân hệ số" là quy
+tắc MỚI của Quy chế 2026 đã duyệt, "cách cũ" (1.7) = không nhân hệ số mới là gốc đúng (đối chiếu
+T10/2025). Đây là bằng chứng thật khác tháng (T9 vs T10/2025) mâu thuẫn với PV-9. Đã hỏi lại chủ sở
+hữu đúng câu hỏi QUY CHẾ (không phải "tin file nào"): "tiền tăng ca công nhật CN1/CN2 có nhân hệ số
+mã tăng ca giống mọi loại lương khác không?" — **chủ sở hữu xác nhận CÓ, không phân biệt quy chế
+2026 hay cách cũ.** Đã áp lại đúng sửa này (commit `742f972`), lần này có chạy `eslint --max-warnings 0`
+trước khi đẩy (bản bị hoàn tác trước đó để sót hàm `stripKeys` không dùng, làm lint đỏ — lỗi thật của
+tôi, đã sửa). **`docs/PAYROLL_FORMULAS.md` (mục C5, repo root) hiện vẫn ghi sai** — cần một phiên có
+phạm vi đụng tới file đó (ngoài `LuongHAK_Offline/`) sửa lại cho khớp xác nhận mới này; phiên này
+không tự sửa vì đó là tài liệu dùng chung ở gốc repo, ngoài phạm vi `LuongHAK_Offline/` được giao.
