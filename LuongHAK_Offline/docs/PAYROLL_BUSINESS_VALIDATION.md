@@ -159,13 +159,31 @@ giá trị 0 ở các dòng đã xem) — **chưa đủ dữ liệu thật để
 xác nhận đúng. Để ở mục cần kiểm tra thêm khi có dữ liệu phù hợp (ví dụ nhân viên nghỉ không lương
 giữa tháng, hoặc công < ngưỡng).
 
-## PV-3 (đã kiểm tra lại từ phiên trước, để tham chiếu): KPCĐ phần NLĐ
+## PV-3 (bằng chứng CỦNG CỐ THÊM — đơn vị thứ 3, tháng khác): KPCĐ phần NLĐ
 
 Đã phát hiện ở phiên trước (tách KPCĐ NLĐ khỏi "Cộng BH NLĐ đóng" — xác nhận đúng bằng dữ liệu thật
-`RP_BHXH`), đã sửa và PUSH, nhưng **sau đó bị hoàn tác** (commit `fe3bdd7`) với lý do "đổi công thức
-chưa được duyệt". Bài học áp dụng cho toàn tài liệu này: dù có bằng chứng Excel rõ ràng, vẫn phải chờ
-phê duyệt trước khi đổi code đang chạy thật, vì có thể ảnh hưởng ngược đến các kỳ đã chốt bằng công
-thức cũ hoặc có quy định nội bộ chưa thể hiện trong dữ liệu mẫu.
+`RP_BHXH` của HAK_DN T11/2025), đã sửa và PUSH, nhưng **sau đó bị hoàn tác** (commit `fe3bdd7`) với
+lý do "đổi công thức chưa được duyệt". Bài học: dù có bằng chứng Excel rõ ràng, vẫn phải chờ phê
+duyệt trước khi đổi code đang chạy thật.
+
+**Bằng chứng mới, đơn vị KHÁC, tháng KHÁC** — `Luong09QS_Ngan_221025_V3.xlsx` (Quế Sơn/CNHAK,
+T9/2025): cả `RP_BHXH` và `RP_THLUONG` của đơn vị này ĐỀU có cột **"NLĐ.KPCĐ" tách riêng** khỏi
+"Cộng BH NLĐ". Ví dụ Trần Thị Thu Vân (`RP_BHXH`): NLĐ.BHXH 330.416 + NLĐ.BHYT 61.953 + NLĐ.BHTN
+41.302 = **445.830 = "Cộng BH NLĐ"** (khớp đúng, KHÔNG gồm KPCĐ); "NLĐ.KPCĐ" = 20.651 nằm RIÊNG,
+cộng vào "Tổng KPCĐ" (= DN.KPCĐ + NLĐ.KPCĐ) chứ không cộng vào "Tổng BH" (= Cộng BH DN + Cộng BH
+NLĐ). Cùng mẫu mã BHXH (`BH_KPCD.01` → NLĐ.KPCĐ > 0; `BH_KPCD.03` → NLĐ.KPCĐ = 0) y hệt HAK_DN.
+
+→ **Đây là lần thứ 2, ở đơn vị khác, tháng khác (T9/2025, cũng TRƯỚC ngày quy chế 2026 được duyệt
+11/10/2026), cho cùng 1 kết luận: KPCĐ phần NLĐ luôn được công ty tách thành khoản trừ RIÊNG, không
+gộp vào "BH trừ NLĐ"/"Cộng BH NLĐ đóng".** Việc này nhất quán ở ít nhất 2 đơn vị qua 2 tháng khác
+nhau, cả 2 đều TRƯỚC thời điểm "quy chế 2026" — nên nhiều khả năng đây là lỗi hiện có từ lâu, KHÔNG
+phải một chính sách mới chỉ áp dụng từ 2026 cần gate theo `qc2026`. Việc hoàn tác trước đây ("áp
+dụng cả cách tính cũ 1.7" là lý do bị phản đối) có thể đã hiểu nhầm đây là thay đổi chính sách, trong
+khi thực chất là sửa một lỗi tính sai đã tồn tại từ trước.
+
+**Vẫn CHƯA tự sửa lại** — đã bị hoàn tác 1 lần, cần hỏi lại rõ ràng trước khi làm lần 2. Câu hỏi cho
+chủ sở hữu/kế toán: với bằng chứng từ 2 đơn vị, 2 tháng (đều trước 2026) đều tách KPCĐ NLĐ riêng,
+có đồng ý cho sửa lại (tách riêng, áp dụng không điều kiện quy chế) ở cả webapp và app offline không?
 
 ---
 
