@@ -1239,9 +1239,12 @@
     if (!st.kq || !need("payroll.close")) return;
     var ky = kyStr();
     if (kyChot(ky)) { alert(kyLabel(ky) + " đã chốt."); return; }
-    // P0 (BLOCKER — mục IV.2): lỗi dữ liệu NGHIÊM TRỌNG (hiện chỉ có Mã NV trùng — xem core/integrity.js)
-    // phải CHẶN CỨNG, không cho chốt bằng 1 hộp thoại xác nhận như cảnh báo thường.
-    var critIssues = INT.check(db).filter(function (i) { return i.level === "Critical"; });
+    // P0 (BLOCKER — mục IV.2): lỗi dữ liệu NGHIÊM TRỌNG phải CHẶN CỨNG, không cho chốt bằng 1 hộp
+    // thoại xác nhận như cảnh báo thường — gồm mức "Critical" (Mã NV trùng) VÀ các dòng "High" mà
+    // core/integrity.js đã tự xác định là tiền bị CỘNG TRÙNG (phiếu cân / số chứng từ trùng khóa
+    // → sản lượng, thưởng, tạm ứng bị tính 2 lần) — khớp đúng BLOCKER "sản lượng/chấm công bị cộng
+    // trùng" của mục IV.2, dù mức integrity.js gán là High (ảnh hưởng tiền trực tiếp như Critical).
+    var critIssues = INT.check(db).filter(function (i) { return i.level === "Critical" || /CỘNG (2 LẦN|NHIỀU LẦN)/.test(i.msg); });
     if (critIssues.length) {
       alert("⛔ KHÔNG THỂ CHỐT — có " + critIssues.length + " lỗi dữ liệu NGHIÊM TRỌNG cần sửa trước:\n" +
         critIssues.slice(0, 10).map(function (i) { return "• " + i.msg; }).join("\n") + (critIssues.length > 10 ? "\n…" : "") +
