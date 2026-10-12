@@ -69,13 +69,34 @@ gửi lên) và kiểm tra trước khi thực hiện mỗi IPC ghi/khôi phục
 (ảnh hưởng toàn bộ luồng đăng nhập hiện tại), **không làm trong lượt này**, cần phê duyệt phạm vi
 riêng (mục V/XIV của yêu cầu) trước khi bắt đầu, theo đúng nguyên tắc II.15.
 
+## 1c. "Thiếu mã lương/tham số thiết yếu" (mục IV.2) — đã rà, 1 trường hợp sửa
+
+Rà toàn bộ `out.canhbao.push(...)` trong `engine.js` liên quan "chưa có trong danh mục":
+
+| Trường hợp | Hậu quả nếu bỏ qua | Quyết định |
+|---|---|---|
+| **Mã BHXH không có trong Danh mục bảo hiểm** (`engine.js:379`) | TOÀN BỘ khối BHXH (NLĐ + công ty) bị bỏ qua hoàn toàn cho người đó — thiếu nghĩa vụ đóng BHXH thật | **P0-6: đã nâng thành chặn cứng** (xem bảng lỗi), đã push |
+| Mã lương không có trong Danh mục lương (`engine.js:261`) | Đã đọc kỹ `congChuan()`: vẫn có fallback hợp lý (số ngày − Chủ nhật, không về 0/garbage) — lương tính ra có thể sai CÁCH nhưng không phải 0 hay vô nghĩa | Giữ cảnh báo mềm — không đủ căn cứ nâng thành chặn cứng |
+| Mã thuế TNCN không có trong danh mục (`engine.js:395`) | Có fallback AN TOÀN (tạm tính lũy tiến — thiên về đóng thuế dư chứ không thiếu) | Giữ cảnh báo mềm — fallback đã bảo vệ đúng hướng |
+| Có mã BHXH nhưng chưa có Lương cơ bản, quy chế 2026 (`engine.js:358`) | Đã xác nhận trước đó khớp đúng báo cáo Excel thật (không phải lỗi, là chủ ý) | Giữ nguyên |
+| Các khoản trừ vượt thu nhập → thực lĩnh = 0 (`engine.js:413`) | Đã tự xử lý an toàn (không âm), chỉ cần người dùng xử lý tay phần còn thiếu | Giữ cảnh báo mềm |
+
+| ID | Mức độ | File/Hàm | Nguyên nhân | Rủi ro nghiệp vụ | Giải pháp | Test | Trạng thái |
+|---|---|---|---|---|---|---|---|
+| P0-6 | P0 | `app.js:chotKy()` | Mã BHXH của nhân viên không khớp Danh mục bảo hiểm → `bh=null` → bỏ qua HOÀN TOÀN khối BHXH (CTY+NLĐ) cho người đó trong `engine.js`. `chotKy()` chỉ coi đây là cảnh báo mềm (`w`, 1 confirm có thể bỏ qua). | Thiếu nghĩa vụ đóng BHXH thật cho 1 người — rủi ro truy thu/phạt BHXH, giống P0-3/4/5. | Thêm bước chặn cứng lọc `fresh.canhbao` theo mẫu "chưa có trong Danh mục bảo hiểm" trong `chotKy()`. | Full suite 216/216, E2E 95/95 (chạy 3 lần — 2 lần gặp đúng flake OCR đã biết từ P0-1, không liên quan; xác nhận bằng cách chạy lại bản gốc). | ✅ Đã sửa, đã push (`835e085`) |
+
+## 2b. `core/allocation.js` — đã audit, không phát hiện lỗi
+
+Đọc toàn bộ file (chia chi phí lương theo phòng ban cho báo cáo kế toán, dùng thuật toán
+"largest remainder" để chia số tiền theo tỷ lệ, luôn bảo đảm tổng các phần = đúng số gốc). Đã có 4
+test (`tests/unit/allocation.test.js`) kiểm tra đúng bất biến này + các tình huống điều chuyển phòng
+ban giữa kỳ (Q-19/R-53). Không phát hiện lỗi.
+
 ## 3. Việc tiếp theo (đề xuất, chưa làm)
 
-- **"Thiếu mã lương/tham số thiết yếu"** (mục IV.2): `canhbao` (cảnh báo của engine) đã có một số
-  trường hợp (ví dụ mã lương không có trong danh mục — xem `hr.js:314-316`) nhưng tất cả đều chỉ
-  là cảnh báo mềm (`w`, có thể bấm "Đồng ý" bỏ qua) — cần rà lại xem trường hợp nào thực sự PHẢI
-  chặn cứng như Mã NV trùng / ô chấm công, trường hợp nào hợp lý để giữ dạng xác nhận.
-- Viết E2E trực tiếp cho P0-3/P0-4/P0-5 (tiêm dữ liệu lỗi thẳng vào `data.json` giữa các bước,
+- Viết E2E trực tiếp cho P0-3/P0-4/P0-5/P0-6 (tiêm dữ liệu lỗi thẳng vào `data.json` giữa các bước,
   giống cách các test "Cấu trúc nguy hiểm" đã làm — xem mục 2).
-- `core/allocation.js` (phân bổ theo phòng ban cho báo cáo kế toán, khác với `production-alloc.js`
-  phân bổ sản lượng theo tổ) chưa được audit trong lượt này.
+- Phần còn lại của mục IV (quy trình phê duyệt lương — mục V), VI-X (HRM, chấm công, OCR, sản
+  lượng, engine công thức khác), XI-XX (kiến trúc, SQLite, hiệu suất, bảo mật/mã hóa, UI, sao
+  lưu/phục hồi, kiểm thử/CI mở rộng, Windows) — chưa bắt đầu, cần phê duyệt phạm vi riêng theo
+  nguyên tắc II.15.
