@@ -157,7 +157,7 @@ PV-7: bạn chỉ đúng 3 trường "Mã GT_TNCN_BT, Mã GT_TNCN_PT, Số sổ 
 
 ---
 
-## PV-7 (MỚI — xác nhận đúng như bạn chỉ ra): Mã GT_TNCN_BT / Mã GT_TNCN_PT / Số sổ BHXH
+## PV-7 (ĐÃ SỬA — chủ sở hữu duyệt "làm hết 7a,7b,7c"): Mã GT_TNCN_BT / Mã GT_TNCN_PT / Số sổ BHXH / biểu thuế lũy tiến
 
 Bạn nêu đúng 3 trường này có vấn đề thật. Chi tiết từng trường:
 
@@ -224,9 +224,33 @@ Bạn nêu đúng 3 trường này có vấn đề thật. Chi tiết từng tr�
   3. Thêm cảnh báo trong `engine.js` nếu tìm thấy ≥2 mã khớp regex trong `dm_giamtru` cùng lúc (dấu
      hiệu cơ chế auto-detect không còn đáng tin — nhắc người dùng chọn rõ theo từng phụ lục).
 
-**Trạng thái PV-7: đã có bằng chứng cụ thể, CHƯA SỬA — chờ bạn duyệt theo từng phần (7a an toàn/không
-đổi số tiền; 7b có đổi logic, đã thiết kế để không đổi số liệu các kỳ cũ nhưng vẫn cần bạn xác nhận
-trước khi code).**
+### 7c. Biểu thuế lũy tiến (`dm_bacthue`) không phân biệt theo "Mã thuế TNCN" — cùng lỗ hổng thiết kế như 7b
+
+- **File/hàm:** `engine.js` hàm `tinhBangLuong()` (phần dựng `bieu` từ `dm_bacthue`, trước đây dòng
+  198-201). `app.js` `DM.dm_bacthue.cols`.
+- **Hiện trạng đã xác nhận:** `DM_BAC_TNCN` thật (file `3d229610-...xlsx`) có cột "Mã thuế TNCN" gắn
+  theo từng dòng bậc thuế (7 bậc đều ghi "TNCN2") — chuẩn 7 bậc lũy tiến hiện hành của luật thuế TNCN
+  VN (5/10/15/20/25/30/35%, mốc 5-10-18-32-52-80 triệu), khớp đúng dữ liệu thật đã kiểm (Võ Văn Phụng,
+  Nguyễn Đức Quế, Trương Minh Tây — xem phần đối chiếu công thức dưới). Nhưng field list của app
+  (`app.js` dòng 24, `dm_bacthue.cols`) KHÔNG có cột này — `engine.js` lấy TOÀN BỘ `dm_bacthue` làm 1
+  biểu DUY NHẤT dùng chung cho MỌI mã thuế lũy tiến, y hệt kiểu lỗ hổng của GT_TNCN_BT/PT ở 7b: đúng
+  khi công ty chỉ có 1 mã lũy tiến (hiện tại là vậy — "LT01"/TNCN2), nhưng không có cách biểu diễn
+  "mỗi mã thuế lũy tiến 1 biểu riêng" nếu công ty cần (ví dụ 1 đơn vị trong hệ thống áp dụng mức khác).
+- **Đã kiểm lại luôn công thức thu nhập chịu thuế TNCN bằng dữ liệu thật** (RP_THUETNCN, không chỉ
+  suy luận): `Thu nhập chịu thuế = Thu nhập tính thuế(gộp) − Tiền cơm − KPCĐ − Bảo hiểm(NLĐ) − GT bản
+  thân − GT NPT` — khớp đúng từng đồng với 3 nhân viên khác nhau (Phụng: 30.000.000−0−0−840.000−
+  11.000.000−4.400.000=13.760.000 ✓; Quế và Tây: ra số âm → thuế đúng = 0 ✓). Không có khoản "Lương
+  hỗ trợ" nào bị trừ riêng → **đóng PV-5 theo hướng công thức hiện tại ĐÚNG** (xem PV-5 ở trên).
+- **Đề xuất sửa (đã làm, không đổi số liệu hiện tại):** thêm cột "Mã thuế TNCN" (tùy chọn) vào
+  `dm_bacthue`; để trống = áp dụng chung cho mọi mã lũy tiến (hành vi hiện tại, giữ đúng số liệu cũ);
+  chỉ khi CÓ ≥1 dòng ghi mã mới lọc biểu theo đúng mã của từng người.
+
+**Trạng thái PV-7: ĐÃ SỬA cả 7a/7b/7c** theo yêu cầu "làm hết 7a,7b,7c để tính luôn công thức tính
+thu nhập chịu thuế TNCN và tham chiếu mức đóng thuế TNCN" — commit `10f2ddc` trên `claude/v2-ocr-ky-hieu`
+(cả 3 phần đều backward-compatible: để trống field mới = giữ đúng hành vi/số liệu cũ). Có 7 unit test
+mới (`tests/unit/pv7-fields.test.js`) + toàn bộ 220 unit/integration/regression test + 95 E2E test đều
+pass. Phát hiện thêm trong lúc sửa 7b: `hr.js`'s `REFS` thiếu `dm_giamtru` khiến field `ref` mới làm
+vỡ hẳn form "Thêm nhân viên" (ném lỗi JS) — bắt được qua E2E, đã sửa cùng lúc.
 
 ---
 
@@ -287,7 +311,17 @@ thấy nhãn "ĐH" ở đúng 2 ngày (28, 29) — khớp CƠ CHẾ "đếm ngà
 (60.000 / 2 ngày = 30.000đ/ngày cho nhãn "ĐH", hợp lý). Không có Danh mục Phụ cấp thật để xác nhận
 đúng đơn giá 30.000đ, nhưng cơ chế (đếm nhãn, không phải đếm công) đã khớp.
 
-## PV-5 (CHƯA kết luận được — thiếu dữ liệu danh mục): "Lương hỗ trợ" của Bùi Văn Hậu
+## PV-5 (ĐÃ ĐÓNG — xem PV-7c: KHÔNG phải lỗi, công thức hiện tại ĐÚNG): "Lương hỗ trợ" của Bùi Văn Hậu
+
+**Cập nhật (PV-7c)**: quan sát "chênh lệch = Lương hỗ trợ + Cơm ca" ở dưới là MỘT SỰ TRÙNG HỢP —
+đã kiểm tra lại bằng đúng cột breakdown thuế thật (`RP_THUETNCN`, file `3d229610-...xlsx`, có 2
+nhân viên "Nguyễn Đức Quế"/"Trương Minh Tây" với Lương hỗ trợ = 300.000đ): cột "Thu nhập chịu thuế"
+trong file thật CHỈ trừ đúng 5 khoản — Tiền cơm, KPCĐ, Bảo hiểm (NLĐ), GT bản thân, GT NPT — khớp
+đúng từng đồng với `chiuThue = tongTN - bhNLD - kpcdNLD - tienCom` rồi trừ tiếp GTBT/GTNPT của
+`engine.js` hiện tại. KHÔNG có dòng trừ "Lương hỗ trợ" nào trong breakdown thật. Vậy công thức thu
+nhập chịu thuế hiện tại **ĐÚNG — không sửa gì**. Đóng PV-5 theo hướng ngược lại giả thuyết cũ.
+
+### Lịch sử (giữ để tham khảo)
 
 Báo cáo thật (`RP_THBL`) cho Bùi Văn Hậu có **"Lương hỗ trợ" = 4.000.000đ**, nhưng hồ sơ của anh
 (`NL_NHANSU`) có "Mã hỗ trợ 2" = TRỐNG. Theo `engine.js`, cột "Lương hỗ trợ" (`luongHT`) CHỈ được
