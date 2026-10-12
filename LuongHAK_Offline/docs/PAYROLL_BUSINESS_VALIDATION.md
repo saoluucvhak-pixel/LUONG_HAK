@@ -172,6 +172,16 @@ Có thể giải thích theo nhiều hướng khác nhau mà tôi KHÔNG đủ d
 4.000.000đ không. Không có file này trong bộ dữ liệu đã cung cấp (chỉ có dữ liệu phát sinh hàng
 tháng, không có danh mục cấu hình). **Chưa kết luận được đây là lỗi hay không — cần thêm dữ liệu.**
 
+**Quan sát thêm (cũng chưa kết luận)**: Đối chiếu "Thu nhập tính thuế" thật (17.640.000, `RP_THUETNCN`)
+với tổng các khoản thu nhập thật trong `RP_THBL` (Lương thời gian 10.200.000 + Lương Tăng Ca
+7.440.000 + Lương hỗ trợ 4.000.000 + Cơm ca 460.000 = 22.100.000), chênh lệch đúng bằng
+**Lương hỗ trợ + Cơm ca** (4.460.000). Tức là trong hệ thống thật, "Lương hỗ trợ" (không chỉ
+"Tiền cơm") dường như ĐƯỢC LOẠI khỏi thu nhập chịu thuế. Nhưng `engine.js` hiện tại
+(`chiuThue = tongTN - bhNLD - tienCom`) CHỈ loại trừ `tienCom`, KHÔNG loại `luongHT` — nếu đúng
+vậy thì đây là lỗi thứ 2 (tính thuế cao hơn thực tế cho người có "Lương hỗ trợ"). Nhưng vì chưa rõ
+nguồn gốc số 4.000.000đ (xem đoạn trên), **chưa thể kết luận chắc — phụ thuộc vào câu trả lời cho
+câu hỏi "Lương hỗ trợ từ đâu ra" ở trên.**
+
 ## Việc tiếp theo (đề xuất)
 
 - **PV-1 (TNCN0)**: chờ người dùng kiểm tra Danh mục Thuế TNCN thật — mã "TNCN0" có định nghĩa
