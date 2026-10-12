@@ -557,3 +557,35 @@ Tất cả đều backward-compatible (để trống trường mới = giữ đ�
 
 **Kết luận Giai đoạn 3**: không còn gap nào khác đã biết; công thức tiền đã đúng theo cả 2 cách đối
 chiếu (M thật cho HAK/phân bổ; chữ prompt cho Đại Hiệp) — chỉ thiếu 1 cảnh báo nghiệp vụ, đã bổ sung.
+
+### Giai đoạn 3 — bổ sung: kiểm thử biên bắt buộc cho bù lương Đại Hiệp
+
+Chủ sở hữu ban hành văn bản riêng "QUY TẮC BẮT BUỘC — BÙ LƯƠNG SẢN LƯỢNG ĐẠI HIỆP THEO BẬC THANG" —
+nêu đúng công thức đã xác nhận ở trên nhưng đòi hỏi thêm **bộ kiểm thử biên tường minh** (không chỉ
+đối chiếu công thức bằng mắt) trước khi coi là xong. Đã bổ sung
+`tests/unit/daihiep-bacthang.test.js` (17 test, commit `280b971` trên `claude/v2-ocr-ky-hieu`) —
+mỗi test đối chiếu `engine.js` (`cheDoBu === "daihiep"`) với 1 công thức tham chiếu viết ĐỘC LẬP
+ngay trong file test (không gọi lại `bacThang()` của engine), để test không tự xác nhận chính nó.
+Bao quát đủ danh mục "Kiểm thử bắt buộc" của văn bản:
+
+- Điểm biên hệ số: 0,49/0,5 · 0,99/1 · 1,49/1,5 (Chủ nhật) — đúng bậc, không suy luận tuyến tính.
+- BT = 2 ngày thường → hệ số vẫn chỉ 1 (không vượt tối đa); BT = 2 Chủ nhật → hệ số vẫn chỉ 1,5.
+- SL thực tế thấp hơn / bằng / cao hơn SL tham chiếu → bù > 0 / = 0 / = 0 (không bù âm).
+- 1 ngày nhiều phiếu cân → phải cộng sản lượng trong ngày TRƯỚC khi so bậc thang (không tính bù
+  riêng từng phiếu rồi cộng — test dựng 2 phiếu 10 tấn/phiếu cùng ngày để lộ sai nếu tính sai).
+- Đơn giá khoán + Mức bù lương SL đổi giữa 2 kỳ hiệu lực trong DM_LUONG → mỗi kỳ phải dùng đúng giá
+  hiệu lực của kỳ đó (đối chiếu `hieuLuc()`).
+- SL_CHUAN_1_NGAY = Mức bù / Đơn giá khoán phải tính từ DM_LUONG, không hardcode
+  33,333333/16,666667/49,9999999 — test đổi hẳn sang bộ số khác (150.000/5.000 = 30 tấn/ngày).
+- Không xét ngưỡng công BT tháng đối với Đại Hiệp (khác 2 cách bù "theo tháng"/"theo ngày" cũ) — test
+  đặt ngưỡng tháng rất cao, xác nhận không chặn bù theo ngày.
+- Sai số làm tròn: chỉ làm tròn tiền 1 lần ở tổng tháng, không làm tròn từng ngày rồi cộng — test
+  dựng 2 ngày mà phần bù mỗi ngày rơi đúng ở biên `,5` để 2 cách tính cho ra kết quả KHÁC NHAU, xác
+  nhận engine theo đúng cách "cộng rồi làm tròn 1 lần".
+- 2 công thức tương đương (SL bù × đơn giá ⟷ MAX(0, mức bù × hệ số − SL thực tế × đơn giá)) phải
+  khớp nhau ở mọi điểm biên.
+
+**Kết quả: toàn bộ 17 test PASS ngay với code hiện tại — không phải sửa `bacThang()` hay nhánh
+`daihiep`**, xác nhận công thức đã đúng theo đúng quy tắc chủ sở hữu, không chỉ đối chiếu lý thuyết
+mà có bằng chứng kiểm thử tường minh. Đã chạy lại toàn bộ 249 test unit/integration/regression +
+`eslint --max-warnings 0` + `node --check` trên các file lõi — không có hồi quy.
