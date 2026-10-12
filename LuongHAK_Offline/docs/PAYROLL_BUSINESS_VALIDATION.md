@@ -504,3 +504,30 @@ hệ số TC5 của HAK_DN hiện là 100%, nhưng sai cấu trúc). Vậy toàn
 - Lỗi TC2 thiếu "Công chuẩn 2" khi có nhãn "DQ": **ĐÃ SỬA** (518a5d1).
 - Lỗi TC5 không nhân hệ số: **ĐÃ SỬA** (a25019d).
 - Không còn lỗi tăng ca nào khác đã báo cáo mà chưa sửa trong phiên này.
+
+---
+
+## Giai đoạn 2 (Master Prompt V3, mục IV + VIII.8.1): chuẩn hóa danh mục
+
+Chủ sở hữu đã quyết định kiến trúc: **mỗi công ty/đơn vị HAK Group tiếp tục dùng 1 bản cài + 1 file
+dữ liệu riêng** (không gộp thành 1 app quản nhiều công ty) — nên KHÔNG thêm trường CompanyID vào danh
+mục. Phần việc Giai đoạn 2 còn lại, đã làm:
+
+- **Mục 4.5 ("Trùng quy chế")**: thêm kiểm tra trong `core/integrity.js` — báo **High** khi 1 danh
+  mục (dm_luong, dm_phucap, dm_tangca, dm_hotro, dm_baohiem, dm_tncn, dm_giamtru, dm_phongban,
+  dm_chucvu, dm_bacthue) có ≥2 dòng cùng mã + CÙNG "Hiệu lực từ" — trước đây `hieuLuc()` (engine.js)
+  im lặng chọn 1 dòng theo thứ tự mảng khi gặp trường hợp này. Không ảnh hưởng trường hợp bình thường
+  (nhiều dòng cùng mã nhưng Hiệu lực từ khác nhau — tăng lương/đổi mức theo thời gian). Commit
+  `a582d32`.
+- **Mục 4.5 (đơn giá = 0)**: thêm cảnh báo khi có sản lượng/bơm dăm thật nhưng Danh mục lương thiếu
+  "Số tiền khoán"/"Đơn giá bơm dăm" (trước đây âm thầm ra lương = 0đ). Commit `c743141`.
+- **Mục 8.1 (DM_TANGCA — "loại công thức", không hardcode theo tên mã)**: thêm cột tùy chọn "Loại
+  công thức" vào DM_TANGCA; để trống = dùng đúng tên Mã tăng ca như cũ (không đổi số liệu cũ); có giá
+  trị = cho phép 1 mã tăng ca MỚI dùng lại công thức TC1/TC2/TC3/TC4/TC5/TC6 có sẵn mà không cần sửa
+  `engine.js`. Commit `f3efcce`.
+- **"Mức bù lương SL" / "Đơn giá khoán" không hardcode trong engine**: đã đúng từ trước (đọc từ
+  `dm_luong`: "Đơn giá bù lương", "Số tiền khoán", "Ngưỡng công bù theo tổ" — xem PV-6), không cần sửa.
+- **Mapping dữ liệu cũ**: schema hiện tại đã tương thích tên cột với yêu cầu mục IV, không cần đổi tên.
+
+Tất cả đều backward-compatible (để trống trường mới = giữ đúng hành vi/số liệu cũ), có test riêng,
+đã qua `eslint --max-warnings 0` + `node --check` + 231 test + 95 E2E.
