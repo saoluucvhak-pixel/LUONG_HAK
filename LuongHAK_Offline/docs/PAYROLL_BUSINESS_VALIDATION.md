@@ -492,3 +492,15 @@ trước khi đẩy (bản bị hoàn tác trước đó để sót hàm `stripK
 tôi, đã sửa). **`docs/PAYROLL_FORMULAS.md` (mục C5, repo root) hiện vẫn ghi sai** — cần một phiên có
 phạm vi đụng tới file đó (ngoài `LuongHAK_Offline/`) sửa lại cho khớp xác nhận mới này; phiên này
 không tự sửa vì đó là tài liệu dùng chung ở gốc repo, ngoài phạm vi `LuongHAK_Offline/` được giao.
+
+**PV-9 hoàn tất**: đã sửa thêm TC5 (commit `a25019d` trên `claude/v2-ocr-ky-hieu`) theo đúng quy chế
+chủ sở hữu vừa xác nhận — TC5 cũng phải nhân "Hệ số tăng ca", trước đây bỏ qua (không lộ sai số vì
+hệ số TC5 của HAK_DN hiện là 100%, nhưng sai cấu trúc). Vậy toàn bộ các mã tăng ca (TC1-TC5, CN1/CN2)
+đến đây đều đã nhân đúng hệ số theo 1 quy chế thống nhất.
+
+**Danh sách lỗi tăng ca đã báo cáo trong phiên này — tình trạng cuối**:
+- Lỗi CN1/CN2 không nhân hệ số (gấp đôi khi hệ số ≠ 100%): **ĐÃ SỬA** (742f972, sau khi bị hoàn tác 1
+  lần và chủ sở hữu xác nhận lại quy chế).
+- Lỗi TC2 thiếu "Công chuẩn 2" khi có nhãn "DQ": **ĐÃ SỬA** (518a5d1).
+- Lỗi TC5 không nhân hệ số: **ĐÃ SỬA** (a25019d).
+- Không còn lỗi tăng ca nào khác đã báo cáo mà chưa sửa trong phiên này.
