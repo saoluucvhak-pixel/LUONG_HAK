@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhân sự - Tiền lương HAK</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="stylesheet" href="ui/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="brand"><div class="logo">HAK</div><div><b>Nhân sự · Lương</b><small>Chạy offline</small></div></div>
+    <nav id="nav"></nav>
+    <div class="sidefoot" id="sidefoot"></div>
+  </aside>
+  <section id="content">
+    <header id="top"></header>
+    <main id="main"></main>
+  </section>
+</div>
+<div id="modal" class="hide"></div>
+<div id="toast"></div>
+<script src="xlsx.full.min.js"></script>
+<script src="core/validate.js"></script>
+<script src="core/importer.js"></script>
+<script src="core/integrity.js"></script>
+<script src="core/payroll-close.js"></script>
+<script src="engine.js"></script>
+<script src="hr.js"></script>
+<script src="ui/icons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

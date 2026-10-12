@@ -1,0 +1,44 @@
+{
+  "name": "luong-hak",
+  "version": "1.4.0",
+  "description": "Tính lương HAK - chạy offline",
+  "main": "main.js",
+  "author": "HAK",
+  "scripts": {
+    "test": "node --test \"tests/unit/*.test.js\" \"tests/integration/*.test.js\" \"tests/regression/*.test.js\"",
+    "test:e2e": "node tests/e2e/run-e2e.js",
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "43.7.9",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "vn.hak.luong",
+    "productName": "Tinh Luong HAK",
+    "files": [
+      "main.js",
+      "preload.js",
+      "main/**",
+      "core/**",
+      "ui/**",
+      "index.html",
+      "style.css",
+      "app.js",
+      "engine.js",
+      "hr.js",
+      "xlsx.full.min.js"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "artifactName": "TinhLuongHAK-Setup-${version}.${ext}"
+  }
+}
