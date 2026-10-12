@@ -290,9 +290,13 @@ function createStorage(dir, opts) {
     fs.renameSync(dataFile, path.join(dir, f));
     return f;
   }
+  // P1: phân biệt "chưa có dữ liệu để sao lưu" (backup() trả null vì !exists(dataFile)) với
+  // "sao lưu thất bại" (backup() trả null vì ghi lỗi) — dùng ở nút "Tạo bản sao lưu ngay" để
+  // không báo nhầm "chưa có dữ liệu" khi thực ra là lỗi đĩa/quyền ghi.
+  function hasDataFile() { return exists(dataFile); }
   return { dataFile, backupDir, load, save, backup, list, readBackup, verifyBackup, verifyAll, quarantineCorrupt, info: () => ({ dataFile, backupDir }),
     setMirror, syncMirror, noteExternal, backupStatus, readSettings, writeSettings,
-    getSchedule, setSchedule, tickSchedule, backupOnClose, changedSinceBackup };
+    getSchedule, setSchedule, tickSchedule, backupOnClose, changedSinceBackup, hasDataFile };
 }
 
 module.exports = { createStorage, isValidDataText, sha256, SCHEDULE_HOURS, KEEP_DAILY, SCHEDULE_DEFAULT };

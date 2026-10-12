@@ -27,6 +27,7 @@ function registerIpc() {
   ipcMain.on("store-save", (e, text) => { e.returnValue = storage.save(text); });
   ipcMain.on("store-info", (e) => { e.returnValue = storage.info(); });
   ipcMain.on("store-backup", (e, tag) => { try { e.returnValue = storage.backup(tag); } catch (err) { e.returnValue = null; } });
+  ipcMain.on("store-has-data-file", (e) => { try { e.returnValue = storage.hasDataFile(); } catch (err) { e.returnValue = false; } });
   ipcMain.on("store-list", (e) => { try { e.returnValue = storage.list(); } catch (err) { e.returnValue = []; } });
   ipcMain.on("store-verify", (e) => { try { e.returnValue = storage.verifyAll(); } catch (err) { e.returnValue = []; } });
   ipcMain.on("store-read", (e, name) => { try { e.returnValue = storage.readBackup(name); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });

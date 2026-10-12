@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("hakStore", {
   save: (text) => ipcRenderer.sendSync("store-save", text), // true | "lỗi"
   info: () => ipcRenderer.sendSync("store-info"),
   backup: (tag) => ipcRenderer.sendSync("store-backup", tag),
+  hasDataFile: () => ipcRenderer.sendSync("store-has-data-file"),
   listBackups: () => ipcRenderer.sendSync("store-list"),
   verifyBackups: () => ipcRenderer.sendSync("store-verify"),  // [{ name, tag, created, status: ok|unverified|mismatch|invalid }]
   readBackup: (name) => ipcRenderer.sendSync("store-read", name),
