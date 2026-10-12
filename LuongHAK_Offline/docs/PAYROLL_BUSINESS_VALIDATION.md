@@ -706,3 +706,43 @@ viết cứng công thức theo mã nguồn, quản lý qua danh mục").
 **Vẫn còn mở**: chưa có mã phụ cấp thật nào được khai "Loại công thức" = `TYLE_TRU_LE_PHEP` — khi có
 đủ dữ liệu thật xác nhận 1 mã/công ty cụ thể cần công thức M thật HAK_DN (lễ+phép), chỉ cần khai cột
 này cho đúng mã đó trong danh mục của công ty đó, không cần sửa `engine.js` nữa.
+
+---
+
+## Giai đoạn 4 (Master Prompt V3, mục IX-XV): các nghiệp vụ lương
+
+Bắt đầu rà soát theo đúng danh mục mục IV: Lương thời gian, Tăng ca theo mã (đã xong Giai đoạn 1), Công
+công tác, Phụ cấp (đã xong PV-10/11), Hỗ trợ (đã xong PV-11), Thuế, Bảo hiểm, Thực lĩnh.
+
+### PV-12 (ĐÃ LÀM — mẫu catalog-driven như PV-11): "Lương thời gian" của mã SP
+
+Đối chiếu mục X.3 với M thật HAK_DN (`Section1.m`, cột "Công tính TG") — phát hiện:
+
+- **M thật**: `nếu Mã tiền lương 1 = "SP" thì Công tính TG = Công lễ + Công TĂNG CA`.
+- **`engine.js` + `docs/PAYROLL_FORMULAS.md` ("C3") hiện tại**: `Công lễ + Công PHÉP` — khác M thật,
+  không có bằng chứng đối chiếu nào được ghi lại cho "C3" (khác C5 là đã đối chiếu rõ).
+- **Đã thử đối chiếu bằng số liệu thật** (như cách làm với CN1/CN2) — tra cả 3 bộ dữ liệu HAK_DN đang
+  có (T9/2025 `QR_TH_CC`, T11/2025 `RP_THCHAMCONG`/`RP_THBL`): toàn bộ 16 nhân viên SP trong các kỳ đó
+  đều có Công lễ = Công phép = Công tăng ca = 0 (hoặc giá trị trùng nhau) — **không có dữ liệu nào
+  phân biệt được 2 công thức**. Không tự sửa khi chỉ có 1 nguồn M thật mà không đối chiếu được số
+  liệu — rút kinh nghiệm từ PV-10 (sửa 1 lần, bị hoàn tác vì thiếu đối chiếu).
+- Đã hỏi lại chủ sở hữu; **chỉ đạo: thêm "Loại công thức" vào DM_LUONG** (đúng mẫu PV-8/PV-11, không
+  ép 1 công thức chung). Commit `3ad6387` trên `claude/v2-ocr-ky-hieu`: để trống = hành vi cũ (lễ+phép,
+  không đổi số liệu công ty nào đang dùng); `TG_LE_TANGCA` = đúng M thật HAK_DN (lễ+tăng ca). 2 test
+  mới. 257 test (gồm `v130.test.js` — 0 lệch baseline) + 96 E2E pass.
+
+### Các mục khác đã rà soát nhanh (chưa phát hiện gap cần sửa)
+
+- **13 Thuế TNCN** (mã TNCN1-4): engine đã catalog-driven — mã TNCN1/TNCN2 giữ tên cũ (tương thích),
+  mọi mã khác (TNCN3/TNCN4...) dò qua `DM_TNCN`."Nội dung" (chứa "vãng lai"/"lũy tiến") + "Mức thuế",
+  không hardcode theo tên mã. Đạt yêu cầu mục XIII, không cần sửa.
+- **14.1 Ngưỡng truy thu BH**: đã cấu hình theo danh mục (`dm_luong`."Ngưỡng truy thu BH (công)"), theo
+  đúng mã lương + kỳ hiệu lực — không hardcode 15/20 công theo nhóm. Đạt yêu cầu mục XIV, không cần sửa.
+- **IX. Hình thức công "CT" (công công tác)**: Master Prompt liệt kê "CT" là 1 loại "Hình thức công"
+  riêng (như BT/PN/CL/DC/TRCH/CC), nhưng `tongHopChamCong()` hiện tại CHƯA có nhánh riêng cho "CT" —
+  dòng chấm công "Hình thức công"="CT" sẽ bị tính lẫn vào "Tổng công" như công BT thường (không có
+  cảnh báo). Engine ĐANG xử lý "công công tác" bằng cơ chế khác (nhãn trong ô, ví dụ "1QC"/"2ĐN"/"DQ"
+  gắn trên 1 dòng BT — mục `nhanTheoNgay`/`pcCT`) — cơ chế này ĐÃ khớp đúng M thật (`QR_PHUCAP_CT`,
+  xem PV-6 trước đó). Chưa thấy công ty nào thực tế dùng "Hình thức công"="CT" làm 1 dòng riêng (mọi
+  dữ liệu thật đã xem đều dùng kiểu nhãn-trên-dòng-BT) — **để ngỏ, chưa sửa vì chưa có nhu cầu/dữ liệu
+  thật nào cần đến dòng "CT" riêng; nêu ra để chủ sở hữu biết nếu sau này có công ty dùng kiểu này.**
