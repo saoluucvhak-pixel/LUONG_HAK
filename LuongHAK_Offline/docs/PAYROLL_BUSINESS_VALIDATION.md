@@ -133,21 +133,27 @@ tiếp bảng bậc lũy tiến `DM_BAC_TNCN` (7 bậc, khớp 100% với `dm_ba
 10-18tr @15%, v.v.). Cấu trúc này khớp CHÍNH XÁC với thiết kế `TNCN1→VL, TNCN2→LT, TNCN0→MIEN` đã có
 trong `engine.js`. **Không cần sửa code theo hướng PV-1 ban đầu nữa.**
 
-**Nhưng vẫn còn 1 điều chưa giải thích được**: `RP_THUETNCN` (cùng 1 báo cáo, không đổi giữa 2 lần
-gửi file) vẫn cho **Võ Văn Phụng** và **Bùi Văn Hậu** — 2 người có "Mã TNCN" = `TNCN0` theo
-`NL_NHANSU` của file dữ liệu gốc (`DL_LUONG_11.2025...xlsx`) — mức thuế THẬT khác 0 (1.314.000đ và
-84.786đ, khớp đúng công thức lũy tiến TNCN2, không khớp 0% của TNCN0). Đã kiểm tra `NL_PSLUONG`
-(phát sinh lương hàng tháng) — không có trường nào ghi đè "Mã TNCN" theo tháng. Hai khả năng còn lại,
-**cần người dùng xác nhận trực tiếp** (có thể chỉ cần mở app thật, xem hồ sơ 2 người này):
-1. Trong hồ sơ nhân sự thật của Phụng/Hậu, "Mã TNCN" hiện tại KHÔNG phải "TNCN0" (có thể đã đổi
-   sau thời điểm file `NL_NHANSU` được xuất, hoặc tôi đọc nhầm dòng) — nếu vậy, không có gì mâu
-   thuẫn, chỉ là dữ liệu tham chiếu của tôi bị lệch thời điểm.
-2. Có đúng là "TNCN0" nhưng công cụ PowerQuery thật của công ty có quy tắc RIÊNG cho 2 trường hợp
-   này (ví dụ: chức vụ quản lý luôn bị tính lũy tiến bất kể mã TNCN) mà chưa thể hiện trong các
-   trường dữ liệu tôi đang có.
+**ĐÃ GIẢI THÍCH ĐƯỢC điểm bất thường Phụng/Hậu** (file thứ 3 người dùng gửi: `Luong_N09_27.10.2025.v3T.xlsx`
+— cùng đơn vị HAK_DN, nhưng kỳ **T9/2025**, sớm hơn 2 tháng): `NL_NHANSU` của kỳ T9/2025 cho thấy
+**Võ Văn Phụng và Bùi Văn Hậu có "Mã TNCN" = `TNCN2`** (lũy tiến), KHÔNG phải `TNCN0`! Báo cáo
+`RP_THLUONG` của CHÍNH kỳ T9/2025 này cũng tính thuế lũy tiến cho cả 2 người, khớp đúng số
+1.314.000đ (Phụng) — giống hệt số tôi thấy ở báo cáo T11/2025. Vậy mã TNCN của 2 người này đã được
+đổi từ `TNCN2` (lũy tiến, áp dụng T9/2025) sang `TNCN0` (miễn, theo `NL_NHANSU` tôi đọc từ kỳ
+T11/2025) — nhưng **báo cáo T11/2025 vẫn hiện đúng số thuế của kỳ TRƯỚC** (khả năng cao: số liệu
+PowerQuery T11/2025 chưa refresh lại sau khi đổi mã, hoặc 2 file T11/2025 tôi có bị lệch thời điểm
+xuất so với lúc đổi mã). **Đây là vấn đề đồng bộ dữ liệu trong chính file Excel thật của công ty ở
+thời điểm đó, không phải lỗi của `engine.js`.**
 
-**Kết luận PV-1: Đóng — giữ nguyên code hiện tại (TNCN0 = MIEN), đúng theo Q-29 và Danh mục Thuế TNCN
-thật.** Điểm bất thường ở Phụng/Hậu ghi lại để tham khảo, không phải lý do sửa code.
+**Kết luận PV-1: Đóng hẳn — giữ nguyên code hiện tại (TNCN0 = MIEN), đúng theo Q-29, Danh mục Thuế
+TNCN thật, và giờ đã giải thích được điểm bất thường cuối cùng.**
+
+**Về việc "app offline thiếu thông tin chi tiết nhân sự như file Excel"**: đã kiểm tra lại
+`hr.js`/`app.js` — app offline ĐÃ CÓ đầy đủ các trường tương ứng `NL_CHITIET_NS`: Số CCCD, Ngày cấp,
+Nơi cấp, Ngày sinh, Giới tính, Số điện thoại, Thường trú, Địa chỉ hiện tại (bảng `canhan`); Số tài
+khoản, Tên ngân hàng (bảng `thanhtoan`); Mã GT_TNCN_BT/PT và Người phụ thuộc (tính từ danh sách
+nhân thân đã khai trong bảng `nhanthan`, không lưu dạng số đếm thô — chặt hơn vì theo dõi được từng
+người phụ thuộc theo tên). Chưa tìm thấy trường cụ thể nào bị thiếu — nếu bạn thấy thiếu trường nào
+cụ thể, nói rõ tên trường giúp tôi kiểm tra tiếp.
 
 ---
 
@@ -181,9 +187,12 @@ phải một chính sách mới chỉ áp dụng từ 2026 cần gate theo `qc20
 dụng cả cách tính cũ 1.7" là lý do bị phản đối) có thể đã hiểu nhầm đây là thay đổi chính sách, trong
 khi thực chất là sửa một lỗi tính sai đã tồn tại từ trước.
 
-**Vẫn CHƯA tự sửa lại** — đã bị hoàn tác 1 lần, cần hỏi lại rõ ràng trước khi làm lần 2. Câu hỏi cho
-chủ sở hữu/kế toán: với bằng chứng từ 2 đơn vị, 2 tháng (đều trước 2026) đều tách KPCĐ NLĐ riêng,
-có đồng ý cho sửa lại (tách riêng, áp dụng không điều kiện quy chế) ở cả webapp và app offline không?
+**ĐÃ ĐƯỢC NGƯỜI DÙNG XÁC NHẬN ("ok bạn") — đã sửa lại lần 2 (commit `121b831` trên
+`claude/v2-ocr-ky-hieu`).** Lần này rút kinh nghiệm từ lý do hoàn tác lần 1 ("làm thiếu KPCĐ ở
+phiếu lương/bút toán"): ngoài sửa `engine.js`, đã cập nhật đầy đủ `app.js` — cột Excel bảng lương
+(COLS_FULL/COMPACT), dòng phiếu lương (SLIP_LINES), bút toán hạch toán (Nợ 334/Có 3382 — tránh lệch
+sổ), KPI màn Tính lương, báo cáo 12 tháng và báo cáo thuế năm. Webapp GAS (main) đã có fix này từ
+trước (commit `d220554`, KHÔNG bị hoàn tác, không cần làm lại).
 
 ---
 
