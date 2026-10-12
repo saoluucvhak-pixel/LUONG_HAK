@@ -454,3 +454,29 @@ trích xuất thành công toàn bộ M code từ `DataMashup` nhúng trong file
   `congChuan2` (tùy chọn); `engine.js` tự nhận nhãn "DQ" từ `c.nhanTheoNgay` (cơ chế nhãn chấm công
   dùng chung với phụ cấp công tác, đã có sẵn) → `congChuan2 = 40` nếu có, else 0 (giữ đúng hành vi
   cũ). 3 unit test mới đối chiếu đúng công thức M thật; toàn bộ 223 test + 95 E2E pass.
+
+---
+
+## PV-9 (ĐÃ SỬA): Tăng ca CN1/CN2 tính gấp đôi — không nhân hệ số mã tăng ca
+
+Phát hiện khi đối chiếu `QR_LUONGTG."Lương tăng ca"` trong M thật với `engine.js`:
+
+- **Công thức M thật**: `if SalaryCode ∈ {CN1,CN2}: Lương tăng ca = Lương thỏa thuận (đơn giá/công) ×
+  "Công tính tăng ca"` — "Công tính tăng ca" ĐÃ qua hệ số của đúng mã tăng ca người đó (TC1-TC6).
+- **`engine.js` trước đây** (nhánh không phải quy chế 2026): `tienTC = luongTT × c.congTangCa` — dùng
+  CÔNG TĂNG CA THÔ, bỏ qua hoàn toàn "Hệ số tăng ca" trong DM_TANGCA.
+- **Đối chiếu số liệu thật**: Lê Đức Trương (HAK_DN T9/2025, `RP_THLUONG`) — CN1, mã TC4 (hệ số 50%
+  trong DM_TANGCA thật), Lương thỏa thuận 240.000đ, Công tính tăng ca thật = 2,125 (= 4,25 công thô ×
+  50%) → **Lương tăng ca thật = 240.000 × 2,125 = 510.000đ**, khớp đúng `RP_THLUONG`. Code cũ sẽ tính
+  240.000 × 4,25 = 1.020.000đ — **gấp đôi số thật**.
+- **Phát hiện phụ**: test `U-QC-05 (C5)` (đã có từ trước) ghi rõ "cách cũ: không nhân hệ số" như một
+  hành vi CÓ CHỦ Ý, chỉ "quy chế 2026" mới nhân hệ số — nhưng DM_TANGCA/M thật tôi trích là của kỳ
+  T9/2025 (TRƯỚC quy chế 2026, duyệt 11/10/2026), và đã nhân hệ số từ lúc đó. Vậy việc không nhân hệ
+  số ở "cách cũ" là NHẬN ĐỊNH SAI của một phiên trước (không có M thật để đối chiếu lúc đó), không
+  phải 1 quyết định nghiệp vụ hợp lệ — đã sửa lại nhận định này trong test.
+- **Đã sửa** (commit `0f0a690` trên `claude/v2-ocr-ky-hieu`, theo yêu cầu "sửa theo PowerQuery"): bỏ
+  điều kiện qc2026 cho việc nhân hệ số ở nhánh CN1/CN2 — dùng `heSoTangCa()` như nhánh chung. Không có
+  Mã tăng ca → Tiền tăng ca = 0 (nhất quán, không đoán hệ số = 1). 3 test mới (trong đó có 1 test đối
+  chiếu đúng số liệu thật Lê Đức Trương, 510.000đ); `v130.test.js` loại các cột cộng dồn (Tiền tăng
+  ca, Tổng thu nhập, Thuế TNCN, Thực lĩnh) khỏi so sánh CHỈ cho đúng người bị ảnh hưởng (xác định bằng
+  "Tiền tăng ca" đổi khác giữa 2 bản), không loại hàng loạt. Toàn bộ 225 test + 95 E2E pass.
