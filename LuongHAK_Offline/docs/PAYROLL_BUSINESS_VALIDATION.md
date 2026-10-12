@@ -746,3 +746,34 @@ công tác, Phụ cấp (đã xong PV-10/11), Hỗ trợ (đã xong PV-11), Thu�
   xem PV-6 trước đó). Chưa thấy công ty nào thực tế dùng "Hình thức công"="CT" làm 1 dòng riêng (mọi
   dữ liệu thật đã xem đều dùng kiểu nhãn-trên-dòng-BT) — **để ngỏ, chưa sửa vì chưa có nhu cầu/dữ liệu
   thật nào cần đến dòng "CT" riêng; nêu ra để chủ sở hữu biết nếu sau này có công ty dùng kiểu này.**
+
+---
+
+## Giai đoạn 5 (Master Prompt V3, mục XVI-XIX): hoàn thiện
+
+Rà soát trước: phân quyền, bảo mật (PBKDF2, băm riêng muối), sao lưu tự động + SHA-256, migration,
+kiểm soát chốt kỳ cơ bản (Q-14/Q-15 khóa dữ liệu hồi tố) — đã có sẵn, xác nhận qua các test E2E đang
+pass. 3 mục còn lại là module MỚI, làm theo đúng thứ tự người yêu cầu.
+
+### PV-13 (ĐÃ LÀM): Giao diện "Xem chi tiết cách tính" (mục 16.3)
+
+Thêm nút 📐 "Xem cách tính" trong hộp "Chi tiết lương" (bấm 1 dòng bảng lương) — hiện từng chỉ tiêu
+kèm công thức + giá trị đã thế vào, KHÔNG tính lại bằng công thức khác (đọc từ `_ct`, biến trung gian
+engine.js chụp lại đúng lúc tính), nên không có rủi ro lệch số với các cột tiền đã có:
+
+- Lương thời gian: Mã lương, Công chuẩn, Công BT, Đơn giá TG, Công tính TG.
+- Tăng ca: Mã tăng ca, Loại công thức, Hệ số, Công chuẩn 2 (DQ), Công tăng ca quy đổi.
+- Sản lượng/bù: Sản lượng, Đơn giá khoán, Phương pháp bù, Mức bù DM_LUONG, Bình quân tổ (HAK) — Đại
+  Hiệp trỏ sang sheet "Bu luong theo ngay - DH" đã có (không lặp lại UI).
+- Phụ cấp theo "Loại công thức" đã khai (PV-11).
+- Thuế TNCN: mã, phương pháp (vãng lai/lũy tiến/miễn), thu nhập tính thuế.
+- Thực lĩnh: Tổng thu nhập − Tổng giảm trừ.
+
+Commit `0d1860b` trên `claude/v2-ocr-ky-hieu`. 257 test + 98 E2E pass (1 lần "Dừng đọc" OCR timeout —
+xác nhận lại bằng baseline chưa sửa cũng fail/pass như vậy khi chạy lại nhiều lần — flake môi trường
+có sẵn, không liên quan).
+
+### Tiếp theo
+
+- **PV-14 (đang làm)**: Module "Đối chiếu lương Power Query" (mục XVII).
+- **PV-15 (chưa làm)**: Checklist 20 điểm trước khi chốt kỳ (mục XVIII).
