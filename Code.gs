@@ -181,14 +181,14 @@ const HEADER_BANGLUONG = [
   "Tổng công", "Công Chủ nhật", "Công tăng ca", "Tiền tăng ca",
   "Phụ cấp", "Phụ cấp công tác", "Lương hỗ trợ", "Ngày cơm", "Tiền cơm", "Thưởng", "Thu nhập khác",
   "Tổng thu nhập (trước trừ)",
-  "BHXH/BHYT/BHTN trừ NLĐ", "Truy thu bảo hiểm", "Thuế TNCN", "Trừ khác", "Tạm ứng",
+  "BHXH/BHYT/BHTN trừ NLĐ", "KPCĐ trừ NLĐ", "Truy thu bảo hiểm", "Thuế TNCN", "Trừ khác", "Tạm ứng",
   "Thực lĩnh"
 ];
 
 const HEADER_BHXH = [
   "Mã NV", "Họ và tên", "Phòng ban", "Lương đóng BHXH",
   "CTY.BHXH", "CTY.BHYT", "CTY.BHTN", "CTY.KPCĐ", "Cộng BH công ty đóng",
-  "NLĐ.BHXH", "NLĐ.BHYT", "NLĐ.BHTN", "Cộng BH NLĐ đóng",
+  "NLĐ.BHXH", "NLĐ.BHYT", "NLĐ.BHTN", "NLĐ.KPCĐ", "Cộng BH NLĐ đóng",
   "Truy thu bảo hiểm", "Ghi chú ngưỡng công"
 ];
 

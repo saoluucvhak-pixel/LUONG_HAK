@@ -297,6 +297,7 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
     const bhInfo = dmBaoHiem[ns["Mã BHXH"]];
     const luongDongBH = Number(ns["Lương cơ bản"]) || luongThoaThuan;
     let bhTruNLD = 0;
+    let kpcdTruNLD = 0;
     let truyThuBaoHiem = 0;
     if (bhInfo) {
       const tyLeNLD = (Number(bhInfo["NLD.BHXH"]) || 0) + (Number(bhInfo["NLD.BHYT"]) || 0) + (Number(bhInfo["NLD.BHTN"]) || 0);
@@ -307,6 +308,16 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
       const congTyDong = Math.round(luongDongBH * ((Number(bhInfo["DN.BHXH"]) || 0) + (Number(bhInfo["DN.BHYT"]) || 0) + (Number(bhInfo["DN.BHTN"]) || 0) + (Number(bhInfo["DN.KPCD"]) || 0)));
       if (duNguong) {
         bhTruNLD = Math.round(luongDongBH * tyLeNLD);
+        // ⚠ LỖI THẬT ĐÃ PHÁT HIỆN VÀ SỬA (đối chiếu file Excel PowerQuery thật của
+        // HAK_DN T11/2025 và Đại Hiệp T8/2026): công ty TRỪ RIÊNG thêm "KPCĐ" (kinh
+        // phí công đoàn phần người lao động, DM_BAOHIEM."NLD.KPCD" — khai sẵn trong
+        // danh mục từ trước nhưng CHƯA TỪNG được dùng ở công thức tính lương nào) —
+        // KHÁC CỘT với "Cộng BH NLĐ đóng" (vốn chỉ gồm BHXH/BHYT/BHTN, không gồm
+        // KPCĐ — xác nhận đúng qua dữ liệu thật: "Cộng BH NV" = NV.BHXH+NV.BHYT+
+        // NV.BHTN, "NV.KPCD" nằm ở cột riêng). Trước đây webapp hoàn toàn không trừ
+        // khoản này, khiến "Thực lĩnh" tính CAO HƠN thực tế cho mọi người có khai
+        // "NLD.KPCD" > 0.
+        kpcdTruNLD = Math.round(luongDongBH * (Number(bhInfo["NLD.KPCD"]) || 0));
       } else {
         // ⚠ PHÁT HIỆN MỚI, TRƯỚC ĐÂY CHƯA LẬP TRÌNH: nếu KHÔNG đủ ngưỡng công, công ty
         // TRUY THU LẠI toàn bộ phần đã đóng thay người lao động (= "Cộng BH công ty
@@ -328,6 +339,7 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
         "NLĐ.BHXH": Math.round(luongDongBH * (Number(bhInfo["NLD.BHXH"]) || 0)),
         "NLĐ.BHYT": Math.round(luongDongBH * (Number(bhInfo["NLD.BHYT"]) || 0)),
         "NLĐ.BHTN": Math.round(luongDongBH * (Number(bhInfo["NLD.BHTN"]) || 0)),
+        "NLĐ.KPCĐ": kpcdTruNLD,
         "Cộng BH NLĐ đóng": bhTruNLD,
         "Truy thu bảo hiểm": truyThuBaoHiem,
         "Ghi chú ngưỡng công": duNguong ? "Đủ ngưỡng" : ("Chưa đủ ngưỡng (" + congInfo.tongCong + "/" + nguongBH + " công) — truy thu " + truyThuBaoHiem.toLocaleString("vi-VN") + "đ")
@@ -362,13 +374,15 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
       // người kể cả khi chưa khai Mã TNCN, có thể tính dư thuế cho người thật ra
       // được miễn — đổi mặc định thành "miễn thuế nếu chưa rõ mã" cho AN TOÀN hơn,
       // nhưng CẦN xác nhận lại với kế toán nếu không đúng ý muốn).
-      thuNhapChiuThue = tongThuNhap - bhTruNLD;
+      thuNhapChiuThue = tongThuNhap - bhTruNLD - kpcdTruNLD;
       thuNhapTinhThue = 0;
       thueTNCN = 0;
     } else {
-      // ⚠ Công thức thật (TNCN2) trừ CẢ "Tiền cơm" khỏi thu nhập chịu thuế, không chỉ
-      // BHXH — đã bổ sung (bản trước chỉ trừ BHXH).
-      thuNhapChiuThue = tongThuNhap - bhTruNLD - tienCom;
+      // ⚠ Công thức thật (TNCN2) trừ CẢ "Tiền cơm" VÀ "KPCĐ" khỏi thu nhập chịu thuế,
+      // không chỉ BHXH — đã bổ sung (bản trước chỉ trừ BHXH, rồi chỉ trừ thêm Tiền
+      // cơm — nay trừ thêm KPCĐ đúng theo dữ liệu thật RP_THUETNCN: "Thu nhập chịu
+      // thuế" = gộp − KPCĐ − Bảo hiểm − Giảm trừ bản thân − Giảm trừ NPT).
+      thuNhapChiuThue = tongThuNhap - bhTruNLD - kpcdTruNLD - tienCom;
       thuNhapTinhThue = Math.max(0, thuNhapChiuThue - soTienGiamTruBanThan - tongGiamTruNPT);
       thueTNCN = tinhThueTNCNLuyTien_(thuNhapTinhThue, bieuThue);
     }
@@ -390,8 +404,9 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
     // ⚠ PHÁT HIỆN MỚI: công thức thật làm tròn "Tiền lương còn nhận" về HÀNG NGHÌN
     // (Power Query: Number.Round(chênhLệch, -3)) — nếu âm thì để 0 (không âm lương).
     // Trước đây webapp không làm tròn, có thể lệch vài trăm đồng so với số thật.
-    // Đã bổ sung trừ "Truy thu bảo hiểm" (xem phần BHXH ở trên) — trước đây bị bỏ sót.
-    const chenhLech = tongThuNhap - bhTruNLD - truyThuBaoHiem - thueTNCN - truKhac - tamUng;
+    // Đã bổ sung trừ "Truy thu bảo hiểm" (xem phần BHXH ở trên) và "KPCĐ trừ NLĐ"
+    // (xem phát hiện ở khối BHXH phía trên) — trước đây cả hai đều bị bỏ sót.
+    const chenhLech = tongThuNhap - bhTruNLD - kpcdTruNLD - truyThuBaoHiem - thueTNCN - truKhac - tamUng;
     const thucLinh = chenhLech >= 0 ? Math.round(chenhLech / 1000) * 1000 : 0;
     tongThucLinh += thucLinh;
 
@@ -412,7 +427,7 @@ function tinhBangLuong(nam, thang, phuongPhapBu) {
       "Lương hỗ trợ": luongHoTro, "Ngày cơm": ngayCom, "Tiền cơm": tienCom,
       "Thưởng": Number(ps["Thưởng"]) || 0, "Thu nhập khác": Number(ps["Thu nhập khác"]) || 0,
       "Tổng thu nhập (trước trừ)": tongThuNhap,
-      "BHXH/BHYT/BHTN trừ NLĐ": bhTruNLD, "Truy thu bảo hiểm": truyThuBaoHiem, "Thuế TNCN": thueTNCN,
+      "BHXH/BHYT/BHTN trừ NLĐ": bhTruNLD, "KPCĐ trừ NLĐ": kpcdTruNLD, "Truy thu bảo hiểm": truyThuBaoHiem, "Thuế TNCN": thueTNCN,
       "Trừ khác": truKhac, "Tạm ứng": tamUng,
       "Thực lĩnh": thucLinh
     });
