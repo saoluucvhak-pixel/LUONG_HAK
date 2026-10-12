@@ -773,7 +773,29 @@ Commit `0d1860b` trên `claude/v2-ocr-ky-hieu`. 257 test + 98 E2E pass (1 lần 
 xác nhận lại bằng baseline chưa sửa cũng fail/pass như vậy khi chạy lại nhiều lần — flake môi trường
 có sẵn, không liên quan).
 
+### PV-14 (ĐÃ LÀM): Module "Đối chiếu lương Power Query" (mục XVII)
+
+Thêm tab "↔ Đối chiếu Excel" — nhập 1 bảng lương Excel đã xác nhận đúng (công cụ cũ / Power Query),
+so với kết quả app THEO TỪNG NHÂN VIÊN, TỪNG CHỈ TIÊU (không chỉ so tổng công ty như mục XVII yêu
+cầu): Công BT, Công chuẩn, Công tính TG, Tiền tăng ca, Phụ cấp công tác, SL phân bổ, Lương SL, Tiền
+bù, BH, Thuế, Tổng thu nhập, Thực lĩnh — cộng thêm bảng đối chiếu chi tiết riêng cho tăng ca (mã, hệ
+số, công chuẩn 2, công TC quy đổi).
+
+`core/reconcile.js` (mới) — `parseSheet()` tự nhận dòng tiêu đề (đã kiểm chứng với file `RP_THBL`
+thật của HAK_DN T11/2025, có 3 dòng tiêu đề báo cáo phía trên header) + khớp cột theo alias không
+phân biệt hoa/thường/dấu, liệt kê đầy đủ cột không nhận ra (không âm thầm bỏ qua); `compare()` khớp
+theo Mã NV trước, Họ và tên (chuẩn hóa) khi Excel không có Mã NV — CHỈ khớp khi duy nhất 1 người
+trùng tên, không tự đoán khi trùng nhiều người; `classify()` phân loại lệch theo đúng nhóm mục XVII
+(làm tròn/chấm công/sản lượng/công thức tăng ca/công thức bù/danh mục).
+
+Chưa hỗ trợ đối chiếu Đại Hiệp theo từng ngày ở màn hình này (đã nêu rõ trong UI) — dùng sheet "Bu
+luong theo ngay - DH" (xem "Giai đoạn 3 — bổ sung" ở trên) để so thủ công theo ngày, tránh xây 1 bộ
+phân tích cấu trúc Excel theo-ngày riêng chưa đủ dữ liệu thật để kiểm chứng độ tin cậy.
+
+Commit `6571012` trên `claude/v2-ocr-ky-hieu`. 11 test unit mới (đối chiếu với cấu trúc file Excel
+thật HAK_DN) + 1 test E2E (upload file, phát hiện đúng 1 dòng lệch 50.000đ, không báo lệch giả). 268
+test + 99 E2E pass.
+
 ### Tiếp theo
 
-- **PV-14 (đang làm)**: Module "Đối chiếu lương Power Query" (mục XVII).
 - **PV-15 (chưa làm)**: Checklist 20 điểm trước khi chốt kỳ (mục XVIII).
