@@ -589,3 +589,36 @@ Bao quát đủ danh mục "Kiểm thử bắt buộc" của văn bản:
 `daihiep`**, xác nhận công thức đã đúng theo đúng quy tắc chủ sở hữu, không chỉ đối chiếu lý thuyết
 mà có bằng chứng kiểm thử tường minh. Đã chạy lại toàn bộ 249 test unit/integration/regression +
 `eslint --max-warnings 0` + `node --check` trên các file lõi — không có hồi quy.
+
+---
+
+## PV-10 (ĐÃ SỬA): Phụ cấp TN.01/TN.02 — "Công tính phụ cấp" trừ sai thành phần, điều kiện ngưỡng so sai biến
+
+Phát hiện khi tra lại Giai đoạn 4 (phụ cấp) trong chính M thật đã trích sẵn từ trước (`Section1.m`,
+HAK_DN) — truy ra đúng 2 query từng bị bỏ sót (`QR_CC_PHUCAP_TN`, `QR_PHUCAP_TN`), không cần thêm dữ
+liệu thật mới:
+
+- **Công thức M thật**: `Công tính phụ cấp = Công tính lương − Công lễ − Ngày phép`; `Hệ số phụ cấp
+  tháng (TN.01/TN.02) = nếu Công tính lương ≥ (Công chuẩn − Tham chiếu) thì 1, ngược lại = Công tính
+  phụ cấp / Công chuẩn`. Điều kiện ngưỡng luôn so bằng **Công tính lương THÔ** (≈ Tổng công hiện tại,
+  chưa trừ gì) — không phải giá trị đã trừ.
+- **`engine.js` trước đây** (nhánh phụ cấp không "cố định", không "Cách tính" trống — đúng dạng
+  TN.01/TN.02 trong danh mục mẫu HAK_DN, "Cách tính" có mô tả chữ): hoàn toàn KHÔNG trừ gì
+  (`cPC = Tổng công thô`) cho cả điều kiện ngưỡng và tỷ lệ — sai khác với M thật khi nhân viên có công
+  lễ/phép trong kỳ.
+- **Nhánh "Cách tính" TRỐNG** (C6, quy chế 2026, đã đối chiếu thật CNHAK 9/2026 42/44 và HAKQN 7/2026
+  31/50): phần TRỪ dùng "phép + tăng ca" — khác M thật ("lễ + phép") nhưng **không đụng tới** vì đã có
+  bằng chứng đối chiếu thật riêng cho đúng trường hợp này (công ty/kỳ khác, "Cách tính" trống không
+  phải "Cách tính" có mô tả) — chỉ sửa phần SO NGƯỠNG của nhánh này (đang lỡ dùng giá trị đã trừ thay
+  vì Công tính lương thô), vì đây là phần công thức M xác nhận dùng chung, không riêng theo "Cách
+  tính". Lưu ý: cách so ngưỡng cũ của nhánh C6 chưa từng được chứng minh đúng/sai riêng bởi đối chiếu
+  thật (42/44 và 31/50 không chắc có ai rơi đúng vào biên bị ảnh hưởng) — rủi ro đã nêu rõ với chủ sở
+  hữu trước khi sửa.
+- Đã hỏi lại chủ sở hữu đúng câu hỏi CÔNG THỨC/QUY CHẾ (không phải "tin số liệu nào") trước khi sửa —
+  **chủ sở hữu xác nhận "Sửa theo PowerQuery"**.
+- **Đã sửa** (commit `da9f0cd` trên `claude/v2-ocr-ky-hieu`): nhánh "Cách tính" có mô tả → trừ CÔNG
+  LỄ + NGÀY PHÉP; điều kiện ngưỡng (cả 2 nhánh) → so bằng Tổng công thô. 2 test mới phân biệt rõ với
+  công thức cũ bằng số liệu cụ thể. `tests/regression/v130.test.js`: mở rộng cơ chế loại trừ khác
+  biệt có chủ đích (đã dùng cho PV-9/tăng ca) sang cột "Phụ cấp" — chỉ loại cho đúng người bị ảnh
+  hưởng (xác định bằng "Phụ cấp" đổi khác giữa 2 bản), không loại hàng loạt. 251 test + 95 E2E pass
+  (1 lần "Dừng đọc" OCR timeout — flake môi trường đã biết từ trước, re-run lại 95/95).
