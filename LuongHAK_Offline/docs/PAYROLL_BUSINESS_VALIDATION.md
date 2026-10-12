@@ -97,6 +97,26 @@ có đủ dữ liệu để kết luận đây là lỗi app**.
 
 **Chưa sửa code cho đến khi có câu trả lời.**
 
+### CẬP NHẬT (cùng ngày, trong lúc trao đổi với người dùng): phát hiện xung đột với quyết định Q-29
+
+Một phiên Claude khác, CÙNG NGÀY (commit `306fe6d`, 02:56 UTC — vài giờ trước phiên này), đã hỏi
+chủ sở hữu CHÍNH CÂU HỎI NÀY (ghi nhận là Q-29/R-70) và nhận câu trả lời: *"có trừ thuế TNCN, trong
+phần mềm khi chọn mã TNCN sẽ có miễn thuế nếu muốn kg trừ"* — tức là **giữ nguyên code hiện tại**
+(TNCN0 = miễn), và đã thêm test khóa hành vi (`tests/unit/thue-tncn-ma.test.js`, dòng 25).
+
+Khi hỏi lại trực tiếp trong phiên này, người dùng xác nhận Ý ĐỒ THIẾT KẾ của code là: **"nếu mã
+TNCN là gì thì sẽ chọn thuế TNCN theo mức đó, nếu mã TNCN mà có mức thuế 0% thì áp dụng 0%"** — tức
+là hệ thống phải TRA DANH MỤC theo mã, không phải ép cứng theo tên mã. Điều này cho thấy dòng code
+`else if (!maT || maT === "TNCN0") kieu = "MIEN";` có thể vẫn SAI theo đúng ý đồ của chính nó (ép
+cứng "TNCN0" = miễn ngay trong code, không tra Danh mục Thuế TNCN của công ty) — NHƯNG chỉ xác nhận
+được chắc chắn khi biết Danh mục Thuế TNCN thật của công ty có định nghĩa mã "TNCN0" với nội dung gì
+(Miễn / Lũy tiến / khác).
+
+**Trạng thái: TẠM DỪNG — chờ người dùng kiểm tra Danh mục Thuế TNCN thật (trong app hoặc hỏi kế
+toán) xem mã "TNCN0" được định nghĩa thế nào, trước khi quyết định sửa hay giữ nguyên. KHÔNG sửa
+code trong lúc chờ**, vì có 2 tín hiệu "chủ sở hữu" trong cùng 1 ngày đang mâu thuẫn nhau — sửa vội
+sẽ lặp lại đúng bài học KPCĐ.
+
 ---
 
 ## PV-2 (đã kiểm tra, KHÔNG phải lỗi): Truy thu bảo hiểm (R-57/R-60)
@@ -115,10 +135,53 @@ chưa được duyệt". Bài học áp dụng cho toàn tài liệu này: dù c
 phê duyệt trước khi đổi code đang chạy thật, vì có thể ảnh hưởng ngược đến các kỳ đã chốt bằng công
 thức cũ hoặc có quy định nội bộ chưa thể hiện trong dữ liệu mẫu.
 
+---
+
+## PV-4 (đã kiểm tra, KHÔNG phải lỗi): Lương thời gian + Tiền cơm — khớp đúng dữ liệu thật
+
+**Lương thời gian (Bùi Văn Hậu, HAK_DN, mã lương TG1)**: Lương thỏa thuận 8.500.000, Công chuẩn 25,
+Công tính LTG **30** (> công chuẩn!), Lương thời gian = 340.000 × 30 = 10.200.000 — khớp đúng
+báo cáo thật. Điều đáng chú ý: "Công tính LTG" KHÔNG bị cắt ở công chuẩn (30 > 25) — đúng với công
+thức `qc2026` (C1 "trả đủ công đi làm, không cắt ở công chuẩn") trong `engine.js`, KHÔNG khớp công
+thức cũ 1.7 (`Math.min(tongCong, cChuan)` sẽ cho ra 25, sai). Dữ liệu T11/2025 này cho thấy HAK đã
+áp dụng cách tính "2026" trong thực tế từ trước khi quy chế được chính thức duyệt (11/10/2026) —
+không phải lỗi, chỉ cần nhớ chọn đúng "Quy chế 2026" khi tính lại các kỳ cũ bằng app.
+
+**Tiền cơm**: "Mã hỗ trợ" = HT.01 (code cơm), `tienCom = ngayCom × Số tiền`. Cơm ca thật = 460.000 —
+cơ chế khớp đúng (ht1 dùng cho tiền cơm theo đúng thiết kế `hr.js`).
+
+**Phụ cấp công tác (Lê Thanh Phú Thủy)**: Phụ cấp CT thật = 60.000. Tra chấm công gốc (`DL_Chamcong`)
+thấy nhãn "ĐH" ở đúng 2 ngày (28, 29) — khớp CƠ CHẾ "đếm ngày có nhãn × đơn giá nhãn" của `engine.js`
+(60.000 / 2 ngày = 30.000đ/ngày cho nhãn "ĐH", hợp lý). Không có Danh mục Phụ cấp thật để xác nhận
+đúng đơn giá 30.000đ, nhưng cơ chế (đếm nhãn, không phải đếm công) đã khớp.
+
+## PV-5 (CHƯA kết luận được — thiếu dữ liệu danh mục): "Lương hỗ trợ" của Bùi Văn Hậu
+
+Báo cáo thật (`RP_THBL`) cho Bùi Văn Hậu có **"Lương hỗ trợ" = 4.000.000đ**, nhưng hồ sơ của anh
+(`NL_NHANSU`) có "Mã hỗ trợ 2" = TRỐNG. Theo `engine.js`, cột "Lương hỗ trợ" (`luongHT`) CHỈ được
+tính khi có "Mã hỗ trợ 2" (bù thiếu công so với công chuẩn) — nếu trống, `luongHT` phải = 0, mâu
+thuẫn với con số thật 4.000.000đ.
+
+Có thể giải thích theo nhiều hướng khác nhau mà tôi KHÔNG đủ dữ liệu để phân biệt:
+- Khoản 4.000.000đ này thực ra tương ứng với trường **"Lương phụ"** của `engine.js` (phụ cấp cố
+  định gắn theo MÃ LƯƠNG "TG1" trong Danh mục Lương, không liên quan "Mã hỗ trợ") — chỉ là khác tên
+  cột giữa 2 hệ thống, không phải lỗi tính toán.
+- Hoặc công cụ PowerQuery thật của HAK có thêm 1 nguồn "hỗ trợ" khác mà `engine.js` offline chưa có.
+
+**Cần**: Danh mục Lương (`dm_luong`) thật của HAK_DN — xem mã "TG1" có cấu hình "Lương phụ" =
+4.000.000đ không. Không có file này trong bộ dữ liệu đã cung cấp (chỉ có dữ liệu phát sinh hàng
+tháng, không có danh mục cấu hình). **Chưa kết luận được đây là lỗi hay không — cần thêm dữ liệu.**
+
 ## Việc tiếp theo (đề xuất)
 
-- Hỏi chủ sở hữu/kế toán 3 câu ở PV-1 trước khi đổi bất kỳ dòng code thuế TNCN nào.
-- Khi có dữ liệu thật có "Truy thu bảo hiểm" > 0, đối chiếu PV-2.
-- Mở rộng rà soát mục 10.2 (các thành phần lương khác: lương thời gian, tăng ca, phụ cấp, hỗ trợ,
-  tiền cơm) với dữ liệu thật — chưa làm trong lượt này, tập trung vào phần rủi ro cao nhất (thuế)
-  trước theo đúng yêu cầu ưu tiên P0.
+- **PV-1 (TNCN0)**: chờ người dùng kiểm tra Danh mục Thuế TNCN thật — mã "TNCN0" có định nghĩa
+  trong đó không, nội dung gì. Không sửa code cho đến khi có câu trả lời này.
+- **PV-2 (truy thu BH)**: chưa có dữ liệu thật nào kích hoạt được trường hợp này trong 2 bộ dữ liệu
+  đang có (đã kiểm tra lại, không có ai vào làm/nghỉ giữa tháng ở cả HAK_DN T11/2025 và Đại Hiệp
+  T8/2026) — cần dữ liệu tháng khác có trường hợp này mới đối chiếu được.
+- **PV-5 (Lương hỗ trợ 4.000.000đ của Bùi Văn Hậu)**: cần Danh mục Lương (`dm_luong`) thật của
+  HAK_DN để biết mã "TG1" có cấu hình "Lương phụ" khớp con số này không.
+- Đã kiểm tra thêm (PV-4): lương thời gian (kể cả biến thể qc2026 "trả đủ công"), tiền cơm, cơ chế
+  phụ cấp công tác theo nhãn chấm công — đều khớp dữ liệu thật, không phải lỗi.
+- Tăng ca (mã TC5), lương sản lượng + bù sản lượng (2 chế độ "to"/"daihiep"), KPCĐ: đã kiểm tra kỹ ở
+  các lượt trước trong phiên này (xem lịch sử hội thoại) — khớp dữ liệu thật.
