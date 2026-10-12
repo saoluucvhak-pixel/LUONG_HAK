@@ -48,6 +48,27 @@ Phạm vi: chỉ `LuongHAK_Offline/`. Không đụng WebApp Google Apps Script.
   95/95 không có false-positive). Chưa có test E2E tái hiện trực tiếp "dữ liệu lỗi → bấm Chốt bị
   từ chối" như đã làm cho P0-1. Cần bổ sung ở lượt tiếp theo.
 
+## 1b. Phát hiện kiến trúc quan trọng (mục XIV.1) — CHƯA SỬA, cần phê duyệt phạm vi riêng
+
+**Phân quyền (`need()` trong app.js) chỉ tồn tại ở tầng renderer (không đáng tin cậy), không được
+main process (tầng đáng tin cậy của Electron) kiểm tra lại.** Đã đọc toàn bộ `main.js`: mọi IPC
+handler (`store-save`, `store-backup`, `store-quarantine`, `store-read`, v.v. — xem `main.js:26-80`)
+thực hiện NGAY hành động được yêu cầu, không kiểm tra ai đang gọi hay họ có quyền gì — toàn bộ việc
+"ai được làm gì" (`need("payroll.close")`, `need("hr.edit")`, `need("system.admin")`…) chỉ là code
+JS chạy trong CHÍNH renderer đang gọi IPC đó. `contextIsolation: true` + `nodeIntegration: false` +
+`sandbox: true` (`main.js:86`) đã chặn renderer truy cập Node/fs trực tiếp — nhưng không chặn được
+việc gọi thẳng `window.hakStore.save(...)` / `.backup(...)` / `.quarantine()` nếu có bất kỳ cách nào
+chạy được JS tùy ý trong renderer (ví dụ 1 lỗ hổng khác như XSS từ nội dung file nhập/OCR được hiển
+thị không an toàn — **chưa tìm thấy lỗ hổng cụ thể nào trong lượt audit này**, đây là phát hiện về
+THIẾU LỚP PHÒNG VỆ ở tầng kiến trúc, không phải 1 lỗi khai thác được ngay).
+
+Đúng với cảnh báo của mục XIV.1: "Không được coi việc ẩn nút trong UI là kiểm soát quyền đầy đủ" và
+"Không cung cấp IPC cho phép renderer không được xác thực tùy ý đọc, ghi hoặc khôi phục toàn bộ dữ
+liệu". Sửa đúng cách cần: main process tự giữ trạng thái đăng nhập/quyền (không tin dữ liệu renderer
+gửi lên) và kiểm tra trước khi thực hiện mỗi IPC ghi/khôi phục — đây là thay đổi kiến trúc đáng kể
+(ảnh hưởng toàn bộ luồng đăng nhập hiện tại), **không làm trong lượt này**, cần phê duyệt phạm vi
+riêng (mục V/XIV của yêu cầu) trước khi bắt đầu, theo đúng nguyên tắc II.15.
+
 ## 3. Việc tiếp theo (đề xuất, chưa làm)
 
 - **"Thiếu mã lương/tham số thiết yếu"** (mục IV.2): `canhbao` (cảnh báo của engine) đã có một số
