@@ -91,9 +91,48 @@
     });
     return rows;
   }
+  // P0: chỉ tiêu đối chiếu TỪNG NHÂN VIÊN trước khi chốt — không chỉ "Thực lĩnh"/tổng (2 người đổi lương ngược
+  // dấu nhau làm tổng & số NV y nguyên nhưng bảng lương thực tế đã khác người/khác số, xem OFFLINE_AUDIT_REPORT.md #P0-1)
+  var DIFF_FIELDS = ["Phòng ban", "Chức vụ", "Lương thỏa thuận", "Công chuẩn", "Tổng công", "Công CN", "Công tăng ca",
+    "Lương thời gian", "Lương phụ", "Sản lượng (tấn)", "Lương sản lượng", "Lương bù SL", "Số xe bơm dăm", "Lương bơm dăm",
+    "Tiền tăng ca", "Phụ cấp", "Phụ cấp công tác", "Lương hỗ trợ", "Ngày cơm", "Tiền cơm", "Thưởng", "Thu nhập khác",
+    "Tổng thu nhập", "BH trừ NLĐ", "Truy thu BH", "Thuế TNCN", "Trừ khác", "Tạm ứng", "Thực lĩnh"];
+  var DIFF_TEXT_FIELDS = { "Phòng ban": 1, "Chức vụ": 1 };
+  function diffEqual(v1, v2, field) {
+    if (DIFF_TEXT_FIELDS[field]) return String(v1 || "") === String(v2 || "");
+    return Math.abs((+v1 || 0) - (+v2 || 0)) < 1e-6;
+  }
+  /**
+   * So sánh CHI TIẾT từng chỉ tiêu của TỪNG nhân viên giữa 2 kết quả tính lương — dùng để chặn chốt nhầm
+   * khi dữ liệu đầu vào đã đổi nhưng tổng thực lĩnh/số NV (vô tình) không đổi.
+   * Trả về 1 dòng cho mỗi (nhân viên, chỉ tiêu) có chênh lệch: { "Mã NV", "Họ và tên", "Chỉ tiêu",
+   * "Giá trị đang xem", "Giá trị tính lại", "Chênh lệch" }. Nhân viên mới/không còn → 1 dòng duy nhất.
+   */
+  function diffDetailed(kqA, kqB, fields) {
+    fields = fields || DIFF_FIELDS;
+    var a = {}, b = {}, rows = [];
+    (kqA.bangluong || []).forEach(function (x) { a[x["Mã NV"]] = x; });
+    (kqB.bangluong || []).forEach(function (x) { b[x["Mã NV"]] = x; });
+    Object.keys(a).concat(Object.keys(b).filter(function (k) { return !a[k]; })).forEach(function (k) {
+      var ra = a[k], rb = b[k];
+      if (!ra || !rb) {
+        rows.push({ "Mã NV": k, "Họ và tên": (ra || rb)["Họ và tên"], "Chỉ tiêu": "(toàn bộ)",
+          "Giá trị đang xem": ra ? "Có trong bảng" : "", "Giá trị tính lại": rb ? "Có trong bảng" : "Không còn trong bảng", "Chênh lệch": "" });
+        return;
+      }
+      fields.forEach(function (f) {
+        var v1 = ra[f], v2 = rb[f];
+        if (diffEqual(v1, v2, f)) return;
+        rows.push({ "Mã NV": k, "Họ và tên": ra["Họ và tên"], "Chỉ tiêu": f,
+          "Giá trị đang xem": v1 == null ? "" : v1, "Giá trị tính lại": v2 == null ? "" : v2,
+          "Chênh lệch": DIFF_TEXT_FIELDS[f] ? "" : Math.round(((+v2 || 0) - (+v1 || 0)) * 1000) / 1000 });
+      });
+    });
+    return rows;
+  }
 
   var api = { buildSnapshot: buildSnapshot, close: close, rollbackClose: rollbackClose, reopen: reopen, rollbackReopen: rollbackReopen,
-    verify: verify, diff: diff, checksum: checksum, totals: totals, current: current, history: history };
+    verify: verify, diff: diff, diffDetailed: diffDetailed, checksum: checksum, totals: totals, current: current, history: history };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.close = api; }
 })(typeof window !== "undefined" ? window : this);

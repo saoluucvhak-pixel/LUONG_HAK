@@ -1232,11 +1232,16 @@
     if (!st.kq || !need("payroll.close")) return;
     var ky = kyStr();
     if (kyChot(ky)) { alert(kyLabel(ky) + " đã chốt."); return; }
-    // Luôn tính lại từ dữ liệu mới nhất: tránh chốt nhầm bảng lương cũ đang hiển thị
-    var shown = CLS.totals(st.kq), fresh = tinhLuong(), now2 = CLS.totals(fresh);
-    if (shown.thucLinh !== now2.thucLinh || shown.soNV !== now2.soNV) {
+    // Luôn tính lại từ dữ liệu mới nhất: tránh chốt nhầm bảng lương cũ đang hiển thị.
+    // P0: so sánh TỪNG chỉ tiêu của TỪNG nhân viên (CLS.diffDetailed), không chỉ tổng thực lĩnh/số NV —
+    // 2 người đổi lương ngược dấu nhau (A +1tr, B -1tr) làm tổng & số NV y nguyên nhưng bảng lương đã khác.
+    var fresh = tinhLuong(), now2 = CLS.totals(fresh), diffRows = CLS.diffDetailed(st.kq, fresh);
+    if (diffRows.length) {
       st.kq = fresh; render();
-      alert("Dữ liệu đã thay đổi sau lần tính trước. App đã TÍNH LẠI: " + now2.soNV + " NV, tổng thực lĩnh " + fmt(now2.thucLinh) + ".\nHãy kiểm tra lại rồi bấm Chốt lần nữa.");
+      var dBody = h("div");
+      dBody.appendChild(h("div", { class: "warn", text: "Dữ liệu đã thay đổi sau lần tính trước — " + diffRows.length + " chênh lệch theo từng nhân viên/chỉ tiêu (không chỉ tổng). App đã TÍNH LẠI: " + now2.soNV + " NV, tổng thực lĩnh " + fmt(now2.thucLinh) + ".\nHãy xem kỹ bảng dưới rồi bấm Chốt lần nữa." }));
+      dBody.appendChild(simpleTable(diffRows));
+      modal("⚠ Dữ liệu đã đổi trước khi chốt " + kyLabel(ky), dBody, function (close) { return [btn("Đóng", "", close)]; });
       return;
     }
     var w = fresh.canhbao.length, badDay = 0;
