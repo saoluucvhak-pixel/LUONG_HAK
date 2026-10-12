@@ -531,3 +531,29 @@ mục. Phần việc Giai đoạn 2 còn lại, đã làm:
 
 Tất cả đều backward-compatible (để trống trường mới = giữ đúng hành vi/số liệu cũ), có test riêng,
 đã qua `eslint --max-warnings 0` + `node --check` + 231 test + 95 E2E.
+
+---
+
+## Giai đoạn 3 (Master Prompt V3, mục V-VII): sản lượng & bù lương
+
+- **Phân bổ sản lượng theo tổ** (mục V): đối chiếu `RP_CTPBSL` trích từ M thật của HAK_DN — khớp đúng
+  100% với `core/production-alloc.js` (điều kiện đủ công tác, cách so NV vắng, chia đều). App còn có
+  thêm 2 cải tiến owner đã duyệt vượt công thức M gốc (tự loại người nghỉ phép dù chưa ghi NV vắng;
+  coi công=0 là nghỉ nguyên ngày) — không phải lỗi.
+- **Bù lương HAK** (mục VI): đã đối chiếu M thật từ lượt trước — khớp đúng (`QR_DONGIASANLUONG`).
+- **Bù lương Đại Hiệp — theo ngày bậc thang** (mục VII): trích được mã M thật riêng của Đại Hiệp
+  (`dfc97336-DAIHIEP...xlsx`), nhưng workbook này KHÔNG chứa công thức bậc thang trong Power Query
+  (chỉ có bước chuẩn bị dữ liệu) — công thức bậc thang nằm trong 1 "công cụ" riêng ngoài file này.
+  Theo yêu cầu "làm theo prompt": đối chiếu lại `engine.js` với đúng công thức VIẾT TRONG Master
+  Prompt V3 (mục 7.3-7.10) — xác nhận **công thức hiện tại ĐÃ ĐÚNG, dùng chính "công thức kiểm tra
+  chéo" mà mục 7.10 của prompt tự đưa ra** (`TIEN_BU_NGAY = MAX(0, MUC_BU × H − SL_thực_tế_ngày ×
+  Đơn_giá)`), tương đương toán học với đường đi dài hơn (SL_CHUAN_1_NGAY → SL_THAM_CHIEU → SL_BU →
+  TIỀN_BÙ) mà không cần làm tròn ở bước trung gian nào — đúng tinh thần mục 7.16 ("Ưu tiên kiểm tra
+  tương đương... không làm tròn SL tham chiếu giữa các bước nếu gây sai lệch tiền").
+  - **1 gap tìm thấy và đã sửa** (mục 7.15, "có sản lượng nhưng thiếu BT → phải CẢNH BÁO"): trước đây
+    engine.js tính đúng bù=0 cho ngày này (không suy đoán BT=1 — đúng) nhưng KHÔNG báo gì, admin
+    không biết là do thiếu chấm công. Đã thêm cảnh báo. Không đổi số tiền. Commit `df47473` trên
+    `claude/v2-ocr-ky-hieu`, 1 test mới, 232 test + 95 E2E pass.
+
+**Kết luận Giai đoạn 3**: không còn gap nào khác đã biết; công thức tiền đã đúng theo cả 2 cách đối
+chiếu (M thật cho HAK/phân bổ; chữ prompt cho Đại Hiệp) — chỉ thiếu 1 cảnh báo nghiệp vụ, đã bổ sung.
