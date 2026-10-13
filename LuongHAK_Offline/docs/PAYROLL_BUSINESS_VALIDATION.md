@@ -875,7 +875,42 @@ như nghỉ) — không đổi, chỉ phần "cả tổ chưa chấm công" bị
 
 309 test + 105 E2E pass. Commit `5188141` trên `feature/payroll-dynamic-formula-optimization`.
 
+### PV-17 — Mục VII: màn hình "Danh mục → Công thức tiền lương"
+
+7 tab đúng mục VII: **Tăng ca/Phụ cấp/Hỗ trợ** — tái dùng `grid()` chung cho cả 3 (bảng `dm_congthuc`
+duy nhất, lọc hiển thị theo cột "Loại" qua `def.rowFilter` mới thêm vào `grid()`) để kế thừa miễn phí
+toàn bộ quyền (`dm.edit`), khóa kỳ chốt, import/export Excel, tìm kiếm đã có — không viết form CRUD
+riêng (đúng nguyên tắc "không viết lại khi có cách nâng cấp an toàn từng phần" của mục XXI). **Thư
+viện biến** — bảng chỉ xem từ `formula-variables.js`. **Mẫu công thức** — công thức tham khảo, transcribe
+CHÍNH XÁC từ switch/case TC1/TC2/TC3/TC6 gốc trong `engine.js` (không tự chế, đối chiếu lại từng dòng)
++ ví dụ phụ cấp/hỗ trợ lấy từ chính ví dụ trong Master Prompt. **Kiểm tra công thức** — chạy thử với
+dữ liệu 1 nhân viên + kỳ đã tính (qua `kqKy()`/`_ct`, đọc không tính lại) hoặc giả lập (gõ tay), hiện
+từng biến + nguồn (danh mục / nhân viên / nhập tay) + kết quả theo công thức này / đang áp dụng / chênh
+lệch — **không ghi gì vào bảng lương thật** (chỉ evaluate trong bộ nhớ UI). **Lịch sử phiên bản** —
+`FML.versionsOf()` (đã có sẵn từ mục III, chưa ai dùng tới) liệt kê mọi dòng cùng "Mã công thức" (mọi
+Trạng thái) + nhật ký sửa đổi chung của app lọc theo mã.
+
+**Phát hiện khi làm**: nhật ký (audit log) của app chỉ ghi khi sửa danh mục ảnh hưởng HỒI TỐ một kỳ
+ĐÃ CHỐT (`audit: theoKy ? false : "retro"` — quy ước đã có từ trước cho MỌI bảng `dm_*`, không riêng
+công thức). Nghĩa là thêm/sửa công thức bình thường (chưa có kỳ nào bị ảnh hưởng) sẽ KHÔNG có nhật ký
+ở tab "Lịch sử phiên bản" — đây là hành vi ĐÚNG theo quy ước chung của app, không phải lỗi, nhưng khác
+với cách đọc "Lưu: người tạo/sửa/phê duyệt, thời điểm, nội dung trước/sau" ở mục VII.4 theo nghĩa "luôn
+có nhật ký". Đã ghi rõ trong hint UI + test E2E xác nhận đúng hành vi này (không giả định sai).
+
+Không xây hệ thống phê duyệt riêng (approver role, workflow draft→duyệt tách bạch) — cột "Trạng thái"
+sẵn có (Nháp/Đã duyệt/Hiệu lực/Ngừng, `formula-registry.js` chỉ dùng "Hiệu lực" để tính lương chính
+thức) đã đóng vai trò draft/activate; dòng mới mặc định "Nháp" (`DM.dm_congthuc.def`). Việc tách quyền
+"chỉ nhập chấm công" khỏi "sửa công thức" dùng đúng permission `dm.edit` đã có (cùng tầng với mọi danh
+mục lương khác) — không cần quyền mới.
+
+`core/repository.js` `identOf()` thêm `r["Mã công thức"]` vào danh sách fallback để nhật ký (khi có)
+nhận diện đúng dòng. `engine.js` `_ct` chụp thêm `congLe/congPhep/congTrungChuyen/congChuNhat/
+congDiChuyen/congTangCa` (thô) để tab Kiểm tra công thức có đủ nguồn biến từ dữ liệu nhân viên thật.
+
+309 test + 114 E2E pass (thêm 1 kịch bản E2E đủ 7 tab). Commit `7e41602` trên
+`feature/payroll-dynamic-formula-optimization`.
+
 ### Tiếp theo
 
-Còn: Formula management UI (mục VII), company-driven phương pháp bù (mục VIII), tối ưu hiệu suất
-(mục XII), báo cáo đối chiếu + build Windows + PR (mục XVI-XX).
+Còn: company-driven phương pháp bù (mục VIII), tối ưu hiệu suất (mục XII), báo cáo đối chiếu + build
+Windows + PR (mục XVI-XX).
