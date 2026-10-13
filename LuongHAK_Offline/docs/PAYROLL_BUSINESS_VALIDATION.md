@@ -833,3 +833,49 @@ chốt được bình thường). 280 test + 102 E2E pass.
 
 Cả 3 module còn lại của Giai đoạn 5 (mục 16.3, XVII, XVIII) đã hoàn thành. Chưa còn mục nào mở của
 Giai đoạn 5.
+
+---
+
+## Giai đoạn 6 (Master Prompt mới — nâng cấp engine nội bộ, công thức động): nhánh `feature/payroll-dynamic-formula-optimization`
+
+Chủ sở hữu gửi Master Prompt mới (13/10/2026) yêu cầu nâng cấp sâu: Dynamic Payroll Formula Engine
+(tăng ca/phụ cấp/hỗ trợ không còn hardcode trong engine.js), sửa phân bổ sản lượng, tối ưu hiệu suất,
+phương pháp bù theo công ty, hoàn thiện kiểm soát chốt kỳ. Audit đầu tiên phát hiện
+`feature/offline-v2-hardening` có 6 commit P0/P1 (chặn cứng chốt kỳ khi dữ liệu cộng trùng/Mã NV
+trùng/thiếu mã BHXH...) CHƯA được đưa vào `claude/v2-ocr-ky-hieu` — đã cherry-pick đầy đủ vào nhánh
+mới trước khi làm gì khác.
+
+- Reconcile P0 hardening + phân loại lại "loi" (⛔) trong checklist PV-15 thành BLOCKER thật (không
+  còn nút "vẫn chốt dù còn lỗi") — đúng mục XIV của Master Prompt mới.
+- `core/payroll/formula-{parser,variables,functions,validator,evaluator,registry,engine}.js` (mới):
+  bộ công thức động an toàn (không `eval()`/`new Function()`, chỉ AST + biến/hàm đã khai báo).
+- `engine.js`: `heSoTangCa()` (tăng ca) + khối phụ cấp/hỗ trợ tự tra `db.dm_congthuc` (DM_PAYROLL_FORMULA)
+  trước khi dùng switch/case hoặc kiểu mặc định cũ — mã MỚI chỉ cần 1 dòng danh mục, không sửa code.
+  Switch/case cũ GIỮ NGUYÊN làm tầng dự phòng (không ai cấu hình thì số liệu y như trước).
+
+### PV-16: `core/production-alloc.js`/`hr.js` — cả tổ chưa chấm công BT ngày cân → GHI ĐÈ 1 phần của R-73
+
+Mục IX của Master Prompt mới yêu cầu: không có BT hợp lệ ngày cân thì KHÔNG được phân bổ sản lượng
+(trạng thái PENDING_ATTENDANCE), trong khi R-73 (chủ sở hữu duyệt 12/10/2026, 1 ngày trước) có đúng
+quy tắc ngược lại cho tình huống này: "ngày cả tổ chưa chấm công → vẫn chia theo NV vắng ghi trên
+phiếu". Phát hiện xung đột qua test `U-PA-12 (R-73)` đang pin đúng hành vi cũ — **đã hỏi lại chủ sở
+hữu trước khi sửa** (đúng bài học KPCĐ/PV-9/PV-10 từng bị hoàn tác vì tự đổi công thức đã duyệt).
+
+**Chủ sở hữu xác nhận (13/10/2026): làm theo Master Prompt mục IX, ghi đè phần đó của R-73.**
+
+Đã sửa: `membersOf()` (hr.js) không còn coi cả tổ có mặt khi chưa ai chấm công BT ngày đó — trả
+present rỗng + cờ `chuaCC`; `allocate()` (production-alloc.js) báo "PENDING_ATTENDANCE" riêng (khác
+"không còn ai có mặt" khi mọi người đã nghỉ/bị ghi vắng thật), vẫn cộng vào "unallocated" (không mất
+khối lượng). Cập nhật `U-PA-04`/`U-PA-11` (thêm chấm công fixture — 2 test này không kiểm thử phần
+chấm công, trước đó vô tình thiếu), `U-PA-12` (sửa kỳ vọng mới + thêm test PENDING_ATTENDANCE), và 1
+test E2E "Chia phiếu theo tổ như công cụ" (1 ngày phiếu P2 vô tình dựa vào hành vi cũ).
+
+**Quyết định còn áp dụng cho 2 phần khác của R-73** (công > 0 dù 0,3 vẫn chia đều; công = 0/trống coi
+như nghỉ) — không đổi, chỉ phần "cả tổ chưa chấm công" bị ghi đè.
+
+309 test + 105 E2E pass. Commit `5188141` trên `feature/payroll-dynamic-formula-optimization`.
+
+### Tiếp theo
+
+Còn: Formula management UI (mục VII), company-driven phương pháp bù (mục VIII), tối ưu hiệu suất
+(mục XII), báo cáo đối chiếu + build Windows + PR (mục XVI-XX).
