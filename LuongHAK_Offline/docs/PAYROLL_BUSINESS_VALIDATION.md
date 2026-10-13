@@ -910,7 +910,56 @@ congDiChuyen/congTangCa` (thô) để tab Kiểm tra công thức có đủ ngu�
 309 test + 114 E2E pass (thêm 1 kịch bản E2E đủ 7 tab). Commit `7e41602` trên
 `feature/payroll-dynamic-formula-optimization`.
 
+### PV-18 — Mục VIII: "CompanyID → PolicyVersion → PayrollMethod" cho bù sản lượng
+
+**Thực tế kiến trúc app (đã xác minh trước khi làm, không giả định)**: app là mô hình **1 công ty / 1
+file dữ liệu** — `db.congty[0]` là bản ghi công ty DUY NHẤT, không có trường "Mã công ty"/"chi nhánh"
+ở `nhanvien`/`dm_phongban` hay bất kỳ đâu khác; HAK/CNHAK/HAKQN cùng dùng 1 "Quy chế lương HAK Group
+2026" (R-68) vì là các khối/phòng ban TRONG CÙNG 1 công ty, không phải nhiều công ty trong 1 file.
+"Đại Hiệp" chỉ là TÊN GỌI của 1 trong 2 cách bù sản lượng mà công cụ HAK cung cấp để so sánh (xem
+nhãn `BU_OPTS`: cả "to" và "daihiep" đều ghi "công cụ HAK"), không phải một tenant/công ty thật trong
+hệ thống. Vì vậy **"CompanyID" trong ngữ cảnh app này = chính file dữ liệu đang mở** (không cần/không
+nên tạo thêm trường CompanyID giả) — mục VIII được hiện thực đúng theo mô hình thật: "PolicyVersion"
+= bản ghi đã duyệt (Trạng thái = Hiệu lực, có Hiệu lực từ/đến) trong 1 danh mục mới; "PayrollMethod"
+= giá trị "Cách bù" của bản ghi đó.
+
+**Đã làm**: danh mục mới `dm_quychebu` ("Quy chế bù sản lượng" — Hiệu lực từ/đến, Cách bù, Trạng thái,
+Người phê duyệt, Mô tả), reuse đúng toàn bộ quy ước của `dm_congthuc` (mục VII/PV-17): `grid()` chung,
+datalist gợi ý Trạng thái/Cách bù theo `tableKey`, "Hiệu lực" là trạng thái duy nhất có tác dụng chính
+thức. `engine.js` thêm `quyCheBuChinhThuc(list, nam, thang)` (thuần, không đụng `tinhBangLuong()`) chọn
+đúng bản Hiệu lực mới nhất còn hiệu lực trong kỳ.
+
+Màn hình Tính lương: lựa chọn "Cách bù lương sản lượng" (dropdown cũ) **giữ nguyên, không đổi hành vi**
+— vẫn tự do chọn để xem thử/so sánh nhiều phương pháp (đúng yêu cầu "cho phép màn hình so sánh mô
+phỏng"), chỉ thêm 1 dòng báo cho biết phương pháp CHÍNH THỨC đã duyệt là gì và có khác lựa chọn đang
+xem hay không (chỉ hiện khi công ty có dùng lương sản phẩm — không làm phiền công ty không bù sản
+lượng). `chotKy()` (app.js): kỳ có sản lượng cần bù thật (`_ct.laSanLuong`) mà CHƯA có bản Hiệu lực hợp
+lệ cho kỳ đó → chặn cứng (BLOCKER, cùng cấp với badDay/missingBH đã có — không có đường vượt qua, đặt
+TRƯỚC checklist 20 điểm để không hiện "có thể tiếp tục" rồi mới chặn ngay sau); có bản Hiệu lực nhưng
+KHÁC lựa chọn đang xem trên dropdown → **tự chuyển sang đúng phương pháp đã duyệt, tính lại rồi mới
+chốt** — không bao giờ chốt theo lựa chọn tự do, đúng đúng câu "không dùng lựa chọn tự do trên màn
+hình tính lương để quyết định phương pháp bù sản lượng chính thức" của mục VIII.
+
+Seed "Nạp danh mục chuẩn HAK": thêm 1 bản `dm_quychebu` mặc định (Cách bù = "to" — bình quân tổ, Trạng
+thái = Hiệu lực, Người phê duyệt = "Chủ sở hữu HAK Group") khớp đúng R-68 đã duyệt — cài đặt mới của
+HAK Group có ngay quy chế hợp lệ, không bị chặn chốt oan.
+
+**Không làm** (có cân nhắc, không phải thiếu sót): không tạo trường "CompanyID"/multi-company giả cho
+hợp với chữ trong Master Prompt, vì app THẬT KHÔNG có nhiều công ty trong 1 file — làm vậy sẽ là
+over-engineering một khái niệm không tồn tại trong kiến trúc thật, và vi phạm nguyên tắc "không viết
+lại/thêm phức tạp khi không cần" của mục XXI. Nếu sau này thật có nhu cầu 1 file quản lý nhiều công ty
+riêng biệt (không phải khối/phòng ban), sẽ cần thiết kế riêng một trường định danh công ty trước, rồi
+mới mở rộng `dm_quychebu`/`dm_congthuc` theo trường đó (cả hai đã có cột "Công ty" dự phòng ở
+`dm_congthuc`; `dm_quychebu` có thể thêm tương tự khi cần).
+
+5 unit test mới cho `quyCheBuChinhThuc()` (chưa có cấu hình, chỉ Nháp/Đã duyệt/Ngừng, nhiều bản Hiệu
+lực lấy bản mới nhất, bản đã hết hiệu lực). E2E: 1 kịch bản đầy đủ end-to-end (xóa quy chế đã nạp sẵn →
+chốt kỳ có sản lượng → bị chặn cứng với đúng thông báo; khai báo quy chế "to" khác lựa chọn đang xem
+"false" → màn hình báo đang xem thử → chốt → app tự chuyển sang "to" rồi chốt thành công) — 121/121
+qua, không ảnh hưởng kịch bản BLOCKER sản lượng-chưa-phân-bổ đã có từ trước (kỳ 2026-10, item #9) vì
+đó là lỗi phân bổ, độc lập với phương pháp bù. Unit/integration/regression 314/314 không đổi. Commit
+`ee528a1` trên `feature/payroll-dynamic-formula-optimization`.
+
 ### Tiếp theo
 
-Còn: company-driven phương pháp bù (mục VIII), tối ưu hiệu suất (mục XII), báo cáo đối chiếu + build
-Windows + PR (mục XVI-XX).
+Còn: tối ưu hiệu suất (mục XII), báo cáo đối chiếu + bộ test đầy đủ + build Windows + PR (mục XVI-XX).
