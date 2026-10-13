@@ -47,3 +47,15 @@ test("gói cài (package.json build.files) phủ mọi file nạp bởi index.ht
   assert.deepEqual(miss, [], "file chưa nằm trong build.files: " + miss.join(", "));
   [...need].forEach((f) => assert.ok(fs.existsSync(path.join(APP, f)), "thiếu file " + f));
 });
+
+test("V8: mọi ipcMain.handle trừ allowlist đều đi qua guarded/guardedW (có quyền); ipcMain.on được bọc kiểm nguồn", () => {
+  const src = fs.readFileSync(path.join(APP, "main.js"), "utf8");
+  assert.match(src, /ipcMain\.on = \(ch, fn\) => _on\(ch,[^;]*guard\.trusted\(e\)/);
+  assert.match(src, /ipcMain\.handle = \(ch, fn\) => _handle\(ch,[^;]*guard\.trusted\(e\)/);
+  const open = [];
+  src.split("\n").forEach((ln) => { const m = ln.match(/ipcMain\.handle\("([^"]+)",\s*(.*)$/); if (m && !/^guarded(W)?\(/.test(m[2])) open.push(m[1]); });
+  assert.deepEqual(open.sort(), ["ocr-selftest"]);
+  // các lệnh nhạy cảm phải đòi đúng quyền
+  const need = { "fb-create": "backup.restore", "rs-commit": "backup.restore", "rs-stage": "backup.restore", "ocrlib-approve": "input.edit", "ocrlib-set-status": "ocr.library", "ocrlib-relabel": "ocr.library", "ocrlib-image": "input.view", "report-pdf": "export", "paths-move": "backup.restore" };
+  Object.keys(need).forEach((ch) => { const re = new RegExp('ipcMain\\.handle\\("' + ch + '",\\s*guarded(W)?\\("' + need[ch].replace(".", "\\.") + '"'); assert.match(src, re, ch); });
+});

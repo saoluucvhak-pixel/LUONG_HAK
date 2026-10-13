@@ -53,7 +53,9 @@ function createWriter(file, opts) {
 }
 
 /** Đọc thư mục trung tâm. Ném lỗi nếu không phải ZIP hợp lệ / tên mục nguy hiểm. */
-function openZip(file) {
+/** limits: { maxEntries, maxTotalBytes, maxRatio } — chống ZIP bomb (tỉ lệ nén phi lý, tổng dung lượng giải nén quá lớn, quá nhiều mục). */
+function openZip(file, limits) {
+  limits = Object.assign({ maxEntries: 200000, maxTotalBytes: 64 * 1024 * 1024 * 1024, maxRatio: 1000 }, limits || {});
   const fd = fs.openSync(file, "r"), size = fs.fstatSync(fd).size;
   const fail = (m) => { fs.closeSync(fd); throw new Error(m); };
   if (size < 22) fail("File quá nhỏ, không phải gói ZIP");
@@ -63,7 +65,8 @@ function openZip(file) {
   const count = tail.readUInt16LE(p + 10), cdSize = tail.readUInt32LE(p + 12), cdOff = tail.readUInt32LE(p + 16);
   if (count === 0xFFFF || cdOff === LIM || cdOff + cdSize > size) fail("Gói ZIP không hợp lệ hoặc dùng ZIP64 (không hỗ trợ)");
   const cd = Buffer.alloc(cdSize); fs.readSync(fd, cd, 0, cdSize, cdOff);
-  const entries = [], byName = {}; let q = 0;
+  if (count > limits.maxEntries) fail("Gói ZIP có quá nhiều mục (" + count + ")");
+  const entries = [], byName = {}; let q = 0, totalU = 0;
   for (let i = 0; i < count; i++) {
     if (q + 46 > cd.length || cd.readUInt32LE(q) !== 0x02014b50) fail("Thư mục trung tâm ZIP bị hỏng");
     const flags = cd.readUInt16LE(q + 8), method = cd.readUInt16LE(q + 10), crc = cd.readUInt32LE(q + 16), csize = cd.readUInt32LE(q + 20), usize = cd.readUInt32LE(q + 24);
@@ -73,6 +76,9 @@ function openZip(file) {
     if (byName[name]) fail("Gói ZIP trùng tên mục: " + name);
     if (method !== 0 && method !== 8) fail("Gói ZIP dùng kiểu nén không hỗ trợ: " + name);
     if (offset + 30 + csize > size) fail("Mục vượt ngoài file ZIP: " + name);
+    totalU += usize; if (totalU > limits.maxTotalBytes) fail("Tổng dung lượng giải nén của gói quá lớn — nghi ZIP bomb");
+    if (usize > 1048576 && csize > 0 && usize / csize > limits.maxRatio) fail("Tỉ lệ nén bất thường ở mục " + name + " — nghi ZIP bomb");
+    if (usize > 1048576 && csize === 0) fail("Kích thước mục không hợp lệ: " + name);
     const e = { name, method, crc, csize, size: usize, offset }; entries.push(e); byName[name] = e; q += 46 + nl + xl + cl;
   }
   function dataStart(e) { const h = Buffer.alloc(30); fs.readSync(fd, h, 0, 30, e.offset); if (h.readUInt32LE(0) !== 0x04034b50) throw new Error("Header cục bộ hỏng: " + e.name); return e.offset + 30 + h.readUInt16LE(26) + h.readUInt16LE(28); }

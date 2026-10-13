@@ -86,7 +86,6 @@ test("công thức Hiệu lực áp dụng vào bảng lương; bản Ngừng th
   const s = setup("admin", "a", db);
   const row = s.run("insert", null, Object.assign({}, NEW, { "Biểu thức": "CONG_TC * HE_SO_TC + 1", "Hiệu lực từ": "2026-01-01" })).row;
   const tc = () => E.tinhBangLuong(db, 2026, 9, false).bangluong[0]["Tiền tăng ca"];
-  const base = Math.round(9000000 / 26 * 4);
   assert.equal(tc(), 0);                                      // nháp: chưa áp dụng, TC7 không thuộc TC1–TC6 → FORMULA_ERROR, 0đ
   ["Chờ duyệt", "Đã duyệt", "Hiệu lực"].forEach((t) => s.run("update", row, { "Trạng thái": t }));
   assert.equal(tc(), Math.round(9000000 / 26 * 5));

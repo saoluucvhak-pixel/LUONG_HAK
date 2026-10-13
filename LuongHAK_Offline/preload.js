@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld("hakReport", {
 // Kho chứng từ gốc: chỉ thêm / đọc / kiểm tra theo DocumentID — không có hàm xóa
 contextBridge.exposeInMainWorld("hakOcrLib", {
   record: (p) => ipcRenderer.invoke("ocrlib-record", p), confirm: (p) => ipcRenderer.invoke("ocrlib-confirm", p),
-  approve: (q) => ipcRenderer.invoke("ocrlib-approve", q), undo: (key, user) => ipcRenderer.invoke("ocrlib-undo", key, user),
+  approve: (q) => ipcRenderer.invoke("ocrlib-approve", q), spoolPut: (p) => ipcRenderer.invoke("ocrlib-spool-put", p), spoolList: () => ipcRenderer.invoke("ocrlib-spool-list"), spoolRemove: (t) => ipcRenderer.invoke("ocrlib-spool-remove", t), undo: (key, user) => ipcRenderer.invoke("ocrlib-undo", key, user),
   lookup: (items) => ipcRenderer.invoke("ocrlib-lookup", items), list: (f) => ipcRenderer.invoke("ocrlib-list", f),
   edits: () => ipcRenderer.invoke("ocrlib-edits"), image: (sha) => ipcRenderer.invoke("ocrlib-image", sha),
   setStatus: (id, st, user, reason) => ipcRenderer.invoke("ocrlib-set-status", id, st, user, reason),
@@ -57,7 +57,8 @@ contextBridge.exposeInMainWorld("hakOcrLib", {
   layouts: () => ipcRenderer.invoke("ocrlib-layouts"), layoutMatch: (sig) => ipcRenderer.invoke("ocrlib-layout-match", sig), layoutSave: (sig, name, user) => ipcRenderer.invoke("ocrlib-layout-save", sig, name, user)
 });
 contextBridge.exposeInMainWorld("hakPaths", {
-  get: () => ipcRenderer.invoke("paths-get"), pick: (kind) => ipcRenderer.invoke("paths-pick", kind), move: (kind, dir) => ipcRenderer.invoke("paths-move", kind, dir)
+  get: () => ipcRenderer.invoke("paths-get"), pick: (kind) => ipcRenderer.invoke("paths-pick", kind), move: (kind, dir) => ipcRenderer.invoke("paths-move", kind, dir),
+  info: () => ipcRenderer.invoke("paths-info"), open: (kind) => ipcRenderer.invoke("paths-open", kind), verify: (kind) => ipcRenderer.invoke("paths-verify", kind)
 });
 contextBridge.exposeInMainWorld("hakDocs", {
   add: (data, info) => ipcRenderer.invoke("doc-add", data, info),   // Uint8Array, { name, user, note, pages } → { ok, id, sha256, duplicate, size } | { ok:false, error }
@@ -72,5 +73,7 @@ contextBridge.exposeInMainWorld("hakFull", {
   create: (info) => ipcRenderer.invoke("fb-create", info),     // { user } → { ok, name, dir, size, sha256, docs, warnings, mirrored } | { ok:false, error }
   list: () => ipcRenderer.invoke("fb-list"),
   inspect: (name) => ipcRenderer.invoke("fb-inspect", name),   // name tùy chọn (trong thư mục xuất); bỏ trống = hộp thoại chọn file → { ok, problems, manifest, docs, text }
-  importDocs: () => ipcRenderer.invoke("fb-import-docs")        // chỉ nhập chứng từ từ gói vừa inspect OK → { ok, added, same, conflict[], failed[] }
+  // Khôi phục theo giao dịch: stage(opt{name?,acceptPartial?}) → commit(rid) → [giao diện thay dữ liệu] → postcheck(rid) → finish(rid) | rollback(rid)
+  stage: (opt) => ipcRenderer.invoke("rs-stage", opt), commit: (rid) => ipcRenderer.invoke("rs-commit", rid), postcheck: (rid) => ipcRenderer.invoke("rs-postcheck", rid),
+  rollback: (rid) => ipcRenderer.invoke("rs-rollback", rid), finish: (rid) => ipcRenderer.invoke("rs-finish", rid), discard: (rid) => ipcRenderer.invoke("rs-discard", rid)
 });

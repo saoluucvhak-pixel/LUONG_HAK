@@ -22,10 +22,20 @@
    * @returns number
    * @throws FormulaError — DIV_ZERO | MISSING_VAR | UNKNOWN_VAR | UNKNOWN_FN | TOO_MANY_STEPS | SYNTAX | BAD_VALUE | NON_FINITE
    */
+  // Bộ nhớ đệm AST theo NỘI DUNG biểu thức (ExpressionHash = chính chuỗi): sửa công thức → khóa mới → không bao giờ dùng AST cũ.
+  // Chỉ lưu parse THÀNH CÔNG (lỗi cú pháp luôn được báo lại mỗi lần); AST không bị evaluator sửa. Giới hạn kích thước để không phình bộ nhớ.
+  var CACHE = new Map(), CACHE_MAX = 2000, stats = { hit: 0, miss: 0 };
+  function parseCached(src) {
+    var a = CACHE.get(src);
+    if (a) { stats.hit++; return a; }
+    stats.miss++; a = P.parse(src);
+    if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value);
+    CACHE.set(src, a); return a;
+  }
   function evaluate(astOrSrc, context, opts) {
     opts = opts || {}; context = context || {};
     var maxSteps = opts.maxSteps || DEFAULT_MAX_STEPS, steps = 0;
-    var ast = typeof astOrSrc === "string" ? P.parse(astOrSrc) : astOrSrc;
+    var ast = typeof astOrSrc === "string" ? parseCached(astOrSrc) : astOrSrc;
 
     function readVar(name) {
       if (Object.prototype.hasOwnProperty.call(context, name) && context[name] != null) {
@@ -88,7 +98,7 @@
     return result;
   }
 
-  var api = { evaluate: evaluate, DEFAULT_MAX_STEPS: DEFAULT_MAX_STEPS };
+  var api = { evaluate: evaluate, DEFAULT_MAX_STEPS: DEFAULT_MAX_STEPS, cacheStats: function () { return { hit: stats.hit, miss: stats.miss, size: CACHE.size }; }, clearCache: function () { CACHE.clear(); stats.hit = 0; stats.miss = 0; } };
   if (isNode) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.formulaEvaluator = api; }
 })(typeof window !== "undefined" ? window : this);

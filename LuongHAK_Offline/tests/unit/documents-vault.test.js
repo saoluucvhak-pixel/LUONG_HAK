@@ -58,3 +58,11 @@ test("V7 tên chuẩn chứng từ: {Company}_{YYYYMM}_{Loại}_{Bộ phận}_{D
   assert.match(m.storedName, /^HAK_202609_BANGCONG_KHO1_DOC-\d{6}-\d{8}-[A-Z0-9]+_[0-9a-f]{8}\.png$/);
   assert.equal(m.sha256.slice(0, 8), m.storedName.split("_").pop().slice(0, 8));
 });
+
+test("V8: cùng nội dung → dùng lại; cùng tên khác nội dung → lưu bản mới và báo sameNameDifferent, không ghi đè", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dv8-")), v = createVault(dir);
+  const a = v.add(Buffer.from("noi dung 1"), { name: "bang-cong.png" }), a2 = v.add(Buffer.from("noi dung 1"), { name: "doi-ten.png" }), b = v.add(Buffer.from("noi dung 2 khac"), { name: "bang-cong.png" });
+  assert.equal(a2.duplicate, true); assert.equal(a2.id, a.id);
+  assert.equal(b.duplicate, false); assert.notEqual(b.id, a.id); assert.deepEqual(b.sameNameDifferent, [a.id]);
+  assert.ok(v.verify().every((x) => x.status === "ok"));
+});

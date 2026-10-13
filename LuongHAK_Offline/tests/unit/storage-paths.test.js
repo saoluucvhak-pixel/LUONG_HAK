@@ -48,3 +48,43 @@ test("U-STOR-06 sao lưu chính: chỉ chép các gói Full Backup (+ .sha256), 
   const r = SP.move({ kind: "backup", dir: dst, userData: ud, settings: {}, exportsDir: ex, writeSettings: () => {} });
   assert.equal(r.ok, true); assert.deepEqual(fs.readdirSync(dst).sort(), ["LuongHAK_FullBackup_20261013_100000.zip", "LuongHAK_FullBackup_20261013_100000.zip.sha256"]);
 });
+
+// ---- V8: nguồn mất vs kho khởi tạo rỗng; lồng thật qua symlink; hoàn tác cấu hình; dung lượng ----
+test("U-STOR-07 nguồn không tồn tại: chưa từng dùng → EMPTY_INITIAL_STORAGE (ok); đã từng dùng → SOURCE_MISSING (lỗi, không đổi cấu hình)", () => {
+  const ud = tmp(), dst = path.join(tmp(), "n"); let saved = null;
+  const a = SP.move({ kind: "docs", dir: dst, userData: ud, settings: {}, writeSettings: (s) => { saved = s; } });
+  assert.equal(a.ok, true); assert.equal(a.state, "EMPTY_INITIAL_STORAGE"); assert.equal(a.files, 0);
+  saved = null; const dst2 = path.join(tmp(), "m");
+  const b = SP.move({ kind: "docs", dir: dst2, userData: ud, settings: { storeUsed: { docs: true } }, writeSettings: (s) => { saved = s; } });
+  assert.equal(b.ok, false); assert.equal(b.state, "SOURCE_MISSING"); assert.equal(saved, null);
+  const c = SP.move({ kind: "docs", dir: path.join(tmp(), "k"), userData: ud, settings: { docsDir: path.join(ud, "da-mat") }, writeSettings: (s) => { saved = s; } });
+  assert.equal(c.state, "SOURCE_MISSING"); // đã đặt đường dẫn tùy chỉnh = đã từng dùng
+});
+test("U-STOR-08 markUsed ghi nhớ kho có dữ liệu; sau đó nếu thư mục mất thì move báo SOURCE_MISSING", () => {
+  const ud = tmp(); const v = createVault(path.join(ud, "documents")); v.add(Buffer.from("x".repeat(10)), { name: "a.png" });
+  let st = {}; assert.equal(SP.markUsed(ud, st, "", (s) => { st = s; }), true); assert.equal(st.storeUsed.docs, true);
+  fs.rmSync(path.join(ud, "documents"), { recursive: true });
+  assert.equal(SP.move({ kind: "docs", dir: path.join(tmp(), "z"), userData: ud, settings: st, writeSettings: () => {} }).state, "SOURCE_MISSING");
+});
+test("U-STOR-09 thư mục lồng nhau qua symlink / '..' / vào chính thư mục hiện tại bị từ chối", () => {
+  const ud = tmp(), cur = SP.resolve(ud, {}, path.join(ud, "exports")); fs.mkdirSync(cur.docs, { recursive: true });
+  const ln = path.join(tmp(), "lien-ket"); fs.symlinkSync(cur.docs, ln, "dir");
+  assert.match(SP.validate("ocrLib", ln, cur), /lồng|trùng|liên kết/);                          // trỏ vào kho chứng từ
+  assert.match(SP.validate("ocrLib", path.join(cur.docs, "..", "documents", "con"), cur), /lồng|trùng/);
+  const bk = path.join(ud, "exports"); fs.mkdirSync(bk, { recursive: true });
+  assert.match(SP.validate("docs", path.join(bk, "kho"), cur, { export: bk }), /lồng|trùng/);       // chứng từ trong thư mục sao lưu
+  assert.match(SP.validate("backup", path.join(cur.docs, "bk"), cur), /lồng|trùng/);              // sao lưu trong kho chứng từ
+  assert.match(SP.validate("mirror", path.join(cur.ocrLib, "m"), cur), /lồng|trùng/);              // mirror trong thư viện OCR
+  const r = SP.move({ kind: "docs", dir: path.join(cur.docs, "moi"), userData: ud, settings: {}, writeSettings: () => {} });
+  assert.equal(r.ok, false); assert.equal(r.state, "INVALID_TARGET");
+});
+test("U-STOR-10 khởi tạo kho mới lỗi → trả cấu hình + kho cũ; kiểm tra kho đích lỗi → không đổi cấu hình; thiếu dung lượng → từ chối", () => {
+  const ud = tmp(), v = createVault(path.join(ud, "documents")); v.add(Buffer.from("noi dung"), { name: "a.png" });
+  const writes = []; let applied = 0;
+  const r = SP.move({ kind: "docs", dir: path.join(tmp(), "d"), userData: ud, settings: {}, writeSettings: (s) => writes.push(s), onApplied: () => { if (++applied === 1) throw new Error("không mở được kho"); } });
+  assert.equal(r.ok, false); assert.equal(r.state, "APPLY_FAILED"); assert.equal(writes.length, 2); assert.equal(writes[1].docsDir, undefined); assert.equal(applied, 2);
+  let w2 = 0; const r2 = SP.move({ kind: "docs", dir: path.join(tmp(), "e"), userData: ud, settings: {}, writeSettings: () => { w2++; }, verifyStore: () => "kho hỏng" });
+  assert.equal(r2.state, "TARGET_VERIFY_FAILED"); assert.equal(w2, 0);
+  const r3 = SP.move({ kind: "docs", dir: path.join(tmp(), "f"), userData: ud, settings: {}, writeSettings: () => {}, statfs: () => ({ bavail: 1, bsize: 1024 }) });
+  assert.equal(r3.state, "NO_SPACE");
+});

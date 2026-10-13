@@ -95,7 +95,7 @@
   }
   // Chỉ TẠO bảng còn thiếu; bảng có nhưng sai kiểu đã bị chặn ở bước kiểm tra cấu trúc (không bao giờ thay bằng bảng rỗng)
   function ensureTables() {
-    Object.keys(ALL).concat(["congty", "kyluong", "kyluong_lichsu", "auditlog", "nguoidung", "baomat", "chungtu"]).forEach(function (k) {
+    Object.keys(ALL).concat(["congty", "kyluong", "kyluong_lichsu", "auditlog", "nguoidung", "baomat", "chungtu", "chungtu_lienket"]).forEach(function (k) {
       if (db[k] === undefined) db[k] = [];
       else if (!Array.isArray(db[k])) throw new Error("Bảng " + k + " sai cấu trúc — không tự thay thế");
     });
@@ -401,7 +401,7 @@
             alert("⚠ KHÔNG lưu được xuống đĩa — đã hủy toàn bộ lần nhập này, dữ liệu giữ nguyên như trước khi nhập.");
             return;
           }
-          close(); if (done) done(true); else render();
+          close(); if (done) done(true, plans); else render();
           toast("Đã ghi " + n + " dòng (" + tot.add + " mới, " + tot.update + " cập nhật" + (tot.merged ? ", gộp " + tot.merged : "") + ")" + (bkOk ? "" : " · ⚠ KHÔNG tạo được bản sao lưu trước khi nhập — kiểm tra dung lượng đĩa"));
         })];
     });
@@ -506,7 +506,7 @@
     function draw() {
       refreshNVList();
       body.innerHTML = "";
-      var idx = [], qq = qOf(key), names = {};
+      var idx = [], qq = qOf(key), names = {}, LKMAP = key === "chamcong" ? linkMapNow() : {};
       db.nhanvien.forEach(function (n) { if (!(n["Mã NV"] in names)) names[n["Mã NV"]] = n["Họ và tên"] || ""; }); // tra tên 1 lần / lượt vẽ (trước: dò cả danh sách NV cho mỗi dòng)
       var nameOf = function (ma) { return Object.prototype.hasOwnProperty.call(names, ma) ? names[ma] : ""; };
       db[key].forEach(function (r, i) {
@@ -558,6 +558,7 @@
             if (inp.value !== n.value && !isDay) inp.value = n.value;
             save(); if (c === "Mã NV" && nameTd) nameTd.textContent = tenNV(n.value) || (n.value ? "⚠ chưa có trong Nhân sự" : ""); if (isDay) updTot();
           }, null, key);
+          if (key === "chamcong" && isDay) { var lkc = LKMAP[attRecordId("chamcong", r) + "|" + c]; if (lkc) { inp.classList.add("has-src"); inp.title = "Nguồn: " + lkc.docId + " trang " + lkc.page + " — chuột phải (hoặc Alt+bấm) để xem ảnh/PDF gốc"; inp.addEventListener("contextmenu", function (ev) { ev.preventDefault(); openCellSource(lkc); }); inp.addEventListener("click", function (ev) { if (ev.altKey) { ev.preventDefault(); openCellSource(lkc); } }); } }
           inp.addEventListener("paste", function (ev) {
             var txt = (ev.clipboardData || window.clipboardData).getData("text");
             if (txt.indexOf("\t") < 0 && txt.indexOf("\n") < 0) return;
@@ -2088,20 +2089,68 @@
   }
   // ---------- Bộ lọc báo cáo dùng chung + xuất PDF (Master V5) ----------
   /** Thanh lọc dùng chung: cùng một st.rf cho Tính lương, Bảng tính lương nội bộ, Excel và PDF. */
-  function reportFilterBar(allRows, opt) {
-    opt = opt || {}; var op = RF.options(allRows), spec = RF.normalize(st.rf), bar = h("div", { class: "bar", "data-rf": "1" });
-    var sel = function (label, key, list) {
-      var s = h("select", { "data-rf-key": key }); s.appendChild(h("option", { value: "", text: "— " + label + ": tất cả —" }));
-      list.forEach(function (x) { s.appendChild(h("option", { value: x, text: x })); });
-      s.value = spec[key][0] || ""; s.addEventListener("change", function () { st.rf = Object.assign({}, RF.normalize(st.rf)); st.rf[key] = s.value ? [s.value] : []; render(); });
-      return s;
+  // ---- Bộ lọc dùng chung (V8): chọn NHIỀU giá trị, tìm không dấu, chọn tất cả/bỏ chọn, lưu bộ lọc, đặt lại ----
+  var RFCTX_KEY = "", RFCTX_LAST = {};
+  function rfContext() {
+    var key = st.nam + "-" + st.thang + "|" + (db.chamcong || []).length + "|" + (db.dm_phongban || []).length;
+    if (key === RFCTX_KEY) return RFCTX_LAST;
+    var kmap = {}; (db.dm_phongban || []).forEach(function (p) { if (p && p["Tên phòng ban"]) kmap[p["Tên phòng ban"]] = p["Tên khối"] || ""; });
+    var forms = {}, ky = st.nam + "-" + ("0" + st.thang).slice(-2);
+    (db.chamcong || []).forEach(function (r) { if (r && r["Kỳ"] === ky && r["Mã NV"]) { var f = (forms[r["Mã NV"]] = forms[r["Mã NV"]] || []); var c = r["Hình thức công"] || "BT"; if (f.indexOf(c) < 0) f.push(c); } });
+    RFCTX_KEY = key; RFCTX_LAST = { khoiOf: function (pb) { return kmap[pb] || ""; }, formsOf: function (ma) { return forms[ma] || []; } };
+    return RFCTX_LAST;
+  }
+  function rfPresets() { try { return JSON.parse(localStorage.getItem("hak.rf.presets") || "{}") || {}; } catch (e) { return {}; } }
+  function rfPresetsSave(o) { try { localStorage.setItem("hak.rf.presets", JSON.stringify(o)); return true; } catch (e) { return false; } }
+  /** Ô chọn nhiều giá trị: items = [string | {value,label}]; chọn tất cả / bỏ chọn / tìm không phân biệt dấu. */
+  function multiSelect(label, key, items, spec) {
+    var norm = items.map(function (x) { return typeof x === "string" ? { value: x, label: x } : x; });
+    var cur = (spec[key] || []).slice(), box = h("details", { class: "msel", "data-rf-key": key });
+    if (st.rfOpen === key) box.setAttribute("open", "");
+    box.addEventListener("toggle", function () { if (box.open) st.rfOpen = key; else if (st.rfOpen === key) st.rfOpen = ""; });
+    box.appendChild(h("summary", { text: label + (cur.length ? " (" + cur.length + ")" : ": tất cả"), title: cur.join(", ") }));
+    var pop = h("div", { class: "mselpop" }), q = h("input", { class: "i", placeholder: "Tìm…", value: (st.rfq && st.rfq[key]) || "" }), list = h("div", { class: "mselist" });
+    var commit = function (arr) { st.rf = Object.assign({}, RF.normalize(st.rf)); st.rf[key] = arr; st.rfOpen = key; render(); };
+    var draw = function () {
+      list.innerHTML = ""; var f = RF.fold(q.value);
+      norm.forEach(function (o) {
+        if (f && RF.fold(o.label).indexOf(f) < 0) return;
+        var cb = h("input", { type: "checkbox" }); cb.checked = cur.indexOf(o.value) >= 0;
+        cb.addEventListener("change", function () { var i = cur.indexOf(o.value); if (cb.checked && i < 0) cur.push(o.value); if (!cb.checked && i >= 0) cur.splice(i, 1); commit(cur.slice()); });
+        list.appendChild(h("label", { class: "mselrow" }, [cb, document.createTextNode(" " + o.label)]));
+      });
+      if (!list.children.length) list.appendChild(h("div", { class: "hint", text: "Không có lựa chọn khớp" }));
     };
-    bar.appendChild(sel("Phòng ban", "phongBan", op.phongBan)); if (!opt.compact) { bar.appendChild(sel("Mã lương", "maLuong", op.maLuong)); bar.appendChild(sel("Thanh toán", "httt", op.httt)); }
+    q.addEventListener("input", function () { st.rfq = st.rfq || {}; st.rfq[key] = q.value; draw(); });
+    pop.appendChild(q);
+    pop.appendChild(h("div", { class: "bar" }, [
+      btn("Chọn tất cả", "ghost", function () { var f = RF.fold(q.value); commit(norm.filter(function (o) { return !f || RF.fold(o.label).indexOf(f) >= 0; }).map(function (o) { return o.value; })); }),
+      btn("Bỏ chọn", "ghost", function () { commit([]); })]));
+    pop.appendChild(list); box.appendChild(pop); draw(); return box;
+  }
+  function reportFilterBar(allRows, opt) {
+    opt = opt || {}; RF.setContext(rfContext());
+    var op = RF.options(allRows), spec = RF.normalize(st.rf), bar = h("div", { class: "bar", "data-rf": "1" });
+    if (op.khoi.length) bar.appendChild(multiSelect("Khối", "khoi", op.khoi, spec));
+    bar.appendChild(multiSelect("Phòng ban", "phongBan", op.phongBan, spec));
+    if (op.to.length) bar.appendChild(multiSelect("Tổ", "to", op.to, spec));
+    if (!opt.compact) {
+      bar.appendChild(multiSelect("Mã lương", "maLuong", op.maLuong, spec)); bar.appendChild(multiSelect("Thanh toán", "httt", op.httt, spec));
+      if (op.hinhThucCong.length) bar.appendChild(multiSelect("Hình thức công", "hinhThucCong", op.hinhThucCong, spec));
+      if (op.nhanVien.length <= 3000) bar.appendChild(multiSelect("Nhân viên", "maNV", op.nhanVien, spec));
+    }
     var q = h("input", { class: "i", placeholder: "Tìm mã / tên…", value: spec.tuKhoa, "data-rf-key": "tuKhoa" });
     q.addEventListener("change", function () { st.rf = Object.assign({}, RF.normalize(st.rf), { tuKhoa: q.value }); render(); });
     var cb = h("input", { type: "checkbox" }); cb.checked = spec.chiCoThuNhap; cb.addEventListener("change", function () { st.rf = Object.assign({}, RF.normalize(st.rf), { chiCoThuNhap: cb.checked }); render(); });
     bar.appendChild(q); if (!opt.compact) bar.appendChild(h("label", {}, [cb, document.createTextNode(" chỉ người có thu nhập")]));
-    if (!RF.isEmpty(spec)) bar.appendChild(btn("✕ Xóa lọc", "", function () { st.rf = {}; render(); }));
+    // bộ lọc đã lưu (theo máy này)
+    var pr = rfPresets(), ps = h("select", { "data-rf-presets": "1", "aria-label": "Bộ lọc đã lưu" }); ps.appendChild(h("option", { value: "", text: "— Bộ lọc đã lưu —" }));
+    Object.keys(pr).sort().forEach(function (n) { ps.appendChild(h("option", { value: n, text: n })); });
+    ps.addEventListener("change", function () { if (ps.value && pr[ps.value]) { st.rf = RF.normalize(pr[ps.value]); render(); } });
+    bar.appendChild(ps);
+    bar.appendChild(btn("💾 Lưu bộ lọc", "ghost", function () { if (RF.isEmpty(spec)) { toast("Chưa chọn điều kiện lọc nào"); return; } askText("Lưu bộ lọc", "Tên bộ lọc:", {}, function (name) { name = String(name || "").trim(); if (!name) return; var p2 = rfPresets(); p2[name] = spec; toast(rfPresetsSave(p2) ? "Đã lưu bộ lọc “" + name + "”" : "⚠ Không lưu được bộ lọc trên máy này"); render(); }); }, "Lưu điều kiện lọc hiện tại để dùng lại (lưu trên máy này)"));
+    if (ps.value === "" && Object.keys(pr).length) bar.appendChild(btn("🗑 Xóa bộ lọc đã lưu", "ghost", function () { askText("Xóa bộ lọc đã lưu", "Tên bộ lọc cần xóa:", {}, function (name) { var p2 = rfPresets(); if (p2[String(name || "").trim()]) { delete p2[String(name).trim()]; rfPresetsSave(p2); toast("Đã xóa"); render(); } else toast("Không có bộ lọc tên đó"); }); }));
+    if (!RF.isEmpty(spec)) bar.appendChild(btn("✕ Đặt lại", "", function () { st.rf = {}; st.rfq = {}; st.rfOpen = ""; render(); }, "Bỏ toàn bộ điều kiện lọc"));
     return bar;
   }
   function pdfFallbackPrint(html) {
@@ -2379,6 +2428,44 @@
     }
     return window.createImageBitmap(file).then(function (bm) { var cv = canvasOf(bm.width, bm.height); cv.getContext("2d").drawImage(bm, 0, 0); return [{ name: name, canvas: cv, docId: docId || "", trang: 1 }]; });
   }
+  // ===== Liên kết ô chấm công ↔ chứng từ gốc (V8): AttendanceRecordID → DocumentID → PageNumber → CellKey → OCRRunID (→ SampleID tra theo CellKey) =====
+  // AttendanceRecordID là khóa tự nhiên ổn định: CC|kỳ|mã NV|hình thức công (chấm công) hoặc SC|ngày|mã NV (suất cơm). Lưu trong db.chungtu_lienket nên đi cùng dữ liệu & Full Backup.
+  // Nhập lại ô đó từ chứng từ khác: liên kết cũ được GIỮ (current=false) làm lịch sử, liên kết mới là hiện hành.
+  function attRecordId(table, r) { return C.attLinks.recordId(table, r); }
+  function linkMapNow() { return C.attLinks.mapOf(db.chungtu_lienket); }
+  function recordCellLinks(cells, batchId) { db.chungtu_lienket = db.chungtu_lienket || []; return C.attLinks.record(db.chungtu_lienket, cells, { batchId: batchId, by: currentUser(), makeId: function (n) { return "LK-" + Date.now().toString(36) + "-" + n; } }); }
+  /** Mở lại ảnh/PDF gốc của 1 ô chấm công, khoanh đúng vị trí ô OCR đã đọc. */
+  function openCellSource(link) {
+    if (!window.hakDocs) { alert("Xem chứng từ gốc chỉ có trong bản cài (.exe)."); return; }
+    if (!can("input.view")) { alert("Bạn không có quyền xem chứng từ gốc."); return; }
+    var hist = C.attLinks.history(db.chungtu_lienket, link.recordId, link.day);
+    var body = h("div"), cv = h("canvas", { style: "max-width:100%;border:1px solid var(--bd,#ccc)" }), meta = h("div", { class: "hint" });
+    body.appendChild(meta);
+    body.appendChild(h("div", { class: "hint", text: "Giá trị đã nhập: " + link.value + " · ngày " + link.day + " · bản ghi " + link.recordId }));
+    body.appendChild(cv);
+    if (hist.length > 1) body.appendChild(h("div", { class: "hint", text: "Lịch sử nguồn của ô này: " + hist.map(function (l) { return l.docId + " tr." + l.page + " (" + fmtTime(l.at) + (l.current === false ? ", đã thay" : ", hiện hành") + ")"; }).join(" → ") }));
+    modal("Chứng từ gốc của ô", body, function (close) { return [btn("Đóng", "pri", close)]; });
+    meta.textContent = "Đang mở " + link.docId + " trang " + link.page + "…";
+    window.hakDocs.read(link.docId).then(function (r) {
+      if (!r || !r.ok) { meta.textContent = "⚠ Không mở được chứng từ " + link.docId + ": " + ((r && r.error) || "mất file"); return; }
+      var m = r.meta || {}, bytes = new Uint8Array(r.data), isPdf = /pdf/i.test(m.ext || "") || (bytes[0] === 0x25 && bytes[1] === 0x50);
+      meta.textContent = (m.name || link.docId) + " · trang " + link.page + " · nhập lúc " + fmtTime(link.at) + " bởi " + (link.by || "");
+      var draw = function (srcCanvas) {
+        var W = link.imgW || srcCanvas.width, H = link.imgH || srcCanvas.height, rot = ((link.rot || 0) % 360 + 360) % 360, swap = rot === 90 || rot === 270;
+        cv.width = W; cv.height = H; var cx = cv.getContext("2d"), sw = swap ? srcCanvas.height : srcCanvas.width, sh = swap ? srcCanvas.width : srcCanvas.height;
+        cx.save(); cx.translate(W / 2, H / 2); cx.rotate(rot * Math.PI / 180); cx.scale(W / sw, H / sh); cx.drawImage(srcCanvas, -srcCanvas.width / 2, -srcCanvas.height / 2); cx.restore();
+        if (link.bbox) { cx.strokeStyle = "#e11d48"; cx.lineWidth = Math.max(3, W / 300); cx.strokeRect(link.bbox.x0, link.bbox.y0, link.bbox.x1 - link.bbox.x0, link.bbox.y1 - link.bbox.y0); }
+      };
+      if (!isPdf) { window.createImageBitmap(new Blob([bytes])).then(function (bm) { var c0 = canvasOf(bm.width, bm.height); c0.getContext("2d").drawImage(bm, 0, 0); draw(c0); }, function () { meta.textContent = "⚠ Không giải mã được ảnh"; }); return; }
+      loadScript("vendor/pdfjs/pdf.min.js").then(function () {
+        var lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.js";
+        return lib.getDocument({ data: bytes }).promise;
+      }).then(function (pdf) { return pdf.getPage(link.page || 1); }).then(function (pg) {
+        var vp = pg.getViewport({ scale: link.pdfScale || 2 }), c1 = canvasOf(Math.ceil(vp.width), Math.ceil(vp.height));
+        return pg.render({ canvasContext: c1.getContext("2d"), viewport: vp }).promise.then(function () { draw(c1); });
+      }).catch(function (e) { meta.textContent = "⚠ Không dựng được trang PDF: " + (e && e.message || e); });
+    });
+  }
   /** Lưu NGUYÊN BẢN file vào kho chứng từ (SHA-256, không xóa) và ghi siêu dữ liệu vào db.chungtu. Lỗi lưu → báo, KHÔNG chặn đọc OCR. */
   function archiveOriginal(file) {
     if (!window.hakDocs) return Promise.resolve("");
@@ -2388,6 +2475,7 @@
         db.chungtu.push({ id: r.id, sha256: r.sha256, name: file.name, size: r.size, addedAt: new Date().toISOString(), addedBy: currentUser(), nguon: "OCR", ky: kyStr() });
         audit("Lưu chứng từ gốc", r.id + " · " + file.name + " · SHA-256 " + r.sha256.slice(0, 12) + "…"); save();
       } else if (r.duplicate) toast("File " + file.name + " đã có trong kho chứng từ (" + r.id + ") — dùng lại bản đã lưu");
+      if (r.sameNameDifferent && r.sameNameDifferent.length) toast("⚠ Đã có chứng từ CÙNG TÊN \"" + file.name + "\" nhưng NỘI DUNG KHÁC (" + r.sameNameDifferent.join(", ") + ") — bản mới được lưu thêm, không ghi đè");
       return r.id;
     }, function (e) { toast("Chưa lưu được bản gốc: " + e.message); return ""; });
   }
@@ -2397,7 +2485,7 @@
   function titleName(title) { var t = (title || []).filter(function (x) { return /lịch|lich/i.test(C.tsparse.fold(x)); })[0] || ""; return t.replace(/^.*?(lịch làm|lich lam)\s*/i, "").trim(); }
   // Tự học từ chỉnh sửa (V7): mỗi ô OCR người dùng sửa tự ghi 1 mẫu "chờ duyệt"; duyệt khi ghi bảng vào Chấm công
   var OCRL = null;
-  function ocrLearn() { if (!OCRL && window.hakOcrLib && C.ocrLearn) OCRL = C.ocrLearn.createService({ api: window.hakOcrLib, user: function () { return session ? session.tenDangNhap : currentUser(); }, cfg: function () { return { saveConfirmed: !!congTy()["OCR lưu mẫu xác nhận"] }; }, ocrVersion: "tsocr-v7" }); return OCRL; }
+  function ocrLearn() { if (!OCRL && window.hakOcrLib && C.ocrLearn) OCRL = C.ocrLearn.createService({ api: window.hakOcrLib, user: function () { return session ? session.tenDangNhap : currentUser(); }, cfg: function () { return { saveConfirmed: !!congTy()["OCR lưu mẫu xác nhận"] }; }, ocrVersion: "tsocr-v7" }); if (OCRL && !OCRL._restored) { OCRL._restored = true; OCRL.restoreQueue().then(function (r) { if (r && r.restored) { toast("⚠ Có " + r.restored + " mẫu học từ lần trước chưa ghi vào thư viện — đã nạp lại, bấm \"Thử lại\" ở màn OCR"); } }); } return OCRL; }
   /** Tra cứu thư viện mẫu cho các ô số: AUTO_ACCEPT → dùng nhãn thư viện (ghi rõ nguồn); SUGGESTED → đánh dấu "không chắc" + gợi ý; còn lại giữ nguyên kết quả OCR. */
   function libEnrich(lr, res, pg) {
     if (pg.mode && pg.mode !== "so") return Promise.resolve();
@@ -2461,7 +2549,7 @@
   function lineSum(L, days) { var s0 = 0, bad = 0; days.forEach(function (d) { var n = ocrNum(L.vals[d]); if (n == null) return; if (isNaN(n)) bad++; else s0 += n; }); return { sum: Math.round(s0 * 100) / 100, bad: bad }; }
   /** Dòng dữ liệu sẵn sàng ghi: { chamcong: [...], tiencom: [...], skip: [...] } */
   function ocrRows(pages) {
-    var cc = [], tc = [], skip = [];
+    var cc = [], tc = [], skip = [], mcc = [], mtc = [];
     pages.forEach(function (pg) {
       (pg.lines || []).forEach(function (L) {
         if (!L.kind) return;
@@ -2469,27 +2557,45 @@
         var bad = pg.days.filter(function (d) { var n = ocrNum(L.vals[d]); return n !== null && (isNaN(n) || n < 0); });
         if (bad.length) { skip.push(pg.name + ": " + (L.name || L.ma) + " — ô ngày " + bad.join(", ") + " chưa sửa (dấu ?)"); return; }
         var ky = pg.ky || kyStr();
-        if (L.kind === "Cơm") pg.days.forEach(function (d) { var n = ocrNum(L.vals[d]); if (n) tc.push({ "Ngày": ky + "-" + ("0" + d).slice(-2), "Mã NV": L.ma, "Số suất cơm": n, "Ghi chú": "OCR: " + pg.name }); });
+        // meta[] song song với dòng ghi: __line = vị trí+1 → sau khi nhập biết CHÍNH XÁC ô OCR nào đã được ghi (ImportBatch → ô → mẫu)
+        function cellsOf(days, recId) {
+          var out = [];
+          days.forEach(function (d) {
+            var cell = L.src && L.src.cells ? L.src.cells[d] : null, v = String(L.vals[d] == null ? "" : L.vals[d]).trim();
+            if (!v) return;
+            out.push({ key: C.ocrLearn.cellKey(pg.docId, pg.trang || 1, cell, pg.rot || 0, L.ma + "|" + d), value: v, day: ("0" + d).slice(-2), recordId: recId, docId: pg.docId || "", page: pg.trang || 1, runId: pg.runId || "",
+              bbox: cell ? { x0: cell.x0, y0: cell.y0, x1: cell.x1, y1: cell.y1 } : null, imgW: pg.res ? pg.res.w : 0, imgH: pg.res ? pg.res.h : 0, rot: pg.rot || 0, pdfScale: pg.pdfScale || 0, srcName: pg.name || "" });
+          });
+          return out;
+        }
+        if (L.kind === "Cơm") pg.days.forEach(function (d) { var n = ocrNum(L.vals[d]); if (n) { mtc.push({ cells: cellsOf([d], ["SC", ky + "-" + ("0" + d).slice(-2), L.ma].join("|")) }); tc.push({ "Ngày": ky + "-" + ("0" + d).slice(-2), "Mã NV": L.ma, "Số suất cơm": n, "Ghi chú": "OCR: " + pg.name, __line: mtc.length }); } });
         else {
           var row = { "Kỳ": ky, "Mã NV": L.ma, "Hình thức công": L.kind === "Tăng ca" ? "TC" : "BT" }, any = false;
           pg.days.forEach(function (d) { var n = ocrNum(L.vals[d]); if (n != null) { row[("0" + d).slice(-2)] = String(n).replace(".", ","); any = true; } });
-          if (any) cc.push(row);
+          if (any) { mcc.push({ cells: cellsOf(pg.days, ["CC", ky, L.ma, row["Hình thức công"]].join("|")) }); row.__line = mcc.length; cc.push(row); }
         }
       });
     });
-    return { chamcong: cc, tiencom: tc, skip: skip };
+    return { chamcong: cc, tiencom: tc, skip: skip, meta: { chamcong: mcc, tiencom: mtc } };
+  }
+  /** Ô OCR đã THỰC SỰ nằm trong dữ liệu vừa ghi (dòng add/update/merged của kế hoạch nhập đã commit) — dòng lỗi/bỏ qua/trùng/khóa không tính. */
+  function ocrImportedCells(plans, meta) {
+    var out = [], seen = {};
+    (plans || []).forEach(function (p) { var m = meta[p.table]; if (!m) return; p.items.forEach(function (it) { if (it.action !== "add" && it.action !== "update" && it.action !== "merged") return; var mm = m[(it.line || 0) - 1]; if (mm) mm.cells.forEach(function (c) { if (!seen[c.key]) { seen[c.key] = 1; out.push(c); } }); }); });
+    return out;
   }
   function ocrApply(pages) {
     if (!need("input.edit", "ghi chấm công / suất cơm")) return;
     var rr = ocrRows(pages);
     if (!rr.chamcong.length && !rr.tiencom.length) { alert("Chưa có dòng nào ghi được." + (rr.skip.length ? "\n\n" + rr.skip.join("\n") : "")); return; }
+    var lrChk = ocrLearn(); if (lrChk && lrChk.pending() && !confirm("⚠ Còn " + lrChk.pending() + " mẫu học từ các ô đã sửa CHƯA ghi vào thư viện OCR (lỗi: " + lrChk.lastError() + ").\nChấm công vẫn ghi được, nhưng những mẫu này chưa được tính là đã học và sẽ không được duyệt.\n\nVẫn tiếp tục ghi chấm công?")) return;
     if (rr.skip.length && !confirm("Các dòng sau CHƯA ghi được (sửa xong bấm lại):\n" + rr.skip.join("\n") + "\n\nVẫn ghi các dòng còn lại?")) return;
     importPreview(function (mode) {
       var pl = [];
       if (rr.chamcong.length) { var p1 = IMP.plan(db, "chamcong", ALL.chamcong.cols, rr.chamcong, { lockedPeriods: lockedMap(), defaultKy: kyStr(), mode: mode }); p1.sheet = "Ảnh chấm công"; pl.push(p1); }
       if (rr.tiencom.length) { var p2 = IMP.plan(db, "tiencom", ALL.tiencom.cols, rr.tiencom, { lockedPeriods: lockedMap(), defaultKy: kyStr(), mode: mode }); p2.sheet = "Ảnh chấm cơm"; pl.push(p2); }
       return pl;
-    }, "OCR " + pages.map(function (p) { return p.name + (p.docId ? " [" + p.docId + "]" : ""); }).join(", "), function (ok) { if (ok && window.hakOcrLib && window.hakOcrLib.layoutSave) pages.forEach(function (p) { if (p.layoutSig && p.layoutStatus !== "MISMATCH" && !p.layoutSuspect) window.hakOcrLib.layoutSave(p.layoutSig, "", session ? session.tenDangNhap : ""); }); var lr = ok && ocrLearn(); if (lr) lr.approvePages(pages.map(function (p) { return { docId: p.docId, page: p.trang || 1 }; })).then(function (r) { if (r && r.verified) toast("Thư viện mẫu OCR: " + r.verified + " mẫu đã được xác nhận" + (r.conflict ? " · " + r.conflict + " mẫu xung đột cần xem" : "")); }); render(); });
+    }, "OCR " + pages.map(function (p) { return p.name + (p.docId ? " [" + p.docId + "]" : ""); }).join(", "), function (ok, donePlans) { if (ok && window.hakOcrLib && window.hakOcrLib.layoutSave) pages.forEach(function (p) { if (p.layoutSig && p.layoutStatus !== "MISMATCH" && !p.layoutSuspect) window.hakOcrLib.layoutSave(p.layoutSig, "", session ? session.tenDangNhap : ""); }); var lr = ok && ocrLearn(); if (lr) { var impCells = ocrImportedCells(donePlans, rr.meta), batchId = "IMP-" + Date.now().toString(36); if (recordCellLinks(impCells, batchId)) save(); lr.approveCells(impCells, batchId).then(function (r) { if (r && (r.verified || r.unsaved)) toast((r.verified ? "Thư viện mẫu OCR: " + r.verified + " mẫu của ô đã nhập được xác nhận" + (r.conflict ? " · " + r.conflict + " mẫu xung đột cần xem" : "") : "") + (r.unsaved ? " · ⚠ còn " + r.unsaved + " mẫu học CHƯA ghi được — bấm \"Thử lại\" ở màn OCR" : "")); }); } render(); });
   }
   function ocrExport(pages) {
     var sheets = pages.filter(function (p) { return p.lines && p.lines.length; }).map(function (pg, i) {
@@ -2513,7 +2619,7 @@
   }
   // ---------- Thư viện mẫu OCR (V7): xem / duyệt / từ chối / đổi nhãn / khôi phục — KHÔNG có thao tác xóa mẫu ----------
   var OLS = { tab: "so", loaded: false, loading: false, samples: [], edits: [], stats: null, confusions: [], page: 0, q: "", err: "", urls: {} };
-  var OL_TABS = [["so", "Số"], ["kyhieu", "Ký hiệu"], ["chu", "Chữ viết tay"], ["bocuc", "Bố cục"], ["cho", "Chờ xác nhận"], ["nham", "Dễ nhầm"], ["lichsu", "Lịch sử sửa"], ["thongke", "Thống kê"]];
+  var OL_TABS = [["so", "Số"], ["kyhieu", "Ký hiệu"], ["chu", "Chữ viết tay"], ["bocuc", "Bố cục"], ["cho", "Chờ xác nhận"], ["nham", "Dễ nhầm"], ["xuly", "Cần xử lý"], ["lichsu", "Lịch sử sửa"], ["thongke", "Thống kê"]];
   var OL_ST = { PENDING_APPROVAL: "Chờ xác nhận", VERIFIED: "Đã xác nhận", SUPERSEDED: "Đã bị thay thế", REJECTED: "Bị từ chối", CONFLICT: "Xung đột" };
   function olLoad(force) {
     if (!window.hakOcrLib || OLS.loading || (OLS.loaded && !force)) return;
@@ -2559,6 +2665,15 @@
       if (!OLS.confusions.length) c.appendChild(h("div", { class: "hint", text: "Chưa có cặp nhầm lẫn nào." }));
       else { var tc = h("table", { class: "t" }); tc.appendChild(h("tr", {}, ["OCR đọc", "Sửa thành", "Số lần"].map(function (x) { return h("th", { text: x }); }))); OLS.confusions.forEach(function (x) { tc.appendChild(h("tr", {}, [h("td", { text: x.ocr || "(trống)" }), h("td", { text: x.corrected }), h("td", { class: "r", text: String(x.count) })])); }); c.appendChild(tc); }
       return w;
+    }
+    if (OLS.tab === "xuly") {
+      var miss = OLS.edits.filter(function (e) { return e.flags && e.flags.indexOf("MISSING_SOURCE_IMAGE") >= 0; }).reverse();
+      c.appendChild(h("h3", { text: "Ô đã sửa nhưng KHÔNG có ảnh nguồn (" + miss.length + ")" }));
+      c.appendChild(h("div", { class: "hint", text: "Các lần sửa này đã được ghi vào lịch sử nhưng không tạo mẫu học (không có ảnh ô thật). Không nằm trong tập mẫu chính thức. Mở lại chứng từ gốc để kiểm tra nếu cần." }));
+      var tx = h("table", { class: "t" });
+      tx.appendChild(h("tr", {}, ["Lúc", "Người sửa", "Chứng từ / trang", "Mã NV", "Từ", "Thành", "Ghi chú"].map(function (x) { return h("th", { text: x }); })));
+      miss.slice(OLS.page * 50, OLS.page * 50 + 50).forEach(function (e) { tx.appendChild(h("tr", {}, [fmtTime(e.at), e.by, (e.docId || "-") + " / " + (e.page || ""), e.employeeId, e.from, e.to, e.note].map(function (x) { return h("td", { text: String(x == null ? "" : x) }); }))); });
+      c.appendChild(tx); olPager(c, miss.length); return w;
     }
     if (OLS.tab === "lichsu") {
       c.appendChild(h("h3", { text: "Lịch sử sửa ô (mới nhất trước)" }));
@@ -2668,7 +2783,7 @@
       tb.appendChild(btn("↶ Hoàn tác ô đã sửa", "ghost", function () {
         var u = (pg.undo || []).pop(); if (!u) { toast("Chưa có ô nào để hoàn tác"); return; }
         var lr = ocrLearn(); u.L.vals[u.d] = u.prev; u.inp.value = u.prev;
-        if (lr && window.hakOcrLib) window.hakOcrLib.undo(C.ocrLearn.cellKey(pg.docId, pg.trang || 1, u.cell, pg.rot || 0), session ? session.tenDangNhap : "").then(function () { toast("Đã hoàn tác ô và mẫu học của lần sửa đó"); });
+        if (lr && window.hakOcrLib) window.hakOcrLib.undo(C.ocrLearn.cellKey(pg.docId, pg.trang || 1, u.cell, pg.rot || 0, u.L.ma + "|" + u.d), session ? session.tenDangNhap : "").then(function () { toast("Đã hoàn tác ô và mẫu học của lần sửa đó"); });
         render();
       }, "Trả ô về giá trị trước khi sửa; mẫu học của lần sửa gần nhất chuyển sang 'Bị từ chối' (vẫn giữ lịch sử)"));
       var lrq = ocrLearn(); if (lrq && lrq.pending()) tb.appendChild(btn("⚠ " + lrq.pending() + " mẫu học chưa ghi được — Thử lại", "ghost", function () { lrq.flush().then(function (r) { toast(r.left ? "Vẫn còn " + r.left + " mẫu chưa ghi được: " + lrq.lastError() : "Đã ghi " + r.sent + " mẫu"); render(); }); }));
@@ -2728,7 +2843,7 @@
         if (L.vals[d] === "?") inp.classList.add("bad");
         inp.addEventListener("focus", function () { inp._viewed = true; inp._changed = false; showCell(cell, (L.name || "Dòng " + (li + 1)) + " · ngày " + d); });
         inp.addEventListener("blur", function () { var lr = ocrLearn(); if (lr && cell && inp._viewed && !inp._changed && String(L.vals[d]).trim() && String(L.vals[d]) === String(L.orig ? L.orig[d] : "")) lr.onViewedUnchanged({ res: pg.res, cell: cell, pg: pg, ma: L.ma, value: L.vals[d] }); inp._viewed = false; });
-        inp.addEventListener("change", function () { var prevV = L.vals[d]; inp._changed = true; if (cell && prevV !== inp.value.trim()) { (pg.undo = pg.undo || []).push({ L: L, d: d, prev: prevV, cell: cell, inp: inp }); } L.vals[d] = inp.value.trim(); var lr = ocrLearn(); if (lr && cell) lr.onEdit({ res: pg.res, cell: cell, pg: pg, ma: L.ma, before: prevV, after: L.vals[d], ocrValue: L.orig ? L.orig[d] : prevV }).then(function (r) { if (r && r.ok === false) toast("⚠ Chưa lưu được mẫu học từ ô vừa sửa — sẽ thử lại (" + (r.error || "") + ")"); }); inp.classList.remove("low"); inp.classList.toggle("bad", isNaN(ocrNum(L.vals[d])) && ocrNum(L.vals[d]) !== null); upd(); });
+        inp.addEventListener("change", function () { var prevV = L.vals[d]; inp._changed = true; if (prevV !== inp.value.trim()) { (pg.undo = pg.undo || []).push({ L: L, d: d, prev: prevV, cell: cell, inp: inp }); } L.vals[d] = inp.value.trim(); var lr = ocrLearn(); if (lr) lr.onEdit({ res: pg.res, cell: cell, ref: L.ma + "|" + d, pg: pg, ma: L.ma, before: prevV, after: L.vals[d], ocrValue: L.orig ? L.orig[d] : prevV }).then(function (r) { if (r && r.ok === false) toast("⚠ Chưa lưu được mẫu học từ ô vừa sửa — " + (r.durable ? "đã giữ lại trên đĩa, sẽ thử lại" : "CHỈ giữ tạm trong bộ nhớ, hãy bấm Thử lại trước khi đóng") + " (" + (r.error || "") + ")"); else if (r && r.missingSource) toast("Ô này không có ảnh nguồn — chỉ ghi lịch sử sửa, chưa tạo mẫu học"); }); inp.classList.remove("low"); inp.classList.toggle("bad", isNaN(ocrNum(L.vals[d])) && ocrNum(L.vals[d]) !== null); upd(); });
         tr.appendChild(h("td", { class: "oc" }, [inp]));
       });
       tr.appendChild(sumTd); tr.appendChild(totTd); upd();
@@ -2858,14 +2973,14 @@
   // opts.quarantine: cất file dữ liệu hỏng hiện tại (chỉ làm SAU khi người dùng đã xác nhận khôi phục)
   function restoreFromText(text, label, opts) {
     opts = opts || {};
-    if (session && !need("backup.restore")) return; // màn hình khôi phục khi file hỏng: chưa đăng nhập được (xem RISK-05)
+    if (session && !need("backup.restore")) return opts.onCancel && opts.onCancel(); // màn hình khôi phục khi file hỏng: chưa đăng nhập được (xem RISK-05)
     var o;
-    try { o = JSON.parse(text); } catch (e) { alert("File không phải dữ liệu hợp lệ (JSON lỗi)."); return; }
-    if (!o || typeof o !== "object" || Array.isArray(o)) { alert("File không đúng cấu trúc dữ liệu của app."); return; }
+    try { o = JSON.parse(text); } catch (e) { alert("File không phải dữ liệu hợp lệ (JSON lỗi)."); return opts.onCancel && opts.onCancel(); }
+    if (!o || typeof o !== "object" || Array.isArray(o)) { alert("File không đúng cấu trúc dữ liệu của app."); return opts.onCancel && opts.onCancel(); }
     var known = Object.keys(ALL).concat(["kyluong", "nhansu", "congty"]).filter(function (k) { return Array.isArray(o[k]); });
-    if (!known.length) { alert("File không chứa bảng dữ liệu nào của app — không khôi phục."); return; }
+    if (!known.length) { alert("File không chứa bảng dữ liệu nào của app — không khôi phục."); return opts.onCancel && opts.onCancel(); }
     var rep = SCH.validate(o, { tables: Object.keys(ALL), hrTables: Object.keys(HRT) });
-    if (rep.fatal.length) { alert("KHÔNG khôi phục được — cấu trúc file không an toàn:\n- " + rep.fatal.join("\n- ")); return; }
+    if (rep.fatal.length) { alert("KHÔNG khôi phục được — cấu trúc file không an toàn:\n- " + rep.fatal.join("\n- ")); return opts.onCancel && opts.onCancel(); }
     // So sánh các kỳ lương đã chốt: khôi phục bản cũ có thể làm MẤT bản chốt mới hơn
     var cur = loadError ? {} : chotSummary(db), nxt = chotSummary(o), diff = [];
     Object.keys(cur).forEach(function (k) { if (!nxt[k]) diff.push("MẤT bản chốt " + kyLabel(k) + " (" + cur[k] + ")"); else if (nxt[k] !== cur[k]) diff.push(kyLabel(k) + ": " + cur[k] + " → " + nxt[k]); });
@@ -2873,23 +2988,32 @@
     if (!confirm("KHÔI PHỤC từ " + label + "\n\nFile này: " + summarize(o) + "\nHiện tại: " + (loadError ? "(không đọc được)" : summarize(db)) +
       (diff.length ? "\n\n⚠ KỲ LƯƠNG ĐÃ CHỐT thay đổi:\n- " + diff.join("\n- ") : "\n\nKỳ lương đã chốt: không thay đổi.") +
       (rep.errors.length ? "\n\n⚠ File có " + rep.errors.length + " vấn đề dữ liệu (xem Kiểm tra dữ liệu sau khi khôi phục)." : "") +
-      "\n\nToàn bộ dữ liệu hiện tại sẽ được THAY THẾ. App sẽ tự sao lưu dữ liệu hiện tại trước khi khôi phục. Tiếp tục?")) return;
+      "\n\nToàn bộ dữ liệu hiện tại sẽ được THAY THẾ. App sẽ tự sao lưu dữ liệu hiện tại trước khi khôi phục. Tiếp tục?")) return opts.onCancel && opts.onCancel();
     // P1: hộp thoại trên hứa "App sẽ tự sao lưu dữ liệu hiện tại trước khi khôi phục" — khác với nhập
     // Excel/mở chốt/gộp chấm công (có "before" + hoàn tác riêng), một khi đã ghi đè `db` và saveNow()
     // thành công thì KHÔNG còn đường nào lấy lại dữ liệu hiện tại ngoài chính bản sao lưu này — nên
     // CHẶN CỨNG nếu không tạo được, đúng với lời hứa đã đưa ra.
     if (opts.quarantine && store && store.quarantine) store.quarantine();
-    else if (!readOnly && !backupOrBlock("truoc-khoi-phuc", "khôi phục dữ liệu")) return;
-    var prev = db, prevRO = readOnly, prevErr = loadError;
-    try { db = o; var mm = HRM.migrate(db).concat(INT.normalizeDataset(db).messages); readOnly = false; loadError = null; ensureTables(); }
-    catch (e) { db = prev; readOnly = prevRO; loadError = prevErr; alert("Không khôi phục được: " + e.message); render(); return; }
-    // Tài khoản lấy theo dữ liệu vừa khôi phục: người đang đăng nhập phải có trong đó, nếu không phải đăng nhập lại
-    var me = session && PERM.findUser(db, session.tenDangNhap);
-    session = me && !me.khoa ? me : null;
-    audit("Khôi phục dữ liệu", label + (diff.length ? " — kỳ chốt thay đổi: " + diff.join("; ") : ""));
-    if (!saveNow()) { alert("Đã nạp dữ liệu nhưng CHƯA lưu được xuống đĩa!"); }
-    st.kq = null; st.tab = "home"; render(); toast("Đã khôi phục từ " + label); if (mm.length) alert(mm.join("\n"));
-    if (opts.after) opts.after();
+    else if (!readOnly && !backupOrBlock("truoc-khoi-phuc", "khôi phục dữ liệu")) return opts.onCancel && opts.onCancel();
+    var apply = function () {
+      var prev = db, prevRO = readOnly, prevErr = loadError, prevSession = session;
+      var revert = function (why) { db = prev; readOnly = prevRO; loadError = prevErr; session = prevSession; try { ensureTables(); } catch (e0) { /* giữ nguyên */ } saveNow(); render(); if (opts.onFail) opts.onFail(why); };
+      try { db = o; var mm = HRM.migrate(db).concat(INT.normalizeDataset(db).messages); readOnly = false; loadError = null; ensureTables(); }
+      catch (e) { db = prev; readOnly = prevRO; loadError = prevErr; render(); if (opts.onFail) opts.onFail("Không nạp được dữ liệu: " + e.message); else alert("Không khôi phục được: " + e.message); return; }
+      // Tài khoản lấy theo dữ liệu vừa khôi phục: người đang đăng nhập phải có trong đó, nếu không phải đăng nhập lại
+      var me = session && PERM.findUser(db, session.tenDangNhap);
+      session = me && !me.khoa ? me : null;
+      audit("Khôi phục dữ liệu", label + (diff.length ? " — kỳ chốt thay đổi: " + diff.join("; ") : ""));
+      if (!saveNow()) {
+        if (opts.strict) { revert("Không ghi được dữ liệu xuống đĩa — đã hoàn tác"); return; } // khôi phục theo giao dịch: không báo thành công khi chưa ghi được
+        alert("Đã nạp dữ liệu nhưng CHƯA lưu được xuống đĩa!");
+      }
+      var fin = function () { st.kq = null; st.tab = "home"; render(); toast("Đã khôi phục từ " + label); if (mm.length) alert(mm.join("\n")); if (opts.after) opts.after(); };
+      if (opts.verify) opts.verify().then(function (r) { if (r && r.ok) fin(); else revert((r && r.msg) || "Kiểm tra sau khôi phục không đạt"); }, function (e) { revert(String(e && e.message || e)); });
+      else fin();
+    };
+    if (opts.prepare) opts.prepare().then(function (r) { if (r && r.ok) apply(); else if (opts.onFail) opts.onFail((r && r.msg) || "Không chuẩn bị được"); }, function (e) { if (opts.onFail) opts.onFail(String(e && e.message || e)); });
+    else apply();
   }
   /** Lịch sao lưu tự động (α17) — cấu hình theo máy; chỉ Admin đổi được */
   function cardSchedule() {
@@ -2948,24 +3072,39 @@
     if (!window.hakPaths) { c.appendChild(h("div", { class: "hint", text: "Chỉ có trong bản cài (.exe)." })); return c; }
     if (!STG.data) { window.hakPaths.get().then(function (r) { if (r && r.ok) { STG.data = r; if (st.tab === "backup") render(); } }); c.appendChild(h("div", { class: "hint", text: "Đang đọc cấu hình…" })); return c; }
     c.appendChild(h("div", { class: "hint", text: "Bấm \"Đổi…\" để chọn thư mục mới. App chép toàn bộ dữ liệu sang thư mục mới, kiểm tra SHA-256 từng file, chỉ khi đạt mới chuyển; dữ liệu cũ KHÔNG bị xóa. Chỉ Admin / người có quyền khôi phục thao tác được." }));
+    if (!STG.info) { window.hakPaths.info().then(function (r) { if (r && r.ok) { STG.info = r.info; STG.exportDir = r.exportDir; if (st.tab === "backup") render(); } }); }
+    var fmtB = function (n) { return n >= 1073741824 ? (n / 1073741824).toFixed(2) + " GB" : n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.ceil(n / 1024) + " KB"; };
     var t = h("table", { class: "t" });
-    ["docs", "ocrLib", "backup"].forEach(function (k) {
-      var row = h("tr", { "data-stg": k }, [h("td", { text: STG.data.labels[k] }), h("td", { text: STG.data.paths[k], style: "word-break:break-all" }), h("td", {}, [btn("Đổi…", "ghost", function () {
-        if (!need("backup.restore", "đổi thư mục lưu trữ") || STG.busy) return;
-        window.hakPaths.pick(k).then(function (p) {
-          if (!p || !p.ok) return;
-          if (!confirm("Chuyển \"" + STG.data.labels[k] + "\" sang:\n" + p.dir + "\n\nDữ liệu sẽ được CHÉP và kiểm tra SHA-256; dữ liệu cũ vẫn giữ nguyên. Tiếp tục?")) return;
-          STG.busy = true; toast("Đang chép và kiểm tra dữ liệu…");
-          window.hakPaths.move(k, p.dir).then(function (r) {
-            STG.busy = false; STG.data = null;
-            STG.msg = r && r.ok ? { bad: false, text: "✓ Đã chuyển " + r.files + " file sang " + r.to + " (đã kiểm SHA-256). " + r.note } : { bad: true, text: "⚠ " + ((r && r.error) || "không chuyển được") + " — giữ nguyên thư mục cũ" };
-            audit("Đổi thư mục lưu trữ", k + " → " + p.dir + " · " + (r && r.ok ? "đạt" : "không đạt")); render();
+    t.appendChild(h("tr", {}, ["Thư mục", "Đường dẫn hiện tại", "Dung lượng", "Thao tác"].map(function (x) { return h("th", { text: x }); })));
+    var KS = [["docs", "Chứng từ gốc"], ["ocrLib", "Thư viện mẫu OCR"], ["backup", "Sao lưu chính (Full Backup)"], ["mirror", "Sao lưu dự phòng"], ["export", "Thư mục xuất file"]];
+    KS.forEach(function (kk) {
+      var k = kk[0], movable = k !== "export", inf = STG.info && STG.info[k];
+      var verify = STG.ver && STG.ver[k];
+      var acts = h("td", {}, [
+        movable ? btn("Chọn / Chuyển…", "ghost", function () {
+          if (!need("backup.restore", "đổi thư mục lưu trữ") || STG.busy) return;
+          window.hakPaths.pick(k).then(function (p) {
+            if (!p || !p.ok) return;
+            if (!confirm("Chuyển \"" + kk[1] + "\" sang:\n" + p.dir + "\n\nDữ liệu sẽ được CHÉP và kiểm tra SHA-256, kho mới được mở thử trước khi đổi cấu hình; dữ liệu cũ vẫn giữ nguyên. Tiếp tục?")) return;
+            STG.busy = true; toast("Đang chép và kiểm tra dữ liệu…");
+            window.hakPaths.move(k, p.dir).then(function (r) {
+              STG.busy = false; STG.data = null; STG.info = null; STG.ver = null;
+              STG.msg = r && r.ok ? { bad: false, text: "✓ Đã chuyển " + r.files + " file sang " + r.to + " (đã kiểm SHA-256). " + r.note } : { bad: true, text: "⚠ " + ((r && r.error) || "không chuyển được") + " — giữ nguyên thư mục cũ" };
+              audit("Đổi thư mục lưu trữ", k + " → " + p.dir + " · " + (r && r.ok ? "đạt" : "không đạt")); render();
+            });
           });
-        });
-      })])]);
-      t.appendChild(row);
+        }, "Chọn thư mục mới và chuyển dữ liệu sang (chép + kiểm SHA-256, không xóa dữ liệu cũ)") : null,
+        btn("Mở", "ghost", function () { window.hakPaths.open(k).then(function (r) { if (!r || !r.ok) toast("⚠ " + ((r && r.error) || "không mở được")); }); }, "Mở thư mục trong Windows Explorer"),
+        btn("Kiểm tra", "ghost", function () {
+          STG.ver = STG.ver || {}; STG.ver[k] = { text: "Đang kiểm tra…" }; render();
+          window.hakPaths.verify(k).then(function (r) { STG.ver[k] = r && r.ok ? { good: r.good, text: r.text } : { good: false, text: (r && r.error) || "lỗi" }; render(); });
+        }, "Kiểm tra toàn vẹn (chỉ đọc, không sửa gì)"),
+        btn("↻ Dung lượng", "ghost", function () { STG.info = null; render(); })]);
+      t.appendChild(h("tr", { "data-stg": k }, [h("td", { text: kk[1] }), h("td", { text: (k === "mirror" ? (STG.data.paths.mirror || "(chưa chọn)") : (k === "export" ? STG.exportDir || "(thư mục xuất file mặc định)" : STG.data.paths[k])), style: "word-break:break-all" }),
+        h("td", { text: inf ? (inf.exists ? inf.files + " file · " + fmtB(inf.bytes) + (inf.free != null ? " · trống " + fmtB(inf.free) : "") : "chưa tạo") : "…" }),
+        acts]));
+      if (verify) t.appendChild(h("tr", {}, [h("td"), h("td", { colspan: 3, class: verify.good === false ? "warn" : "ok", "data-stg-verify": k, text: (verify.good === false ? "✕ " : verify.good ? "✓ " : "") + verify.text })]));
     });
-    t.appendChild(h("tr", { "data-stg": "mirror" }, [h("td", { text: "Sao lưu dự phòng" }), h("td", { text: STG.data.paths.mirror || "(chưa chọn)", style: "word-break:break-all" }), h("td", { class: "hint", text: "đặt ở mục \"Sao lưu ra ngoài máy (thư mục thứ hai)\" bên dưới" })]));
     c.appendChild(t);
     if (STG.msg) c.appendChild(h("div", { class: STG.msg.bad ? "warn" : "ok", "data-stg-msg": "1", text: STG.msg.text }));
     return c;
@@ -2982,27 +3121,59 @@
         if (!saveNow()) { alert("Chưa lưu được dữ liệu hiện tại xuống đĩa — không tạo Full Backup."); return; }
         st.fbMsg = { text: "Đang đóng gói…" }; render();
         window.hakFull.create({ user: currentUser() }).then(function (r) {
-          if (!r || !r.ok) { st.fbMsg = { bad: true, text: "⚠ Không tạo được Full Backup: " + ((r && r.error) || "lỗi không rõ") }; }
-          else { audit("Tạo Full Backup", r.name + " · " + r.docs + " chứng từ · SHA-256 " + r.sha256.slice(0, 12) + "…"); save(); st.fbMsg = { text: "✓ Đã tạo " + r.name + " (" + Math.round(r.size / 1024) + " KB, " + r.docs + " chứng từ) trong thư mục xuất file" + (r.mirrored ? " và chép sang " + r.mirrored : "") + (r.warnings.length ? " — ⚠ " + r.warnings.join("; ") : "") + ". SHA-256: " + r.sha256 }; }
+          if (r && r.status === "FAILED" && r.missing && r.missing.length) {
+            // thiếu/hỏng thành phần: KHÔNG tạo Full Backup; chỉ tạo gói PARTIAL khi người dùng xác nhận rõ ràng
+            var list = r.missing.slice(0, 15).map(function (x) { return "• " + x.kind + " " + x.id + (x.name ? " (" + x.name + ")" : "") + " — " + x.problem; }).join("\n");
+            if (confirm("KHÔNG thể tạo Full Backup đầy đủ — thiếu/hỏng " + r.missing.length + " thành phần:\n" + list + (r.missing.length > 15 ? "\n…" : "") + "\n\nBạn có thể tạo gói SAO LƯU MỘT PHẦN (PARTIAL): chỉ gồm phần còn nguyên vẹn, KHÔNG tính là Full Backup, không thay được bản sao lưu đầy đủ.\n\nTạo gói một phần?")) {
+              return window.hakFull.create({ user: currentUser(), allowPartial: true });
+            }
+          }
+          return r;
+        }).then(function (r) {
+          if (!r || (!r.ok && r.status !== "PARTIAL")) { st.fbMsg = { bad: true, text: "⚠ " + (r && r.status === "CANCELLED" ? "Đã hủy sao lưu." : "KHÔNG tạo được Full Backup: " + ((r && r.error) || "lỗi không rõ")) }; }
+          else if (r.status === "PARTIAL") { audit("Tạo gói sao lưu MỘT PHẦN", r.name + " · thiếu " + r.missing.length + " thành phần"); save(); st.fbMsg = { bad: true, text: "⚠ Đã tạo gói MỘT PHẦN " + r.name + " — KHÔNG phải Full Backup. Thiếu: " + r.missing.map(function (x) { return x.kind + " " + x.id; }).join(", ") }; }
+          else { audit("Tạo Full Backup", r.name + " · " + r.docs + " chứng từ · SHA-256 " + r.sha256.slice(0, 12) + "…"); save(); st.fbMsg = { text: "✓ Full Backup ĐẦY ĐỦ " + r.name + " (" + Math.round(r.size / 1024) + " KB, " + r.docs + " chứng từ, " + (r.ocrSamples || 0) + " mẫu OCR) trong thư mục xuất file" + (r.mirrored ? " và chép sang " + r.mirrored : "") + (r.warnings.length ? " — ⚠ " + r.warnings.join("; ") : "") + ". SHA-256: " + r.sha256 }; }
           render();
         }, function (e) { st.fbMsg = { bad: true, text: "⚠ " + e.message }; render(); });
       }, "Tạo file .zip trong thư mục xuất file (và chép sang thư mục sao lưu thứ hai nếu đã chọn)"),
       btn("📥 Khôi phục từ gói Full Backup…", "", function () {
         if (!need("backup.restore")) return;
-        window.hakFull.inspect().then(function (r) {
-          if (r && r.cancelled) return;
-          if (!r || !r.ok) { st.fbMsg = { bad: true, text: "⚠ Gói KHÔNG đạt kiểm tra — chưa ghi gì: " + (((r && r.problems) || ["lỗi không rõ"]).join("; ")) }; render(); return; }
-          var cnt = { new: 0, same: 0, conflict: 0 }; (r.docs || []).forEach(function (d) { cnt[d.state] = (cnt[d.state] || 0) + 1; });
-          var info = "Gói " + r.label + " — tạo " + fmtTime(r.manifest.createdAt) + (r.manifest.createdBy ? " bởi " + r.manifest.createdBy : "") + ". Đã kiểm tra SHA-256 mọi file: ĐẠT.\nChứng từ: " + cnt.new + " mới sẽ được thêm, " + cnt.same + " đã có sẵn, " + cnt.conflict + " trùng mã nhưng khác nội dung (giữ bản đang có, không ghi đè).";
-          if (!confirm(info + "\n\nTiếp tục sang bước khôi phục dữ liệu?")) return;
-          restoreFromText(r.text, "Full Backup " + r.label, { after: function () {
-            window.hakFull.importDocs().then(function (d) {
-              var linked = (db.chungtu || []).length;
-              st.fbMsg = { bad: !d.ok || (d.conflict || []).length > 0 || (d.failed || []).length > 0, text: d.ok ? "✓ Khôi phục xong. Chứng từ: thêm " + d.added + ", đã có " + d.same + (d.conflict.length ? ", TRÙNG MÃ KHÁC NỘI DUNG (giữ bản cũ): " + d.conflict.join(", ") : "") + (d.ocr ? ". Thư viện mẫu OCR: thêm " + d.ocr.addedSamples + " mẫu, " + d.ocr.addedEdits + " lần sửa" : "") + (d.failed.length ? ", LỖI: " + d.failed.join("; ") : "") + ". Hồ sơ chứng từ trong dữ liệu: " + linked : "⚠ Khôi phục dữ liệu xong nhưng nhập chứng từ lỗi: " + d.error };
-              audit("Khôi phục chứng từ từ Full Backup", st.fbMsg.text); save(); render(); if (st.fbMsg.bad) alert(st.fbMsg.text); else toast(st.fbMsg.text);
+        var fail = function (msg) { st.fbMsg = { bad: true, text: msg }; render(); alert(msg); };
+        var run = function (acceptPartial) {
+          window.hakFull.stage({ acceptPartial: !!acceptPartial }).then(function (r) {
+            if (r && r.cancelled) return;
+            if (r && r.needsPartialAck) {
+              if (confirm("Gói này là SAO LƯU MỘT PHẦN (không phải Full Backup). Thiếu:\n" + (r.missing || []).map(function (x) { return "• " + x.kind + " " + x.id + " — " + x.problem; }).join("\n") + "\n\nVẫn tiếp tục khôi phục phần có trong gói?")) run(true);
+              return;
+            }
+            if (!r || !r.ok) { st.fbMsg = { bad: true, text: "⚠ Gói KHÔNG đạt kiểm tra (" + ((r && r.phase) || "") + ") — chưa ghi gì: " + ((r && (r.error || (r.problems || []).join("; "))) || "lỗi không rõ") }; render(); return; }
+            var cnt = { new: 0, same: 0, conflict: 0 }; (r.docs || []).forEach(function (d) { cnt[d.state] = (cnt[d.state] || 0) + 1; });
+            var info = "Gói " + r.label + " — tạo " + fmtTime(r.manifest.createdAt) + (r.manifest.createdBy ? " bởi " + r.manifest.createdBy : "") + (r.partial ? " · ⚠ GÓI MỘT PHẦN" : "") + ".\n" +
+              r.phases.map(function (p) { return "✓ " + p.name + ": " + p.detail; }).join("\n") +
+              "\nChứng từ: " + cnt.new + " mới sẽ được thêm, " + cnt.same + " đã có sẵn, " + cnt.conflict + " trùng mã nhưng khác nội dung (giữ bản đang có, không ghi đè)." + (r.warnings && r.warnings.length ? "\n⚠ " + r.warnings.join("\n⚠ ") : "");
+            if (!confirm(info + "\n\nGói đã được giải nén & kiểm tra ở thư mục tạm, CHƯA ghi gì vào dữ liệu đang chạy. Tiếp tục sang bước ghi?")) { window.hakFull.discard(r.rid); return; }
+            restoreFromText(r.text, "Full Backup " + r.label, {
+              strict: true,
+              // COMMIT tài sản (chứng từ + thư viện OCR, có nhật ký hoàn tác) chạy SAU xác nhận & sao lưu "trước khôi phục" và TRƯỚC khi thay dữ liệu lương
+              prepare: function () {
+                return window.hakFull.commit(r.rid).then(function (c) { if (c && c.ok) r._commit = c; return c && c.ok ? { ok: true } : { ok: false, msg: "Không ghi được chứng từ/thư viện OCR: " + ((c && c.error) || "lỗi không rõ") }; });
+              },
+              verify: function () { // POSTCHECK sau khi dữ liệu lương đã ghi xuống đĩa
+                return window.hakFull.postcheck(r.rid).then(function (p) { return p && p.ok ? { ok: true } : { ok: false, msg: "Kiểm tra sau khôi phục KHÔNG đạt: " + ((p && p.checks) || []).filter(function (k) { return !k.ok; }).map(function (k) { return k.name + " (" + k.detail + ")"; }).join("; ") }; });
+              },
+              onCancel: function () { window.hakFull.discard(r.rid); },
+              onFail: function (why) { window.hakFull.rollback(r.rid).then(function () { fail("⚠ Khôi phục KHÔNG hoàn tất — đã hoàn tác, dữ liệu như trước khi khôi phục. Lý do: " + why); }); },
+              after: function () {
+                window.hakFull.finish(r.rid).then(function () {
+                  var d = (r._commit || {}).docs || { added: 0, same: 0, conflict: [] }, o2 = (r._commit || {}).ocr;
+                  st.fbMsg = { bad: (d.conflict || []).length > 0, text: "✓ Khôi phục xong. Chứng từ: thêm " + d.added + ", đã có " + d.same + ((d.conflict || []).length ? ", TRÙNG MÃ KHÁC NỘI DUNG (giữ bản cũ): " + d.conflict.join(", ") : "") + (o2 ? ". Thư viện mẫu OCR: thêm " + o2.addedSamples + " mẫu, " + o2.addedEdits + " lần sửa" : "") + (r.partial ? ". ⚠ Đây là gói MỘT PHẦN." : "") + ". Đã kiểm tra mở lại nhân viên, bảng chấm công, kỳ lương, chứng từ, mẫu OCR." };
+                  audit("Khôi phục Full Backup", st.fbMsg.text); save(); render(); if (st.fbMsg.bad) alert(st.fbMsg.text); else toast(st.fbMsg.text);
+                });
+              }
             });
-          } });
-        });
+          });
+        };
+        run(false);
       }, "Chọn file .zip Full Backup: kiểm tra toàn vẹn → xác nhận → khôi phục dữ liệu (tự sao lưu bản hiện tại trước) → thêm chứng từ còn thiếu")
     ]));
     return c;

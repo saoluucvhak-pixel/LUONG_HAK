@@ -343,3 +343,9 @@ table.sld-thieu button.b.chipbtn{white-space:normal;text-align:left;justify-cont
 .subtabs button.bad .n{background:var(--red);color:#fff}
 .ocrprev{margin-top:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .ocrprev canvas{border:1px solid var(--line);border-radius:8px;max-width:100%;background:#fff}
+.i.has-src,input.has-src{box-shadow:inset 0 -2px 0 #3b82f6}
+.msel{position:relative;display:inline-block}
+.msel>summary{cursor:pointer;padding:4px 8px;border:1px solid #bbb;border-radius:4px;background:#fff;list-style:none;font-size:13px}
+.mselpop{position:absolute;z-index:30;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;min-width:220px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.mselist{max-height:240px;overflow:auto;margin-top:4px}
+.mselrow{display:block;padding:2px 0;font-size:13px;cursor:pointer}

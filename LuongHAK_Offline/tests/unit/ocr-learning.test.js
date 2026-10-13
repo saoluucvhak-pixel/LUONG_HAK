@@ -114,7 +114,7 @@ test("U-OCRL-12 dịch vụ: sửa ô → gọi ghi mẫu kèm ảnh+bbox; khôn
   assert.equal(r.ok, false); assert.equal(sv.pending(), 1);
   assert.equal(calls[0].page, 3); assert.equal(calls[0].user, "kt1"); assert.equal(calls[0].after, "7"); assert.ok(calls[0].raw.length === calls[0].w * calls[0].h);
   fail = false; const f = await sv.flush(); assert.equal(f.sent, 1); assert.equal(sv.pending(), 0);
-  const a = await sv.approvePages([{ docId: "DOC-1", trang: 3 }]); assert.equal(a.verified, 2);
+  const a = await sv.approveCells([{ key: "DOC-1|3|20|10|60|60|0", value: "7" }], "B1"); assert.equal(a.verified, 2);
 });
 
 test("U-OCRL-13 Full Backup gồm thư viện mẫu OCR; khôi phục sang máy mới không phải học lại; gói sửa 1 byte bị từ chối", () => {
@@ -200,9 +200,9 @@ test("U-OCRL-18 kịch bản nghiệp vụ: 0,5→0,6 (nhãn thập phân), ô t
   assert.equal(st.lib.list()[0].label, "0.6"); assert.equal(st.lib.list()[0].ocrValue, "0.5"); assert.equal(st.lib.edits()[0].from, "0.5");
   st.record(mk("1", 2, { before: "", after: "1", bbox: bb(9, 9, 10, 10) })); assert.equal(st.lib.list().length, 2); // ô trống → 1
   st.record(mk("1", 2, { before: "1", after: "", bbox: bb(9, 9, 10, 10) })); // xóa giá trị: ghi sự kiện, KHÔNG tạo mẫu
-  assert.equal(st.lib.list().length, 2); assert.equal(st.lib.edits().length, 3);
+  assert.equal(st.lib.list().length, 2); assert.equal(st.lib.edits().length, 3); assert.equal(st.lib.list()[1].status, "SUPERSEDED"); // V8: mẫu của ô đã xóa không còn hiệu lực
   st.record(mk("x", 3, { before: "", after: "X", mode: "mark", cellType: "mark", bbox: bb(20, 20, 21, 21) }));
   const x = st.lib.list().find((s) => s.label === "X"); assert.equal(x.labelKind, "UNKNOWN");
   st.lib.cfg.nearDupSim = 0.9; // hai ảnh "1" khác hạt giống nhưng rất giống nhau → gần trùng
-  const n0 = st.lib.size(); st.record(mk("1", 4, { before: "", after: "1", bbox: bb(30, 30, 31, 31) })); assert.equal(st.lib.size(), n0);
+  st.record(mk("1", 4, { before: "", after: "1", bbox: bb(30, 30, 31, 31) })); const n0 = st.lib.size(); st.record(mk("1", 6, { before: "", after: "1", bbox: bb(40, 40, 41, 41) })); assert.equal(st.lib.size(), n0);
 });

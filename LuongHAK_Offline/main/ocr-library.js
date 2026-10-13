@@ -11,17 +11,18 @@ const sha = (b) => crypto.createHash("sha256").update(b).digest("hex");
 function createStore(root, opts) {
   opts = opts || {};
   const logFile = path.join(root, "library.jsonl"), imgDir = path.join(root, "images");
-  const lib = L.createLibrary(Object.assign({}, opts.libOpts || {}));
-  let corrupt = 0, loaded = false;
+  let lib = L.createLibrary(Object.assign({}, opts.libOpts || {}));
+  let corrupt = 0, tailCut = 0, loaded = false;
   const imgPath = (h) => path.join(imgDir, h.slice(0, 2), h + ".png");
 
   function load() {
     if (loaded) return { corrupt };
     loaded = true; if (!fs.existsSync(logFile)) return { corrupt };
     const text = fs.readFileSync(logFile, "utf8");
-    text.split("\n").forEach((line) => {
+    const parts = text.split("\n");
+    parts.forEach((line, idx) => {
       if (!line.trim()) return;
-      let r; try { r = JSON.parse(line); } catch (e) { corrupt++; return; }
+      let r; try { r = JSON.parse(line); } catch (e) { if (idx === parts.length - 1) tailCut++; else corrupt++; return; } // dòng cuối không có '\n' = bị cắt dở khi mất điện, không phải hỏng giữa file
       lib.apply(r);
     });
     return { corrupt };
@@ -63,6 +64,29 @@ function createStore(root, opts) {
   function setStatus(id, st, user, reason) { return commitAll(() => lib.setStatus(id, st, user, reason)); }
   function relabel(id, label, kind, user, reason) { return commitAll(() => lib.relabel(id, label, kind, user, reason)); }
   function undoCell(key, user) { return commitAll(() => lib.undoCell(key, user)); }
+  // ---- Hàng đợi bền (V8): mẫu chưa ghi được vào thư viện được giữ trên đĩa (thư mục riêng, NGOÀI thư viện) để thử lại sau khi khởi động lại ----
+  // Mỗi mục là 1 tệp <txId>.json (ghi tmp → fsync → rename). txId là khóa idempotent: ghi lại nhiều lần không tạo trùng.
+  const spoolDir = opts.spoolDir || path.join(path.dirname(root), "ocr-spool");
+  const okTx = (t) => /^[A-Za-z0-9_-]{6,80}$/.test(String(t || ""));
+  const enc = (v) => (v instanceof Uint8Array || Array.isArray(v)) ? { __u8: Buffer.from(v).toString("base64") } : v;
+  const dec = (v) => (v && typeof v === "object" && v.__u8 != null) ? new Uint8Array(Buffer.from(v.__u8, "base64")) : v;
+  function spoolPut(p) {
+    if (!p || !okTx(p.txId)) throw new Error("thiếu TransactionID hợp lệ");
+    fs.mkdirSync(spoolDir, { recursive: true });
+    const o = Object.assign({}, p); o.raw = enc(p.raw); o.clean = enc(p.clean);
+    const f = path.join(spoolDir, p.txId + ".json"), tmp = f + ".tmp" + process.pid;
+    const fd = fs.openSync(tmp, "w"); try { fs.writeSync(fd, JSON.stringify(o)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+    fs.renameSync(tmp, f); return { txId: p.txId };
+  }
+  function spoolList() {
+    if (!fs.existsSync(spoolDir)) return [];
+    const out = [];
+    fs.readdirSync(spoolDir).filter((n) => /\.json$/.test(n)).sort().forEach((n) => { try { const o = JSON.parse(fs.readFileSync(path.join(spoolDir, n), "utf8")); o.raw = dec(o.raw); o.clean = dec(o.clean); out.push(o); } catch (e) { /* tệp hỏng: bỏ qua, không chặn các mục khác */ } });
+    return out;
+  }
+  function spoolRemove(txId) { if (!okTx(txId)) return false; const f = path.join(spoolDir, txId + ".json"); if (fs.existsSync(f)) fs.unlinkSync(f); return true; }
+  /** Ghi 1 mục: thành công (hoặc đã có — trùng txId) thì gỡ khỏi hàng đợi bền. */
+  function recordSpooled(p) { const r = record(p); if (p && okTx(p.txId)) spoolRemove(p.txId); return r; }
   function lookup(items, ctx) {
     load(); const counts = {};
     const out = items.map((it) => {
@@ -81,13 +105,21 @@ function createStore(root, opts) {
   function verify() {
     load(); const bad = []; let n = 0;
     lib.list().forEach((s) => { n++; const b = readImage(s.pngSha); if (!b) bad.push({ id: s.id, error: "thiếu ảnh" }); else if (sha(b) !== s.pngSha) bad.push({ id: s.id, error: "ảnh sai SHA-256" }); });
-    return { ok: bad.length === 0 && corrupt === 0, samples: n, corruptLines: corrupt, bad };
+    return { ok: bad.length === 0 && corrupt === 0, samples: n, corruptLines: corrupt, truncatedTail: tailCut, bad };
   }
   /** Danh sách file thuộc thư viện (để đóng gói Full Backup). */
   function files() {
     const out = []; if (fs.existsSync(logFile)) out.push({ rel: "library.jsonl", abs: logFile }); if (fs.existsSync(layFile)) out.push({ rel: "layouts.jsonl", abs: layFile });
     if (fs.existsSync(imgDir)) fs.readdirSync(imgDir).forEach((d) => fs.readdirSync(path.join(imgDir, d)).forEach((f) => { if (/^[0-9a-f]{64}\.png$/.test(f)) out.push({ rel: "images/" + d + "/" + f, abs: path.join(imgDir, d, f) }); }));
     return out;
+  }
+  // ---- điểm khôi phục cho Restore (V8): ghi lại kích thước nhật ký; hoàn tác = cắt về kích thước đó + xóa ảnh mới thêm + nạp lại bộ nhớ ----
+  const sizeOf = (f) => { try { return fs.statSync(f).size; } catch (e) { return 0; } };
+  function pos() { return { log: sizeOf(logFile), lay: sizeOf(path.join(root, "layouts.jsonl")) }; }
+  function rollbackTo(p, newImages) {
+    [[logFile, p.log], [path.join(root, "layouts.jsonl"), p.lay]].forEach(([f, n]) => { if (fs.existsSync(f)) { if (n === 0 && sizeOf(f) > 0) fs.truncateSync(f, 0); else if (sizeOf(f) > n) fs.truncateSync(f, n); } });
+    (newImages || []).forEach((h) => { if (/^[0-9a-f]{64}$/.test(h)) { try { fs.unlinkSync(imgPath(h)); } catch (e) { /* đã không còn */ } } });
+    lib = L.createLibrary(Object.assign({}, opts.libOpts || {})); loaded = false; corrupt = 0; tailCut = 0; lays = null; load();
   }
   // ----- thư viện bố cục: layouts.jsonl (thêm vào cuối) -----
   const layFile = path.join(root, "layouts.jsonl"); let lays = null;
@@ -120,6 +152,6 @@ function createStore(root, opts) {
     const fd = fs.openSync(logFile, "a"); try { fs.writeSync(fd, lines.join("\n") + "\n"); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     norm.forEach((r) => lib.apply(r));
   }
-  return { lib, root, addLayoutRecord, layouts, layoutMatch, layoutSave, putImage, restoreRecords, load, record, confirm, approve, setStatus, relabel, undoCell, lookup, readImage, verify, files, persist, corrupt: () => corrupt };
+  return { get lib() { return lib; }, root, pos, rollbackTo, spoolPut, spoolList, spoolRemove, recordSpooled, addLayoutRecord, layouts, layoutMatch, layoutSave, putImage, restoreRecords, load, record, confirm, approve, setStatus, relabel, undoCell, lookup, readImage, verify, files, persist, corrupt: () => corrupt + tailCut };
 }
 module.exports = { createStore };
