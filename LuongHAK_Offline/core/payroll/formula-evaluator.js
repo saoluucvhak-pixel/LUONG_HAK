@@ -20,7 +20,7 @@
    * @param context  { TEN_BIEN: giá trị } — xem formula-variables.js cho danh sách biến hợp lệ
    * @param opts     { maxSteps }
    * @returns number
-   * @throws FormulaError — DIV_ZERO | MISSING_VAR | UNKNOWN_VAR | UNKNOWN_FN | TOO_MANY_STEPS | SYNTAX
+   * @throws FormulaError — DIV_ZERO | MISSING_VAR | UNKNOWN_VAR | UNKNOWN_FN | TOO_MANY_STEPS | SYNTAX | BAD_VALUE | NON_FINITE
    */
   function evaluate(astOrSrc, context, opts) {
     opts = opts || {}; context = context || {};
@@ -28,7 +28,12 @@
     var ast = typeof astOrSrc === "string" ? P.parse(astOrSrc) : astOrSrc;
 
     function readVar(name) {
-      if (Object.prototype.hasOwnProperty.call(context, name) && context[name] != null) { var v = +context[name]; return isNaN(v) ? 0 : v; }
+      if (Object.prototype.hasOwnProperty.call(context, name) && context[name] != null) {
+        var v = context[name] === "" ? 0 : +context[name];
+        // Giá trị biến không phải số hữu hạn (NaN/Infinity) KHÔNG được âm thầm coi là 0 — sai dữ liệu đầu vào phải lộ ra (Master V5 mục V.3/V.4)
+        if (!isFinite(v)) throw new FormulaError("BAD_VALUE", "Biến \"" + name + "\" có giá trị không phải số hợp lệ (" + String(context[name]) + ")");
+        return v;
+      }
       var def = VARLIB.get(name);
       if (!def) throw new FormulaError("UNKNOWN_VAR", "Biến \"" + name + "\" không tồn tại");
       if (def.missing === "error") throw new FormulaError("MISSING_VAR", "Biến \"" + name + "\" (" + def.label + ") chưa được cung cấp cho công thức này");
@@ -79,7 +84,8 @@
       catch (e) { throw new FormulaError("FN_ERROR", e.message || String(e)); }
     }
     var result = ev(ast);
-    return isFinite(result) ? result : 0;
+    if (!isFinite(result)) throw new FormulaError("NON_FINITE", "Kết quả công thức không phải số hữu hạn — kiểm tra lại biểu thức");
+    return result;
   }
 
   var api = { evaluate: evaluate, DEFAULT_MAX_STEPS: DEFAULT_MAX_STEPS };

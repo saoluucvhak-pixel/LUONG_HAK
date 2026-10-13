@@ -36,7 +36,7 @@ async function auth(w, who) {
 }
 async function launch(dataDir, opt) {
   opt = opt || {};
-  const app = await _electron.launch({ executablePath: ELECTRON, args: ["--no-sandbox", APP], env: Object.assign({}, process.env, { HAK_USER_DATA: dataDir || DATA, HAK_DOWNLOAD_DIR: DL, HAK_NO_SHELL: "1" }) });
+  const app = await _electron.launch({ executablePath: ELECTRON, args: ["--no-sandbox", APP], env: Object.assign({}, process.env, { HAK_USER_DATA: dataDir || DATA, HAK_DOWNLOAD_DIR: DL, HAK_NO_SHELL: "1" }, opt.env || {}) });
   const w = await app.firstWindow(); const errs = [];
   w.on("pageerror", (e) => errs.push(e.message));
   w.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
@@ -105,6 +105,45 @@ async function launch(dataDir, opt) {
   await w.click("#nav button[data-k=luong]"); await w.click("button.big");
   const line = await w.locator("main tbody tr").first().innerText();
   ok("Tính lương: 12.000.000 − BH 630.000 = 11.370.000", /11\.370\.000/.test(line), line.replace(/\t/g, " | "));
+  // V5: Bảng tính lương nội bộ + bộ lọc dùng chung + xuất PDF thật
+  await w.click("#nav button[data-k=bangtinh]");
+  const btHead = (await w.locator("table[data-bangtinh] thead").innerText()).replace(/\s+/g, " ");
+  const btBody = (await w.locator("table[data-bangtinh]").innerText()).replace(/\s+/g, " ");
+  ok("Bảng tính lương nội bộ: có Tổng thu nhập, KHÔNG có BH/Thuế/Thực lĩnh", /Tổng thu nhập/.test(btHead) && !/Thực lĩnh|BH trừ|Thuế|Tạm ứng/.test(btHead) && /12\.000\.000/.test(btBody), btHead);
+  await w.locator("[data-rf-key=tuKhoa]").fill("zzzkhongco"); await w.locator("[data-rf-key=tuKhoa]").dispatchEvent("change");
+  ok("Bộ lọc dùng chung: từ khóa không khớp → 'Không có dòng nào khớp bộ lọc'", (await w.locator("main").innerText()).includes("Không có dòng nào khớp bộ lọc"));
+  await w.locator("[data-rf-key=tuKhoa]").fill(""); await w.locator("[data-rf-key=tuKhoa]").dispatchEvent("change");
+  ok("Bộ lọc dùng chung: bỏ từ khóa → hiện lại dòng", /12\.000\.000/.test(await w.locator("table[data-bangtinh]").innerText()));
+  await w.locator("main button", { hasText: "Xuất PDF" }).click();
+  let pdfName = null; for (let i = 0; i < 100 && !pdfName; i++) { await w.waitForTimeout(300); pdfName = fs.readdirSync(DL).filter((f) => /^BangTinhLuongNoiBo_2026-09\.pdf$/.test(f))[0]; }
+  const pdfBuf = pdfName ? fs.readFileSync(path.join(DL, pdfName)) : Buffer.alloc(0);
+  const pdfTxt = pdfBuf.toString("latin1");
+  ok("Xuất PDF: file thật (%PDF-), có ≥1 trang, kích thước hợp lý", pdfBuf.slice(0, 5).toString() === "%PDF-" && /\/Type\s*\/Page(?![s\w])/.test(pdfTxt) && pdfBuf.length > 2000, pdfName + " " + pdfBuf.length + "B");
+  // V5 (nối rộng): Báo cáo lương dùng chung bộ lọc + PDF; Tính lương xuất PDF bảng lương / chuyển khoản
+  {
+    const waitPdf = async (re, before) => { let n = null; for (let i = 0; i < 100 && !n; i++) { await w.waitForTimeout(300); n = fs.readdirSync(DL).filter((f) => re.test(f) && !before.includes(f))[0]; } return n; };
+    const isPdf = (n) => { const b = n ? fs.readFileSync(path.join(DL, n)) : Buffer.alloc(0); return b.slice(0, 5).toString() === "%PDF-" && /\/Type\s*\/Page(?![s\w])/.test(b.toString("latin1")) && b.length > 1500; };
+    await w.click("#nav button[data-k=baocaoluong]");
+    await w.locator("main .bar button", { hasText: "Phiếu chi lương" }).first().click();
+    const pcAll = (await w.locator("main table").first().innerText()).replace(/\s+/g, " ");
+    await w.locator("[data-rf-key=tuKhoa]").fill("zzzkhongco"); await w.locator("[data-rf-key=tuKhoa]").dispatchEvent("change");
+    ok("Báo cáo lương (Phiếu chi): bộ lọc dùng chung — từ khóa không khớp → hết dòng; xóa lọc → hiện lại", /Không có dữ liệu/.test(await w.locator("main").innerText()) && /PC-L/.test(pcAll));
+    await w.locator("main .bar button", { hasText: "Tổng hợp theo phòng ban" }).first().click();
+    const hint = await w.locator("[data-rf-hint]").innerText();
+    ok("Báo cáo không có cột Mã NV (theo phòng ban): báo rõ tiêu chí 'Từ khóa' không áp được, không âm thầm lọc mất dòng", /Không áp được/.test(hint) && /Từ khóa/.test(hint) && (await w.locator("main table tbody tr").count()) >= 1, hint);
+    await w.locator("[data-rf-key=tuKhoa]").fill(""); await w.locator("[data-rf-key=tuKhoa]").dispatchEvent("change");
+    let before = fs.readdirSync(DL);
+    await w.locator("main .card .bar button", { hasText: "Xuất PDF" }).first().click();
+    const p1 = await waitPdf(/^BaoCao_.*\.pdf$/, before);
+    ok("Báo cáo lương: Xuất PDF ra file PDF thật", isPdf(p1), String(p1));
+    await w.click("#nav button[data-k=luong]"); if (await w.locator("button.big").count()) await w.click("button.big");
+    await w.locator("main select[aria-label='Loại PDF']").selectOption("bl");
+    before = fs.readdirSync(DL);
+    await w.locator("main .bar button", { hasText: "Xuất PDF…" }).click();
+    const p2 = await waitPdf(/^BangLuong_.*\.pdf$/, before);
+    ok("Tính lương: PDF 'Bảng lương' (theo bộ lọc) ra file PDF thật", isPdf(p2), String(p2));
+  }
+  await w.click("#nav button[data-k=luong]"); if (await w.locator("button.big").count()) await w.click("button.big");
   // Master Prompt V3 mục 16.3: "Xem chi tiết cách tính" — bấm 1 dòng bảng lương → phiếu lương, chuyển sang xem công thức
   await w.locator("main tbody tr").first().click(); await w.waitForSelector(".dlg");
   const slipHeader = await w.locator(".dlg header h3").innerText();
@@ -125,7 +164,6 @@ async function launch(dataDir, opt) {
   await ctRow.nth(0).fill("2020-01-01"); await ctRow.nth(0).dispatchEvent("change");
   await ctRow.nth(2).fill("TC_E2E"); await ctRow.nth(2).dispatchEvent("change");
   await ctRow.nth(6).fill("CONG_TC * HE_SO_TC * 2"); await ctRow.nth(6).dispatchEvent("change");
-  await ctRow.nth(12).fill("Hiệu lực"); await ctRow.nth(12).dispatchEvent("change");
   ok("Tab Tăng ca: thêm công thức mới (Loại tự gán OVERTIME, không cần sửa code)", (await ctRow.nth(4).inputValue()) === "OVERTIME" && (await ctRow.nth(2).inputValue()) === "TC_E2E");
   await w.locator(".bar.sub button", { hasText: "Phụ cấp" }).click();
   const pcEmpty = await w.locator("main .empty").count();
@@ -153,6 +191,23 @@ async function launch(dataDir, opt) {
   const histTxt = await w.locator("main").innerText();
   ok("Lịch sử phiên bản: hiện đúng mã (chọn mặc định đã là mã duy nhất) + phiên bản Trạng thái Hiệu lực + biểu thức", histTxt.includes("TC_E2E") && histTxt.includes("Hiệu lực") && histTxt.includes("CONG_TC * HE_SO_TC * 2"), histTxt.replace(/\s+/g, " ").slice(0, 300));
   ok("Lịch sử phiên bản: kỳ hiện tại chưa chốt nên sửa danh mục chưa ghi nhật ký hồi tố (đúng quy ước chung — xem nhật ký đầy đủ ở màn hình Nhật ký hệ thống khi có hồi tố)", histTxt.includes("Chưa có nhật ký khớp mã này"), histTxt.replace(/\s+/g, " ").slice(0, 300));
+  // V5 GĐ2: duyệt & phiên bản — Ngừng bản hiệu lực, sao chép thành v2 (Nháp), gửi duyệt; Admin thấy đủ nút
+  ok("Lịch sử phiên bản: hiện cột Người lập/Người duyệt và nút Ngừng + Sao chép cho bản Hiệu lực", histTxt.includes("Người lập") && histTxt.includes("Ngừng") && histTxt.includes("Sao chép bản mới"), histTxt.replace(/\s+/g, " ").slice(0, 200));
+  const verBtn = (v, t) => w.locator('tr[data-ct-ver="TC_E2E#' + v + '"] button', { hasText: t });
+  ok("Bản mới tạo ở lưới luôn là Nháp (không tự đặt Hiệu lực)", (await w.locator('tr[data-ct-ver="TC_E2E#1"]').innerText()).includes("Nháp"));
+  await verBtn(1, "Gửi duyệt").click(); await verBtn(1, "Duyệt").first().click();
+  await verBtn(1, "Kích hoạt").click(); // chưa nhập lý do → bị chặn, vẫn 'Đã duyệt'
+  ok("Kích hoạt thiếu lý do bị chặn", (await w.locator('tr[data-ct-ver="TC_E2E#1"]').innerText()).includes("Đã duyệt"));
+  await w.locator('input[data-ct-reason]').fill("e2e kích hoạt"); await verBtn(1, "Kích hoạt").click();
+  ok("Nháp → Chờ duyệt → Đã duyệt → Hiệu lực: ghi người kích hoạt + lý do", /Hiệu lực/.test(await w.locator('tr[data-ct-ver="TC_E2E#1"]').innerText()) && (await w.locator('tr[data-ct-ver="TC_E2E#1"]').innerText()).includes("e2e kích hoạt"));
+  await w.locator('input[data-ct-reason]').fill("e2e ngừng"); await verBtn(1, "Ngừng").click();
+  const v1Txt = await w.locator('tr[data-ct-ver="TC_E2E#1"]').innerText();
+  ok("Ngừng công thức: bản v1 chuyển 'Ngừng'", v1Txt.includes("Ngừng") && !v1Txt.includes("Kích hoạt"), v1Txt.replace(/\s+/g, " "));
+  await w.locator('tr[data-ct-ver="TC_E2E#1"] button', { hasText: "Sao chép bản mới" }).click();
+  const v2Txt = await w.locator('tr[data-ct-ver="TC_E2E#2"]').innerText();
+  ok("Sao chép thành phiên bản mới: v2 ở trạng thái Nháp, cùng biểu thức", v2Txt.includes("Nháp") && v2Txt.includes("CONG_TC * HE_SO_TC * 2"), v2Txt.replace(/\s+/g, " "));
+  await w.locator('tr[data-ct-ver="TC_E2E#2"] button', { hasText: "Gửi duyệt" }).click();
+  ok("Gửi duyệt: v2 chuyển 'Chờ duyệt'", (await w.locator('tr[data-ct-ver="TC_E2E#2"]').innerText()).includes("Chờ duyệt"));
   // Master Prompt V3 mục XVII: Đối chiếu lương Power Query — nhập 1 Excel tham chiếu, so theo từng người/chỉ tiêu
   await w.click("#nav button[data-k=doichieu]");
   const dcWb = new (require(path.join(APP, "exceljs.min.js"))).Workbook(); const dcWs = dcWb.addWorksheet("BangLuongCu");
@@ -713,6 +768,26 @@ async function launch(dataDir, opt) {
       const g6 = await w.evaluate(() => [...document.querySelectorAll(".ocrgrid tbody tr")].map((tr) => [tr.querySelector("input.i").value, tr.querySelectorAll("select")[1].value, tr.querySelector("input[data-day='9']").value, tr.children[tr.children.length - 2].textContent]));
       ok("Cách đọc ô Dấu x: bảng tay 2 khối, mỗi người 1 cột → tên lấy từ tiêu đề cột, loại Công; xx = 2, ô '7h-15h' = 1; tổng 47 / 35 / 29", pm === "mark" && g6.map((r) => r.join(":")).join("|") === "Lê Văn An:Công:1:47|Trần Bình:Công:1:35|Ngô Cường:Công:2:29", pm + " " + JSON.stringify(g6));
     }
+    // GĐ4: bản gốc được lưu vào kho chứng từ (SHA-256, sidecar), siêu dữ liệu vào db.chungtu; PDF > 30 trang đọc tiếp, không bỏ trang
+    {
+      const vdir = path.join(DATA, "documents"), docs = fs.existsSync(vdir) ? fs.readdirSync(vdir).flatMap((d) => fs.readdirSync(path.join(vdir, d)).map((x) => path.join(d, x))) : [];
+      const vr = await w.evaluate(async () => { const l = await window.hakDocs.list(), v = await window.hakDocs.verify(); return { n: l.docs.length, st: v.items.map((i) => i.status) }; });
+      ok("Kho chứng từ: file gốc (PNG, PDF…) được lưu nguyên bản kèm sidecar, trùng nội dung chỉ lưu 1 lần, kiểm tra SHA-256 đều 'ok'", vr.n >= 2 && vr.st.every((x) => x === "ok") && docs.filter((x) => /\.json$/.test(x)).length === vr.n && docs.length === 2 * vr.n, JSON.stringify({ vr, docs }));
+      const nBefore = vr.n, nPages = 35, objs = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [" + Array.from({ length: nPages }, (_, i) => (3 + i) + " 0 R").join(" ") + "] /Count " + nPages + " >>"];
+      for (let i = 0; i < nPages; i++) objs.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>");
+      let pdf = "%PDF-1.4\n"; const offs = []; objs.forEach((o, i) => { offs.push(pdf.length); pdf += (i + 1) + " 0 obj\n" + o + "\nendobj\n"; });
+      const xr = pdf.length; pdf += "xref\n0 " + (objs.length + 1) + "\n0000000000 65535 f \n" + offs.map((o) => String(o).padStart(10, "0") + " 00000 n \n").join("") + "trailer\n<< /Size " + (objs.length + 1) + " /Root 1 0 R >>\nstartxref\n" + xr + "\n%%EOF\n";
+      const big = path.join(DATA, "pdf-35-trang.pdf"); fs.writeFileSync(big, pdf);
+      await w.click('#main button:has-text("Xóa danh sách")');
+      const [fc2] = await Promise.all([w.waitForEvent("filechooser"), w.locator('#main button:has-text("Chọn ảnh / PDF")').click()]);
+      await fc2.setFiles([big]);
+      let more = 0; for (let i = 0; i < 240 && !more; i++) { await w.waitForTimeout(500); more = await w.locator('#main button:has-text("Đọc tiếp")').count(); }
+      const t1 = await w.locator(".subtabs button").count();
+      ok("PDF 35 trang: lượt đầu 30 trang, hiện nút 'Đọc tiếp' (không âm thầm cắt)", more === 1 && t1 === 30, "tabs=" + t1 + " more=" + more);
+      await w.locator('#main button:has-text("Đọc tiếp")').click();
+      let t2 = 0; for (let i = 0; i < 240 && t2 !== 35; i++) { await w.waitForTimeout(500); t2 = await w.locator(".subtabs button").count(); }
+      ok("Đọc tiếp: đủ 35 trang, hết nút 'Đọc tiếp'; PDF 35 trang cũng vào kho chứng từ (thêm đúng 1 file)", t2 === 35 && (await w.evaluate(async () => (await window.hakDocs.list()).docs.length)) === nBefore + 1, "tabs=" + t2);
+    }
     ok("Không lỗi JavaScript ở Đọc ảnh chấm công", errs.length === 0, errs.join(" | "));
     await app.close();
   }
@@ -731,6 +806,48 @@ async function launch(dataDir, opt) {
     await app.close(); // dữ liệu đã đổi (nhật ký "Đổi lịch sao lưu") → khi đóng app có bản khi-dong
     const afterSet = fs.readdirSync(path.join(DATA, "backups")).filter((f) => /^khi-dong_.*\.json$/.test(f)), after = afterSet.length, moi = afterSet.filter((x) => beforeSet.indexOf(x) < 0);
     ok("Đóng app khi dữ liệu đã đổi → tự sao lưu 'khi-dong' (kèm file kiểm tra; giữ tối đa 10 bản)", moi.length === 1 && after <= 10 && fs.existsSync(path.join(DATA, "backups", moi[0] + ".sha256")), before + " → " + after);
+  }
+
+  // GĐ5: Full Backup (dữ liệu + chứng từ + manifest SHA-256) → gói hỏng bị từ chối → khôi phục đưa chứng từ trở lại
+  {
+    const FB = require(path.join(APP, "main/fullbackup.js"));
+    ({ app, w, errs } = await launch());
+    await w.click("#nav button[data-k=backup]"); await w.waitForSelector("[data-fullbackup]");
+    await w.click('[data-fullbackup] button:has-text("Tạo Full Backup")');
+    await w.waitForSelector('[data-fb-msg]:has-text("Đã tạo")', { timeout: 30000 });
+    const zips = fs.readdirSync(DL).filter((f) => /^LuongHAK_FullBackup_.*\.zip$/.test(f)), good = path.join(DL, zips[0] || "none.zip");
+    const rep = zips.length ? FB.inspect(good) : { ok: false, problems: ["không có gói"], docs: [] };
+    ok("Full Backup: tạo được 1 gói .zip + file .sha256, qua kiểm tra (data.json + mọi chứng từ khớp SHA-256)", zips.length === 1 && fs.existsSync(good + ".sha256") && rep.ok && rep.docs.length >= 3 && rep.docs.every((d) => d.state === "new" || d.state === "same"), JSON.stringify({ zips, ok: rep.ok, p: rep.problems, n: rep.docs.length }));
+    await app.close();
+    const bad = path.join(DL, "LuongHAK_FullBackup_hong.zip"), bb = fs.readFileSync(good); bb[45] ^= 0xFF; fs.writeFileSync(bad, bb);
+    const nDocsBefore = rep.docs.length, vdir = path.join(DATA, "documents");
+    ({ app, w, errs } = await launch(null, { env: { HAK_FB_PICK: bad } }));
+    await w.click("#nav button[data-k=backup]"); await w.waitForSelector("[data-fullbackup]");
+    await w.click('[data-fullbackup] button:has-text("Khôi phục từ gói")');
+    await w.waitForSelector('[data-fb-msg]:has-text("KHÔNG đạt")', { timeout: 15000 });
+    ok("Gói Full Backup bị sửa 1 byte: bị TỪ CHỐI trước khi ghi gì (không đổi dữ liệu, kho chứng từ nguyên vẹn)", (await w.locator("[data-fb-msg]").innerText()).includes("chưa ghi gì") && (await w.evaluate(async () => (await window.hakDocs.list()).docs.length)) === nDocsBefore);
+    await app.close();
+    fs.rmSync(vdir, { recursive: true, force: true }); // giả lập sang máy mới: mất kho chứng từ
+    ({ app, w, errs } = await launch(null, { env: { HAK_FB_PICK: good } }));
+    await w.click("#nav button[data-k=backup]"); await w.waitForSelector("[data-fullbackup]");
+    await w.click('[data-fullbackup] button:has-text("Khôi phục từ gói")');
+    for (let i = 0; i < 60; i++) { await w.waitForTimeout(500); if ((await w.evaluate(async () => (await window.hakDocs.list()).docs.length)) >= nDocsBefore) break; }
+    await w.waitForTimeout(500);
+    const after = await w.evaluate(async () => { const l = await window.hakDocs.list(), v = await window.hakDocs.verify(); return { n: l.docs.length, st: v.items.map((i) => i.status) }; });
+    ok("Khôi phục Full Backup trên kho trống: chứng từ trở lại đủ, đúng DocumentID, SHA-256 đều 'ok'", after.n === nDocsBefore && after.st.every((x) => x === "ok") && rep.docs.every((d) => fs.existsSync(path.join(vdir, d.id.slice(4, 10), d.id + ".json"))), JSON.stringify(after));
+    ok("Không lỗi JavaScript ở Full Backup", errs.length === 0, errs.join(" | "));
+    await app.close();
+  }
+
+  // GĐ6: lệnh nhạy cảm ở tiến trình chính bị chặn khi chưa đăng nhập; đăng nhập xong chạy được; đăng xuất lại bị chặn
+  {
+    ({ app, w, errs } = await launch(null, { noAuth: true }));
+    const pre = await w.evaluate(async () => ({ l: await window.hakDocs.list(), f: await window.hakFull.create({}), p: await window.hakReport.pdf({ html: "<p>x</p>", name: "x" }), o: await window.hakOcr.batch([]).catch((e) => ({ ok: false, error: String(e.message || e) })) }));
+    ok("Chưa đăng nhập: kho chứng từ, Full Backup, PDF, OCR đều bị tiến trình chính từ chối ('Chưa đăng nhập')", [pre.l, pre.f, pre.p].every((r) => r.ok === false && /Chưa đăng nhập/.test(r.error)) && /Chưa đăng nhập/.test(pre.o.error || ""), JSON.stringify(pre).slice(0, 300));
+    await auth(w);
+    const post = await w.evaluate(async () => ({ l: await window.hakDocs.list() }));
+    ok("Đăng nhập Admin xong: lệnh kho chứng từ chạy được", post.l.ok === true, JSON.stringify(post).slice(0, 200));
+    await app.close();
   }
 
   // Quên mật khẩu Admin → mã khôi phục (mã sai bị từ chối; dùng xong cấp mã mới)

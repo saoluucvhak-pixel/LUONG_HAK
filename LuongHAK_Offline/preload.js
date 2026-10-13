@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld("hakStore", {
   scheduleGet: () => ipcRenderer.sendSync("backup-schedule-get"),     // { ok, everyHours, onClose, keepDaily, lastAuto }
   scheduleSet: (o) => ipcRenderer.sendSync("backup-schedule-set", o),  // { everyHours?, onClose?, keepDaily? }
   noteExternal: () => ipcRenderer.sendSync("backup-note-external"),
+  session: (perms) => ipcRenderer.sendSync("auth-session", perms), // báo quyền người đang đăng nhập cho tiến trình chính (lệnh nhạy cảm chỉ chạy khi có quyền)
   whoami: () => ipcRenderer.sendSync("app-user"),            // { user, host } — tài khoản Windows đang dùng
   authSalt: () => ipcRenderer.sendSync("auth-salt"),
   authHash: (pw, salt, iter) => ipcRenderer.sendSync("auth-hash", pw, salt, iter),
@@ -38,4 +39,25 @@ contextBridge.exposeInMainWorld("hakFiles", {
   resetDir: () => ipcRenderer.sendSync("files-reset-dir"),
   setOpenAfter: (on) => ipcRenderer.sendSync("files-open-after", !!on),
   onDone: (cb) => { ipcRenderer.on("download-done", (e, info) => { try { cb(info); } catch (err) { /* lỗi giao diện không làm hỏng tải file */ } }); }
+});
+
+contextBridge.exposeInMainWorld("hakReport", {
+  pdf: (payload) => ipcRenderer.invoke("report-pdf", payload) // { html, name, landscape, footer } → { ok, name, dir, size, pages } | { ok:false, error }
+});
+
+// Kho chứng từ gốc: chỉ thêm / đọc / kiểm tra theo DocumentID — không có hàm xóa
+contextBridge.exposeInMainWorld("hakDocs", {
+  add: (data, info) => ipcRenderer.invoke("doc-add", data, info),   // Uint8Array, { name, user, note, pages } → { ok, id, sha256, duplicate, size } | { ok:false, error }
+  list: () => ipcRenderer.invoke("doc-list"),
+  read: (id) => ipcRenderer.invoke("doc-read", id),                  // → { ok, meta, data }
+  verify: (ids) => ipcRenderer.invoke("doc-verify", ids),            // → { ok, items: [{ id, name, status: ok|missing|mismatch }] }
+  open: (id) => ipcRenderer.sendSync("doc-open", id)
+});
+
+// Full Backup / Restore: gói ZIP (dữ liệu + chứng từ + manifest SHA-256). Khôi phục: inspect (chỉ đọc) → app xác nhận → importDocs
+contextBridge.exposeInMainWorld("hakFull", {
+  create: (info) => ipcRenderer.invoke("fb-create", info),     // { user } → { ok, name, dir, size, sha256, docs, warnings, mirrored } | { ok:false, error }
+  list: () => ipcRenderer.invoke("fb-list"),
+  inspect: (name) => ipcRenderer.invoke("fb-inspect", name),   // name tùy chọn (trong thư mục xuất); bỏ trống = hộp thoại chọn file → { ok, problems, manifest, docs, text }
+  importDocs: () => ipcRenderer.invoke("fb-import-docs")        // chỉ nhập chứng từ từ gói vừa inspect OK → { ok, added, same, conflict[], failed[] }
 });

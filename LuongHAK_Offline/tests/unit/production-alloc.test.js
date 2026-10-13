@@ -17,10 +17,35 @@ test("U-PA-01 chia ĐỀU cho người có mặt; NV vắng so theo từ cuối,
   assert.equal(r.audit[0].soNguoi, 2); assert.equal(r.total, 9); assert.equal(r.unallocated, 0);
 });
 
-test("U-PA-02 trùng tên cuối → cả 2 bị coi vắng + cảnh báo; tên vắng không khớp ai → cảnh báo", () => {
+test("U-PA-02 (V5 VII.1) trùng tên cuối → KHÔNG tự loại ai: giữ phiếu PENDING_IDENTITY + liệt kê ứng viên; tên vắng không khớp ai → cảnh báo", () => {
+  // "Long" khớp 2 người (Trần Văn Long, Đỗ Long) → mơ hồ → phiếu 2 được giữ nguyên, không chia cho ai
   const r = PA.allocate([{ phieu: 2, ngay: "2026-06-01", kl: 6, maPB: "02.02", vang: "Long; Tuấn" }], mem);
-  assert.deepEqual(r.shares.map((x) => x.ma), ["B", "C"]);
-  assert.match(r.warnings.join("\n"), /"Long" khớp 2 người/); assert.match(r.warnings.join("\n"), /"Tuấn" không khớp ai/);
+  assert.deepEqual(r.shares, []); assert.equal(r.unallocated, 6); assert.equal(r.total, 6);
+  assert.equal(r.audit[0].pending, true); assert.equal(r.audit[0].pendingKind, "IDENTITY");
+  assert.deepEqual(r.audit[0].mo[0].ungVien.map((x) => x.ma), ["A", "D"]);
+  assert.match(r.warnings.join("\n"), /PENDING_IDENTITY.*"Long" = A Trần Văn Long \/ D Đỗ Long/);
+  // tên vắng KHÔNG khớp ai (không mơ hồ) → phiếu vẫn chia cho người có mặt + cảnh báo
+  const r2 = PA.allocate([{ phieu: 3, ngay: "2026-06-01", kl: 6, maPB: "02.02", vang: "Tuấn" }], mem);
+  assert.equal(r2.shares.length, 4); assert.match(r2.warnings.join("\n"), /"Tuấn" không khớp ai/);
+});
+
+test("U-PA-02b trùng tên nhưng phiếu ghi MÃ NV → định danh duy nhất, không mơ hồ, chia bình thường (ưu tiên Mã NV)", () => {
+  const r = PA.allocate([{ phieu: 4, ngay: "2026-06-01", kl: 6, maPB: "02.02", vang: "A" }], mem);
+  assert.deepEqual(r.shares.map((x) => [x.ma, x.kl]), [["B", 2], ["C", 2], ["D", 2]]);
+  assert.equal(r.unallocated, 0);
+});
+
+test("U-PA-02c bảo toàn khối lượng: tổng đã chia + chưa phân bổ = tổng phiếu gốc (cả khi có phiếu bị giữ)", () => {
+  const rows = [
+    { phieu: 1, ngay: "2026-06-01", kl: 9.1, maPB: "02.02", vang: "" },
+    { phieu: 2, ngay: "2026-06-01", kl: 6.3, maPB: "02.02", vang: "Long" },      // PENDING_IDENTITY
+    { phieu: 3, ngay: "2026-06-01", kl: 5.7, maPB: "99.99", vang: "" },          // mã tổ lạ
+    { phieu: 4, ngay: "2026-06-02", kl: 7.7, maPB: "02.02", vang: "dinh, C" }];
+  const r = PA.allocate(rows, mem);
+  const chia = r.shares.reduce((a, x) => a + x.kl, 0);
+  assert.ok(Math.abs(chia + r.unallocated - r.total) < 1e-9, chia + " + " + r.unallocated + " ≠ " + r.total);
+  assert.ok(Math.abs(r.total - (9.1 + 6.3 + 5.7 + 7.7)) < 1e-9);
+  assert.ok(Math.abs(r.unallocated - (6.3 + 5.7)) < 1e-9);
 });
 
 test("U-PA-03 mã tổ lạ / không còn ai có mặt → chưa phân bổ, có cảnh báo, không bỏ sót", () => {
@@ -115,14 +140,14 @@ test("U-PA-08 đọc file theo mẫu công cụ: bỏ dòng tiêu đề, nhận 
   assert.match(p.items[1].warn, /77\.77 chưa có trong Danh mục phòng ban/);
 });
 
-test("U-PA-09 NV vắng so CÓ DẤU trước: 'Tưởng' vắng không kéo theo 'Tường'; gõ không dấu vẫn nhận (trùng thì cảnh báo)", () => {
+test("U-PA-09 NV vắng so CÓ DẤU trước: 'Tưởng' vắng không kéo theo 'Tường'; gõ không dấu vẫn nhận (trùng thì giữ phiếu PENDING_IDENTITY)", () => {
   const mem = [{ ma: "A", hoTen: "Lê Văn Tường" }, { ma: "B", hoTen: "Trần Tưởng" }, { ma: "C", hoTen: "Ngô Đào" }];
   const r1 = PA.allocate([{ phieu: "1", ngay: "2026-07-01", kl: 30, maPB: "02.02", vang: "Tưởng" }], () => mem);
   const got = {}; r1.shares.forEach((x) => { got[x.ma] = x.kl; });
   assert.deepStrictEqual(got, { A: 15, C: 15 });
-  const r2 = PA.allocate([{ phieu: "2", ngay: "2026-07-01", kl: 30, maPB: "02.02", vang: "tuong" }], () => mem); // không dấu → cả 2 vắng + cảnh báo
-  assert.deepStrictEqual(r2.shares.map((x) => x.ma), ["C"]);
-  assert.ok(r2.warnings.some((w) => /khớp 2 người/.test(w)));
+  const r2 = PA.allocate([{ phieu: "2", ngay: "2026-07-01", kl: 30, maPB: "02.02", vang: "tuong" }], () => mem); // không dấu → khớp 2 người (Tường, Tưởng) → mơ hồ, giữ phiếu chờ xác nhận
+  assert.deepStrictEqual(r2.shares, []); assert.equal(r2.unallocated, 30);
+  assert.ok(r2.warnings.some((w) => /PENDING_IDENTITY/.test(w)));
 });
 
 test("U-PA-10 tên vắng không khớp ai (người đã nghỉ việc / chuyển tổ) → 1 cảnh báo gộp cho cả tổ, ghi đúng tên CÓ DẤU, số phiếu, khoảng ngày; phiếu vẫn chia cho người có mặt", () => {

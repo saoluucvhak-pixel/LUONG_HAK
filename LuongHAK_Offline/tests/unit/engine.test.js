@@ -173,16 +173,17 @@ test("Dynamic Payroll Formula Engine (mục III/IV): mã tăng ca MỚI có côn
   assert.equal(r["Tiền tăng ca"], Math.round(donGiaTG * (2 + 1) * 0.75));
 });
 
-test("Dynamic Payroll Formula Engine: công thức cấu hình lỗi khi tính (biến/chia 0...) → cảnh báo rõ ràng + tạm dùng công thức mặc định (không chặn tính lương cả công ty)", () => {
+test("Dynamic Payroll Formula Engine (V5 P0-01): công thức HIỆU LỰC lỗi khi tính (chia 0...) → FORMULA_ERROR, khoản = 0đ, KHÔNG dùng công thức mặc định (xem formula-error-block.test.js)", () => {
   const db = baseDb();
   db.dm_tangca.push({ "Mã tăng ca": "TC9", "Nội dung tăng ca": "Công thức lỗi", "Hệ số tăng ca": 1, "Hiệu lực từ": "2020-01-01" });
   db.dm_congthuc = [{ "Mã công thức": "TC9", "Loại": "OVERTIME", "Trạng thái": "Hiệu lực", "Hiệu lực từ": "2020-01-01", "Biểu thức": "CONG_TC / (CONG_CHU_NHAT - CONG_CHU_NHAT)" }]; // chia 0 vì không ai làm Chủ nhật
   db.nhansu = [staff({ "Mã tiền lương 1": "TG1", "Lương thỏa thuận": "9000000", "Mã tăng ca": "TC9" })];
   db.chamcong = [ccRow("NV", 2026, 9, "BT", 1, 20), ccRow("NV", 2026, 9, "TC", 1, 2)];
   const kq = E.tinhBangLuong(db, 2026, 9, false);
-  const donGiaTG = 9000000 / 26;
-  assert.equal(row(kq)["Tiền tăng ca"], Math.round(donGiaTG * 2)); // fallback = công thức mặc định (CONG_TC × HE_SO_TC = 2×1)
-  assert.ok(kq.canhbao.some((w) => /mã tăng ca 'TC9'.*công thức cấu hình.*lỗi khi tính/.test(w)), kq.canhbao.join(" | "));
+  assert.equal(row(kq)["Tiền tăng ca"], 0); // KHÔNG còn rơi về CONG_TC × HE_SO_TC
+  assert.equal(kq.loiCongThuc.length, 1);
+  assert.equal(kq.loiCongThuc[0].maLoi, "DIV_ZERO");
+  assert.ok(kq.canhbao.some((w) => /FORMULA_ERROR.*mã tăng ca 'TC9'/.test(w)), kq.canhbao.join(" | "));
 });
 
 test("phụ cấp TN.02 theo tỷ lệ công: dưới ngưỡng (công chuẩn − 5) thì tính theo công", () => {

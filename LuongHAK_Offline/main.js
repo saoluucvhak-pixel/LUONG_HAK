@@ -4,10 +4,15 @@ const os = require("os");
 const { createStorage } = require("./main/storage");
 const { createExports } = require("./main/exports");
 const { createOcrService, sanitizeOcrItems } = require("./main/ocr-service");
+const pdfSvc = require("./main/pdf");
+const { createVault } = require("./main/documents");
+const fullBackup = require("./main/fullbackup");
+const { createGuard } = require("./main/ipc-guard");
+const guard = createGuard(__dirname);
 
 // Dữ liệu: %APPDATA%\Tinh Luong HAK\data.json — sao lưu trong thư mục backups (xem main/storage.js).
 // Gỡ cài đặt KHÔNG xóa thư mục này (electron-builder: deleteAppDataOnUninstall mặc định false).
-let storage = null, exportsDir = null, ocr = null;
+let storage = null, exportsDir = null, ocr = null, vault = null;
 const ocrSvc = () => ocr || (ocr = createOcrService({ appDir: __dirname })); // nạp Tesseract khi dùng lần đầu
 const NO_SHELL = !!process.env.HAK_NO_SHELL; // kiểm thử tự động: không mở Explorer thật, chỉ ghi lại thao tác
 let lastShell = null;
@@ -23,6 +28,9 @@ if (process.platform === "win32") app.setAppUserModelId("vn.hak.luong");
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 
 function registerIpc() {
+  // Lệnh nhạy cảm: kiểm nguồn + đăng nhập + quyền trước khi chạy
+  const guarded = (perm, fn) => async (e, ...a) => { const d = guard.deny(e, perm); return d ? { ok: false, error: d, problems: [d] } : fn(e, ...a); };
+  ipcMain.on("auth-session", (e, perms) => { e.returnValue = guard.setSession(e, perms); }); // quyền của người đang đăng nhập (GĐ6)
   ipcMain.on("store-load", (e) => { e.returnValue = storage.load(); });
   ipcMain.on("store-save", (e, text) => { e.returnValue = storage.save(text); });
   ipcMain.on("store-info", (e) => { e.returnValue = storage.info(); });
@@ -32,13 +40,62 @@ function registerIpc() {
   ipcMain.on("store-verify", (e) => { try { e.returnValue = storage.verifyAll(); } catch (err) { e.returnValue = []; } });
   ipcMain.on("store-read", (e, name) => { try { e.returnValue = storage.readBackup(name); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
   ipcMain.on("store-quarantine", (e) => { try { e.returnValue = storage.quarantineCorrupt(); } catch (err) { e.returnValue = null; } });
+  // Xuất PDF báo cáo: giao diện gửi HTML (đã escape) + TÊN file; đường dẫn lưu do tiến trình chính quyết (thư mục xuất, không ghi đè)
+  ipcMain.handle("report-pdf", guarded("export", async (e, payload) => {
+    try {
+      const bad = pdfSvc.validate(payload); if (bad) return { ok: false, error: bad };
+      const buf = await pdfSvc.renderPdf({ BrowserWindow }, payload);
+      let name = exportsDir.cleanName(payload.name || "BaoCao"); if (!/\.pdf$/i.test(name)) name = name.replace(/\.[^.]*$/, "") + ".pdf";
+      const f = exportsDir.target(name); require("fs").writeFileSync(f, buf);
+      const opened = exportsDir.openAfter(); if (opened) shellDo("show", f);
+      return { ok: true, name: path.basename(f), dir: path.dirname(f), size: buf.length, pages: pdfSvc.countPages(buf), opened };
+    } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
+  }));
+  // Kho chứng từ gốc (GĐ4): chỉ THÊM / ĐỌC / KIỂM TRA — không có thao tác xóa. Giao diện chỉ dùng DocumentID, không truyền đường dẫn.
+  const toBuf = (d) => d instanceof ArrayBuffer ? Buffer.from(d) : ArrayBuffer.isView(d) ? Buffer.from(d.buffer, d.byteOffset, d.byteLength) : null;
+  ipcMain.handle("doc-add", guarded("input.edit", async (e, data, info) => {
+    try { const b = toBuf(data); if (!b) return { ok: false, error: "Dữ liệu chứng từ không hợp lệ" }; return vault.add(b, info && typeof info === "object" ? { name: info.name, user: info.user, note: info.note, pages: info.pages } : {}); }
+    catch (err) { return { ok: false, error: String(err && err.message || err) }; }
+  }));
+  ipcMain.handle("doc-list", guarded("input.view", async () => { try { return { ok: true, docs: vault.list() }; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
+  ipcMain.handle("doc-read", guarded("input.view", async (e, id) => { try { const r = vault.read(String(id || "")); return r.ok ? { ok: true, meta: r.meta, data: r.data } : r; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
+  ipcMain.handle("doc-verify", guarded("input.view", async (e, ids) => { try { return { ok: true, items: vault.verify(Array.isArray(ids) ? ids.map(String) : undefined) }; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
+  ipcMain.on("doc-open", (e, id) => { if (guard.deny(e, "input.view")) { e.returnValue = false; return; } const f = vault.pathOf(String(id || "")); if (f) shellDo("open", f); e.returnValue = !!f; });
+  // Full Backup / Restore (GĐ5): gói ZIP = dữ liệu + chứng từ gốc + manifest SHA-256. Giao diện không truyền đường dẫn:
+  // tạo vào thư mục xuất (và chép sang thư mục sao lưu thứ hai nếu có); đọc gói qua hộp thoại chọn file hoặc theo TÊN trong thư mục xuất.
+  let lastInspect = null; // chỉ nhập chứng từ từ đúng gói vừa kiểm tra xong
+  ipcMain.handle("fb-create", guarded("backup.restore", async (e, info) => {
+    try {
+      const ld = storage.load(); if (!ld.ok || !ld.text) return { ok: false, error: ld.error || "Chưa có file dữ liệu để sao lưu" };
+      const r = fullBackup.create({ dataText: ld.text, vault, destDir: exportsDir.dir(), appVersion: app.getVersion(), user: info && info.user });
+      if (!r.ok) return r;
+      let mirrored = "";
+      try { const md = storage.readSettings().mirrorDir; if (md) { const t = path.join(md, "FullBackup"); require("fs").mkdirSync(t, { recursive: true }); require("fs").copyFileSync(r.file, path.join(t, r.name)); require("fs").copyFileSync(r.file + ".sha256", path.join(t, r.name + ".sha256")); mirrored = t; } } catch (err) { r.warnings.push("Không chép được sang thư mục sao lưu thứ hai: " + (err.message || err)); }
+      return { ok: true, name: r.name, dir: path.dirname(r.file), size: r.size, sha256: r.sha256, docs: r.docs, warnings: r.warnings, mirrored };
+    } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
+  }));
+  ipcMain.handle("fb-list", guarded("backup.restore", async () => { try { return { ok: true, files: exportsDir.list(500).filter((f) => /^LuongHAK_FullBackup_.*\.zip$/i.test(f.name)) }; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
+  ipcMain.handle("fb-inspect", guarded("backup.restore", async (e, name) => {
+    try {
+      let f = "";
+      if (name) { f = exportsDir.resolve(String(name)) || ""; if (!/\.zip$/i.test(f)) return { ok: false, problems: ["Không tìm thấy gói trong thư mục xuất"] }; }
+      else if (process.env.HAK_FB_PICK) f = process.env.HAK_FB_PICK;
+      else { const r = dialog.showOpenDialogSync(BrowserWindow.fromWebContents(e.sender), { title: "Chọn gói Full Backup (.zip)", filters: [{ name: "Gói sao lưu", extensions: ["zip"] }], properties: ["openFile"] }); if (!r || !r[0]) return { ok: false, cancelled: true }; f = r[0]; }
+      const rep = fullBackup.inspect(f, vault); lastInspect = rep.ok ? f : null;
+      return { ok: rep.ok, problems: rep.problems, label: path.basename(f), manifest: rep.manifest && { createdAt: rep.manifest.createdAt, createdBy: rep.manifest.createdBy, appVersion: rep.manifest.appVersion, warnings: rep.manifest.warnings }, docs: rep.docs, text: rep.ok ? rep.dataText : null };
+    } catch (err) { return { ok: false, problems: [String(err && err.message || err)] }; }
+  }));
+  ipcMain.handle("fb-import-docs", guarded("backup.restore", async () => {
+    try { if (!lastInspect) return { ok: false, error: "Chưa kiểm tra gói nào" }; const r = fullBackup.importDocuments(lastInspect, vault); return Object.assign({ ok: true }, r); }
+    catch (err) { return { ok: false, error: String(err && err.message || err) }; }
+  }));
   ipcMain.on("open-data-folder", () => { shell.openPath(path.dirname(storage.dataFile)); });
   // File xuất (2.0-α16): giao diện chỉ gửi TÊN file — đường dẫn ghép trong thư mục xuất (main/exports.js)
   // OCR bảng chấm công (α20): giao diện gửi ẢNH Ô đã cắt (xám, nhỏ) — không gửi đường dẫn file; chạy offline
-  ipcMain.handle("ocr-batch", async (e, items) => {
+  ipcMain.handle("ocr-batch", guarded("input.edit", async (e, items) => {
     if (!Array.isArray(items) || items.length > 5000) throw new Error("Lô OCR không hợp lệ");
     return ocrSvc().batch(sanitizeOcrItems(items)); // ô sai kích thước → kết quả rỗng ĐÚNG VỊ TRÍ (không làm lệch thứ tự)
-  });
+  }));
   ipcMain.handle("ocr-selftest", async () => { try { return await ocrSvc().selfTest(); } catch (err) { return { ok: false, error: String(err.message || err) }; } });
   // Lịch sao lưu (α17) — cấu hình của máy này (settings.json)
   ipcMain.on("backup-schedule-get", (e) => { try { e.returnValue = Object.assign({ ok: true }, storage.getSchedule()); } catch (err) { e.returnValue = { ok: false, error: String(err.message || err) }; } });
@@ -119,6 +176,7 @@ app.whenReady().then(() => {
     return;
   }
   storage = createStorage(app.getPath("userData"));
+  vault = createVault(path.join(app.getPath("userData"), "documents"));
   exportsDir = createExports({ readSettings: storage.readSettings, writeSettings: storage.writeSettings, defaultDir: path.join(app.getPath("documents"), "Tinh Luong HAK", "File xuat"), fixedDir: process.env.HAK_DOWNLOAD_DIR || "" });
   try { storage.backup("startup"); } catch (e) { /* lần đầu chưa có dữ liệu */ }
   registerIpc();

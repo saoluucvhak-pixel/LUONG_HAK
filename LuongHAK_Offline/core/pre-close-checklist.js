@@ -1,6 +1,6 @@
-// ===== CHECKLIST 20 ĐIỂM TRƯỚC KHI CHỐT KỲ LƯƠNG (Master Prompt V3 mục XVIII) =====
+// ===== CHECKLIST TRƯỚC KHI CHỐT KỲ LƯƠNG — 20 điểm Master Prompt V3 mục XVIII + điểm 21 (FORMULA_ERROR, Master V5 P0-01) =====
 // Chỉ ĐỌC — tổng hợp lại cảnh báo đã có (engine.js "canhbao", core/integrity.js) + vài phép đối chiếu
-// độc lập (bảo toàn khối lượng, tổng thu nhập/giảm trừ/thực lĩnh từng người) để trả về đúng 20 điểm
+// độc lập (bảo toàn khối lượng, tổng thu nhập/giảm trừ/thực lĩnh từng người) để trả về đủ các điểm
 // Master Prompt liệt kê. Không tính lại bảng lương, không tự sửa dữ liệu.
 (function (root) {
   "use strict";
@@ -87,6 +87,12 @@
     add(18, "Tổng thu nhập đúng (cộng đủ các khoản, từng người)", saiTongTN.length ? "loi" : "ok", saiTongTN);
     add(19, "Tổng giảm trừ hợp lệ (BH + KPCĐ + Thuế + Trừ khác + Tạm ứng)", "ok", []);
     add(20, "Thực lĩnh đúng (Tổng thu nhập − Tổng giảm trừ, làm tròn 1.000đ)", saiThucLinh.length ? "loi" : "ok", saiThucLinh);
+
+    // 21. Công thức đang hiệu lực phải tính được (Master V5 P0-01): FORMULA_ERROR = BLOCKER, không dùng công thức mặc định thay thế
+    var loiCT = (kq.loiCongThuc || []).map(function (e) {
+      return (e.maNV ? e.maNV + " · " : "") + e.loai + " '" + e.maCongThuc + "' — " + e.message + " [" + e.maLoi + (e.bien ? ": " + e.bien : "") + "] → " + e.huongXuLy;
+    });
+    add(21, "Công thức hiệu lực hợp lệ (không có FORMULA_ERROR)", loiCT.length ? "loi" : "ok", loiCT);
 
     var loiCount = items.filter(function (x) { return x.trangThai === "loi"; }).length;
     var canhbaoCount = items.filter(function (x) { return x.trangThai === "canhbao"; }).length;

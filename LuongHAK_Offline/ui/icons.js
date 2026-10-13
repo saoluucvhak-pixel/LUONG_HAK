@@ -76,7 +76,7 @@
   var MAP = {
     "🏠": "home", "▶": "play", "🔒": "lock", "🔓": "unlock", "📈": "chart", "🗓": "calendar", "📅": "calendar", "⚖": "scale",
     "🚛": "truck", "🎁": "gift", "💵": "card", "🍚": "bowl", "📷": "camera", "👥": "users", "👤": "user", "📊": "pie", "📚": "grid", "⚙": "db",
-    "⬇": "down", "⬆": "up", "📄": "file", "📑": "files", "💾": "save", "🔍": "search", "✎": "edit", "🕘": "clock", "⏰": "alarm",
+    "⬇": "down", "⬆": "up", "📄": "file", "📑": "files", "💾": "save", "📦": "files", "📥": "down", "🔍": "search", "✎": "edit", "🕘": "clock", "⏰": "alarm",
     "⚠": "warn", "✔": "check", "✓": "check", "🖨": "printer", "📂": "folder", "📁": "folder", "🗂": "folder", "🛡": "shield", "🚑": "medical", "🗑": "trash", "🏢": "building",
     "📋": "clipboard", "📒": "book", "↔": "swap", "🧾": "receipt", "🌴": "leaf", "🏖": "sun", "🤒": "thermo", "🎂": "cake",
     "🩺": "steth", "❤": "heart", "📞": "phone", "🪪": "id", "🎓": "cap", "👪": "family", "🏦": "bank", "💼": "case", "🔀": "shuffle",

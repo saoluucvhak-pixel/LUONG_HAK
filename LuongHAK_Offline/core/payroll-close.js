@@ -8,7 +8,7 @@
   "use strict";
   var V = (typeof module !== "undefined" && module.exports) ? require("./validate.js") : root.HAKCore.validate;
   var MONTHLY = ["chamcong", "sanluong", "bandam", "psluong", "ungluong", "tiencom"];
-  var DM = ["dm_luong", "dm_phucap", "dm_tangca", "dm_hotro", "dm_baohiem", "dm_tncn", "dm_bacthue", "dm_giamtru", "dm_phongban", "dm_chucvu", "dm_cc"];
+  var DM = ["dm_luong", "dm_phucap", "dm_tangca", "dm_hotro", "dm_baohiem", "dm_tncn", "dm_bacthue", "dm_giamtru", "dm_phongban", "dm_chucvu", "dm_cc", "dm_congthuc", "congty"];
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   // FNV-1a 32-bit — đủ để phát hiện dữ liệu chốt bị sửa tay trong file (không phải chữ ký bảo mật)

@@ -46,20 +46,29 @@
         dp.unallocated += kl; unalloc += kl; return;
       }
       var vang = {}, notes = [], vangNghi = {}; // vangNghi: người đang nghỉ / không có công mà phiếu cũng ghi vắng
-      var shown = shownTokens(r.vang);
+      var shown = shownTokens(r.vang), mo = []; // mo: tên vắng MƠ HỒ (trùng tên cuối ≥ 2 người, không ghi Mã NV) — V5 mục VII.1
       rawTokens(r.vang).forEach(function (t, ti) {
         var tx = shown[ti] || t; // tên đúng như ghi trên phiếu
         // So trên CẢ người có mặt lẫn người đang nghỉ / không có công: có dấu trước ("Tưởng" ≠ "Tường"), không ai khớp mới so bỏ dấu
         var pool = mem.concat(mem.nghi || []), f = strip(t).toLowerCase();
-        var hit = pool.filter(function (e) { return lastWordRaw(e.hoTen) === t; });
-        if (!hit.length) hit = pool.filter(function (e) { return lastWord(e.hoTen) === f || (e.ma && strip(e.ma).toLowerCase() === f); });
+        // Mã NV khớp CHÍNH XÁC = định danh duy nhất (ưu tiên Mã NV), không bao giờ mơ hồ
+        var byCode = pool.filter(function (e) { return e.ma && strip(e.ma).toLowerCase() === f; });
+        var hit = byCode.length ? byCode : pool.filter(function (e) { return lastWordRaw(e.hoTen) === t; });
+        if (!hit.length) hit = pool.filter(function (e) { return lastWord(e.hoTen) === f; });
         var list = hit.filter(function (e) { return mem.indexOf(e) >= 0; }), nx = hit.filter(function (e) { return mem.indexOf(e) < 0; });
         list.forEach(function (e) { vang[e.ma] = 1; });
         nx.forEach(function (e) { vangNghi[e.ma] = 1; });
         if (!list.length && nx.length) { notes.push("\"" + tx + "\" " + (nx[0].khongCong ? "không có công ngày này" : "đang nghỉ (" + nx[0].loai + ", đơn đã duyệt)")); return; }
         if (!hit.length) { notes.push("\"" + tx + "\" không khớp ai đang làm trong tổ"); noteVang(pb, tx, "none", 0, r.phieu, d); }
-        else if (hit.length > 1) { notes.push("\"" + tx + "\" khớp " + hit.length + " người (trùng tên cuối) — đều bị coi là vắng"); noteVang(pb, tx, "dup", hit.length, r.phieu, d); }
+        else if (hit.length > 1 && !byCode.length) mo.push({ t: tx, cands: hit }); // trùng tên: KHÔNG tự loại ai — giữ phiếu chờ xác nhận danh tính
       });
+      if (mo.length) {
+        // Master Prompt V5 mục VII.1 "NV vắng": trùng tên → đánh dấu mơ hồ, yêu cầu xác nhận danh tính, tạm giữ phiếu (không tự loại tất cả người trùng)
+        var ds = mo.map(function (m) { return "\"" + m.t + "\" = " + m.cands.map(function (e) { return e.ma + " " + e.hoTen; }).join(" / "); }).join("; ");
+        warnings.push("Phiếu " + r.phieu + " (ngày " + d + ", tổ " + pb + ") NV vắng TRÙNG TÊN, chưa xác định được người vắng (PENDING_IDENTITY) — " + ds + ". Giữ phiếu chờ xử lý, KHÔNG tự loại ai — ghi Mã NV thay cho tên trong cột NV vắng rồi tính lại — " + kl + " " + dv + " chưa phân bổ");
+        audit.push({ phieu: r.phieu, ngay: d, maPB: pb, kl: kl, soNguoi: 0, names: [], share: 0, note: "PENDING_IDENTITY — NV vắng trùng tên: " + ds, pending: true, pendingKind: "IDENTITY", mo: mo.map(function (m) { return { ten: m.t, ungVien: m.cands.map(function (e) { return { ma: e.ma, hoTen: e.hoTen }; }) }; }) });
+        dp.unallocated += kl; unalloc += kl; return;
+      }
       var present = mem.filter(function (e) { return !vang[e.ma]; });
       if (mem.chuaCC) { var ck = pb; if (!chuaCC[ck]) { chuaCC[ck] = []; chuaCCOrder.push(ck); } if (chuaCC[ck].indexOf(d) < 0) chuaCC[ck].push(d); }
       (mem.nghi || []).forEach(function (e) { if (e.khongCong && vangNghi[e.ma]) return; /* phiếu đã ghi vắng → không đổi gì, khỏi báo */ var nk = e.ma + "|" + e.loai; if (!(nk in nghiInfo)) { nghiInfo[nk] = { ma: e.ma, hoTen: e.hoTen, loai: e.loai, khongCong: !!e.khongCong, ngay: [] }; nghiOrder.push(nk); } if (nghiInfo[nk].ngay.indexOf(d) < 0) nghiInfo[nk].ngay.push(d); });
@@ -88,9 +97,7 @@
     vangOrder.forEach(function (k) {
       var w = vangWarn[k], ng = w.ngay.slice().sort(), ds = ng.length ? (ng.length > 1 ? "ngày " + dm(ng[0]) + " → " + dm(ng[ng.length - 1]) : "ngày " + dm(ng[0])) : "";
       var ph = w.phieu.slice(0, 5).join(", ") + (w.phieu.length > 5 ? "…" : "");
-      warnings.push("Tổ " + w.pb + ": NV vắng \"" + w.t + "\" " + (w.kind === "none"
-        ? "không khớp ai đang làm trong tổ — " + w.phieu.length + " phiếu (" + ds + "; phiếu " + ph + "). Phiếu vẫn chia cho người có mặt; kiểm tra người này đã nghỉ việc / chuyển tổ hay ghi sai tên"
-        : "khớp " + w.n + " người (trùng tên cuối) — đều bị coi là vắng ở " + w.phieu.length + " phiếu (" + ds + "; phiếu " + ph + ")"));
+      warnings.push("Tổ " + w.pb + ": NV vắng \"" + w.t + "\" không khớp ai đang làm trong tổ — " + w.phieu.length + " phiếu (" + ds + "; phiếu " + ph + "). Phiếu vẫn chia cho người có mặt; kiểm tra người này đã nghỉ việc / chuyển tổ hay ghi sai tên");
     });
     chuaCCOrder.forEach(function (pb) { var ng = chuaCC[pb].sort(); warnings.push("Tổ " + pb + ": chưa có chấm công " + ng.length + " ngày có phiếu (" + ng.slice(0, 6).map(dm).join(", ") + (ng.length > 6 ? "…" : "") + ") — các ngày này đang CHỜ PHÂN BỔ (PENDING_ATTENDANCE), không tự chia theo NV vắng; nhập chấm công rồi tính lại"); });
     var nghi = nghiOrder.map(function (k) { var x = nghiInfo[k]; x.ngay.sort(); return x; });

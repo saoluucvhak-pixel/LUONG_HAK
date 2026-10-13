@@ -11,6 +11,7 @@
   var EVAL = isNode ? require("./formula-evaluator.js") : root.HAKCore.formulaEvaluator;
   var REGISTRY = isNode ? require("./formula-registry.js") : root.HAKCore.formulaRegistry;
   var VARLIB = isNode ? require("./formula-variables.js") : root.HAKCore.formulaVariables;
+  var DEF = isNode ? require("./formula-defaults.js") : root.HAKCore.formulaDefaults;
   var FN = isNode ? require("./formula-functions.js") : root.HAKCore.formulaFunctions;
 
   var api = {
@@ -18,7 +19,9 @@
     validate: VALIDATOR.validate,
     evaluate: EVAL.evaluate,
     resolve: REGISTRY.resolve,
+    resolveEx: REGISTRY.resolveEx,
     versionsOf: REGISTRY.versionsOf,
+    defaults: DEF,
     variables: VARLIB,
     functions: FN,
     FormulaError: P.FormulaError

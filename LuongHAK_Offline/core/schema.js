@@ -10,7 +10,7 @@
   var CLS = (typeof module !== "undefined" && module.exports) ? require("./payroll-close.js") : root.HAKCore.close;
 
   var SUPPORTED_SCHEMA = 2;
-  var SYSTEM_TABLES = ["congty", "kyluong", "kyluong_lichsu", "auditlog", "nhansu", "nguoidung", "baomat"];
+  var SYSTEM_TABLES = ["congty", "kyluong", "kyluong_lichsu", "auditlog", "nhansu", "nguoidung", "baomat", "chungtu"];
   var SCALAR_KEYS = { schemaVersion: "number" };
   var MONTHLY = ["chamcong", "sanluong", "bandam", "psluong", "ungluong", "tiencom"];
 
@@ -57,7 +57,7 @@
     });
     // Kiểu cột: ngày, tiền, kỳ — trên mọi bảng nghiệp vụ
     Object.keys(res.stats).forEach(function (t) {
-      if (t === "kyluong" || t === "kyluong_lichsu" || t === "auditlog" || t === "nhansu" || t === "nguoidung" || t === "baomat") return;
+      if (t === "kyluong" || t === "kyluong_lichsu" || t === "auditlog" || t === "nhansu" || t === "nguoidung" || t === "baomat" || t === "chungtu") return;
       var bd = 0, bm = 0, bk = 0, ex = [];
       rows(t).forEach(function (r) {
         Object.keys(r).forEach(function (c) {

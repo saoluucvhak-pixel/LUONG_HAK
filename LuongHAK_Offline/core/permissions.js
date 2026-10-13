@@ -10,6 +10,7 @@
     "hr.view": "Xem hồ sơ nhân sự", "hr.edit": "Thêm/sửa/xóa hồ sơ nhân sự, hợp đồng, phụ lục",
     "input.view": "Xem chấm công, sản lượng, thưởng, tạm ứng", "input.edit": "Nhập/sửa/xóa chấm công, sản lượng, thưởng, tạm ứng",
     "dm.edit": "Sửa danh mục (mã lương, phụ cấp, BH, thuế…)",
+    "formula.approve": "Duyệt, kích hoạt, ngừng công thức tiền lương",
     "payroll.view": "Xem bảng lương, kỳ đã chốt, báo cáo lương (thông tin lương nhạy cảm)",
     "payroll.calc": "Tính lương", "payroll.close": "Chốt kỳ lương", "payroll.reopen": "Mở chốt kỳ lương",
     "report.view": "Xem báo cáo nhân sự", "import": "Nhập Excel", "export": "Xuất Excel / in",
@@ -24,7 +25,7 @@
     ketoanluong: { ten: "Kế toán lương", perms: ["hr.view", "input.view", "input.edit", "dm.edit", "payroll.view", "payroll.calc", "payroll.close", "report.view", "import", "export"] },
     ketoanthanhtoan: { ten: "Kế toán thanh toán", perms: ["payroll.view", "export", "hr.view"] },
     truongbophan: { ten: "Trưởng bộ phận", perms: ["hr.view", "input.view", "input.edit", "report.view"] },
-    pheduyet: { ten: "Người phê duyệt", perms: ["hr.view", "input.view", "payroll.view", "report.view", "export"] },
+    pheduyet: { ten: "Người phê duyệt", perms: ["hr.view", "input.view", "payroll.view", "report.view", "export", "formula.approve"] },
     xembaocao: { ten: "Người xem báo cáo", perms: ["report.view", "payroll.view"] }
   };
   function roleOf(u) { return u && ROLES[u.vaiTro] ? ROLES[u.vaiTro] : null; }

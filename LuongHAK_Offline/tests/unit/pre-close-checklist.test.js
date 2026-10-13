@@ -8,13 +8,13 @@ const { baseDb, ccRow, staff } = require("../fixtures/build.js");
 
 function item(r, id) { return r.items.find((x) => x.id === id); }
 
-test("dữ liệu sạch: đủ 20 điểm, không điểm nào 'loi', đúng 20 mục", () => {
+test("dữ liệu sạch: đủ 21 điểm (20 điểm V3 + FORMULA_ERROR), không điểm nào 'loi'", () => {
   const db = baseDb();
   db.nhansu = [staff({ "Mã tiền lương 1": "TG1", "Lương thỏa thuận": "9000000" })];
   db.chamcong = [ccRow("NV", 2026, 9)];
   const kq = E.tinhBangLuong(db, 2026, 9, false);
   const r = PCC.run({ db, kq });
-  assert.equal(r.items.length, 20);
+  assert.equal(r.items.length, 21);
   assert.equal(r.loiCount, 0);
   assert.ok(r.items.every((x) => ["ok", "canhbao", "loi"].includes(x.trangThai)));
 });

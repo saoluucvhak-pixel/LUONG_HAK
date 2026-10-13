@@ -13,6 +13,7 @@
   var V = isNode ? require("./validate.js") : root.HAKCore.validate;
   var GRD = isNode ? require("./period-guard.js") : root.HAKCore.guard;
   var IMP = isNode ? require("./importer.js") : root.HAKCore.importer;
+  function faMod() { return isNode ? require("./payroll/formula-approval.js") : root.HAKCore.formulaApproval; } // nạp muộn: trình duyệt tải module công thức sau repository.js
 
   var MONTHLY = { chamcong: 1, sanluong: 1, bandam: 1, psluong: 1, ungluong: 1, tiencom: 1 };
   // Bảng con của hợp đồng (đổi Số HĐLĐ / xóa hợp đồng thì đổi / xóa theo) — giữ khớp hr.js HD_TABS
@@ -63,7 +64,8 @@
       if (op !== "insert" && db[table].indexOf(target) < 0) return deny("stale", "Dòng này không còn trong dữ liệu (đã bị sửa / xóa ở thao tác khác) — hãy tải lại màn hình");
       // 1. quyền
       var perm = permFor(table);
-      if (!ctx.can(perm)) return deny("perm", "Bạn không có quyền " + what + " (" + tname(table) + ")");
+      // Công thức tiền lương: người có quyền duyệt cũng được ghi (việc được phép làm cụ thể do formula-approval.check quyết định)
+      if (!ctx.can(perm) && !(table === "dm_congthuc" && ctx.can("formula.approve"))) return deny("perm", "Bạn không có quyền " + what + " (" + tname(table) + ")");
       // 2. ô ngày chấm công
       if (table === "chamcong" && after) {
         for (var d = 1; d <= 31; d++) {
@@ -92,12 +94,21 @@
           ? "⛔ Không xóa được: phụ lục của hợp đồng này đã dùng tính lương kỳ ĐÃ CHỐT " + labels(fzH) + " (quy tắc Q-15)."
           : "⛔ Không đổi được Số HĐLĐ: phụ lục của hợp đồng này đã dùng tính lương kỳ đã chốt " + labels(fzH) + " (Q-15).", { periods: fzH });
       }
-      // 5. kỳ đã chốt / hồi tố
-      var imp = GRD.impactChange(db, table, before, after);
+      // 4b. duyệt & phiên bản công thức tiền lương (Master V5 GĐ2) — kiểm tra ở tầng ghi, không đi vòng được
+      var fpatch = null, FA = faMod();
+      if (table === FA.TABLE) {
+        var fc = FA.check(op, before, after, { can: ctx.can, user: ctx.user ? ctx.user() : "", now: ctx.now ? ctx.now() : null, db: db });
+        if (!fc.ok) return deny(fc.code, fc.msg);
+        fpatch = fc.patch;
+        if (op !== "remove") Object.keys(fpatch).forEach(function (k) { after[k] = fpatch[k]; });
+      }
+      // 5. kỳ đã chốt / hồi tố — công thức chưa "Hiệu lực" (nháp/chờ duyệt/đã duyệt/ngừng) không ảnh hưởng kỳ nào
+      var fHL = function (r) { return r && String(r["Trạng thái"] || "") === "Hiệu lực"; };
+      var imp = table === FA.TABLE && !fHL(before) && !fHL(after) ? { kind: "none", periods: [] } : GRD.impactChange(db, table, before, after);
       if (imp.kind === "locked") return deny("locked", "Không thể " + what + ": dữ liệu thuộc kỳ " + labels(imp.periods) + " đã chốt lương. Hãy mở chốt trước.", { impact: imp });
       if (imp.kind === "retro" && !ctx.can("retro.edit"))
         return deny("retro", "⛔ Không thể " + what + ": dữ liệu có hiệu lực trong kỳ lương đã chốt " + labels(imp.periods) + ".\nChỉ Admin được sửa dữ liệu hồi tố (Q-14).", { impact: imp });
-      return Object.assign(base, { ok: true, impact: imp, retro: imp.kind === "retro",
+      return Object.assign(base, { ok: true, patch: fpatch || {}, impact: imp, retro: imp.kind === "retro",
         confirmMsg: imp.kind === "retro" ? what.charAt(0).toUpperCase() + what.slice(1) + "?\n\n" + retroText(imp) + "\n\nVẫn lưu thay đổi?" : "" });
     }
 
@@ -115,11 +126,11 @@
       if (q.retro !== p.retro) return deny("changed", "Dữ liệu vừa thay đổi — hãy thử lại");
       var db = ctx.db(), list = db[q.table], row = null;
       // Mọi kiểm tra đã qua → bây giờ mới sửa dữ liệu
-      if (q.op === "insert") { row = Object.assign({ _id: ctx.uid() }, q.values); list.push(row); }
+      if (q.op === "insert") { row = Object.assign({ _id: ctx.uid() }, q.values, q.patch); list.push(row); }
       else if (q.op === "update") {
         row = q.target;
         var oldHD = q.table === "hopdong" ? q.before["Số HĐLĐ"] : null;
-        Object.assign(row, q.values);
+        Object.assign(row, q.values, q.patch);
         if (oldHD != null && oldHD !== row["Số HĐLĐ"])
           hdChildren.forEach(function (k) { (db[k] || []).forEach(function (r) { if (r["Mã NV"] === q.before["Mã NV"] && r["Số HĐLĐ"] === oldHD) r["Số HĐLĐ"] = row["Số HĐLĐ"]; }); });
       } else {

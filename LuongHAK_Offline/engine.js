@@ -108,6 +108,55 @@
     return Math.round(thue);
   }
 
+  // ===== Tra & tính công thức cấu hình (Master V5 mục V.3 — KHÔNG rơi về công thức mặc định khi cấu hình hiệu lực bị lỗi) =====
+  // Phân biệt:
+  //  • Không có cấu hình hiệu lực cho mã (NONE) / chỉ có cho công ty khác → dùng công thức lịch sử (tương thích ngược) — riêng
+  //    "chỉ có cho công ty khác" có kèm cảnh báo để không âm thầm bỏ qua.
+  //  • Có cấu hình HIỆU LỰC nhưng sai (biểu thức rỗng/sai cú pháp/biến lạ/chia 0/xung đột phiên bản…) → FORMULA_ERROR: khoản này
+  //    = 0đ, KHÔNG dùng công thức lịch sử, ghi vào kq.loiCongThuc → checklist chốt kỳ chặn (BLOCKER).
+  //  • Bản "Nháp"/"Đã duyệt"/"Ngừng" không bao giờ được registry trả về → không áp dụng vào lương chính thức.
+  var LOAI_KHOAN = { OVERTIME: "tăng ca", ALLOWANCE: "phụ cấp", SUPPORT: "hỗ trợ" };
+  function baoLoiCongThuc(fmlCtx, info) {
+    if (fmlCtx && typeof fmlCtx.error === "function") fmlCtx.error(info);
+    else if (fmlCtx && typeof fmlCtx.warn === "function") fmlCtx.warn("FORMULA_ERROR — " + (info.maCongThuc || "") + ": " + info.message);
+  }
+  /** @returns null (không có cấu hình áp dụng — dùng công thức lịch sử) | { loi: true } (đã báo FORMULA_ERROR) | { rec } */
+  function traCongThuc(fmlCtx, code, type) {
+    var r = FML.resolveEx(fmlCtx.records, { code: code, type: type, companyId: fmlCtx.companyId, nam: fmlCtx.nam, thang: fmlCtx.thang });
+    if (r.status === "CONFLICT") {
+      baoLoiCongThuc(fmlCtx, { loai: type, maCongThuc: code, bieuThuc: "", maLoi: "CONFLICT", bien: "",
+        message: "có " + r.conflict.length + " bản công thức cùng 'Hiệu lực' + cùng ngày hiệu lực từ cho mã này — không có quy tắc ưu tiên",
+        huongXuLy: "Danh mục → Công thức tiền lương → Lịch sử phiên bản: chuyển các bản thừa sang 'Ngừng' hoặc đặt ngày hiệu lực khác nhau, rồi tính lại" });
+      return { loi: true };
+    }
+    if (r.status === "OTHER_COMPANY") {
+      fmlCtx._seen = fmlCtx._seen || {}; var kk = type + "|" + code;
+      if (!fmlCtx._seen[kk] && typeof fmlCtx.warn === "function") {
+        fmlCtx._seen[kk] = 1;
+        fmlCtx.warn("Mã " + LOAI_KHOAN[type] + " '" + code + "': có công thức đang hiệu lực nhưng chỉ ghi cho công ty khác (" + r.otherCompany.join(", ") + ") — KHÔNG áp dụng cho công ty của file này, đang dùng công thức lịch sử. Nếu đó là công thức của công ty này, sửa cột 'Công ty' cho đúng tên công ty trong hồ sơ.");
+      }
+      return null;
+    }
+    if (r.rec && !String(r.rec["Biểu thức"] || "").trim()) {
+      baoLoiCongThuc(fmlCtx, { loai: type, maCongThuc: code, bieuThuc: "", maLoi: "EMPTY_EXPRESSION", bien: "",
+        message: "công thức đang hiệu lực nhưng 'Biểu thức' để trống",
+        huongXuLy: "Nhập biểu thức cho bản công thức này hoặc chuyển sang 'Ngừng', rồi tính lại" });
+      return { loi: true };
+    }
+    return r.rec ? { rec: r.rec } : null;
+  }
+  /** @returns { ok: true, v } | { ok: false } (đã báo FORMULA_ERROR) */
+  function tinhCongThuc(fmlCtx, rec, type, vars) {
+    try { return { ok: true, v: FML.evaluate(rec["Biểu thức"], vars) }; }
+    catch (e) {
+      var bien = (String(e && e.message || "").match(/"([A-Z0-9_]+)"/) || [])[1] || "";
+      baoLoiCongThuc(fmlCtx, { loai: type, maCongThuc: String(rec["Mã công thức"] || ""), bieuThuc: String(rec["Biểu thức"] || ""),
+        maLoi: (e && e.code) || "ERROR", bien: bien, message: (e && e.message) || String(e),
+        huongXuLy: "Sửa biểu thức trong Danh mục → Công thức tiền lương (tab Kiểm tra công thức để chạy thử), rồi tính lại" });
+      return { ok: false };
+    }
+  }
+
   // congChuan2: mốc chuẩn riêng cho TC2 khi chấm công có nhãn "DQ" (đối chiếu công thức M thật của HAK_DN,
   // query QR_CHAMCONG2/QR_TH_CC: nhãn chấm công chứa "DQ" → "Công chuẩn 2" = 40 cố định, dùng thay Công chuẩn
   // thường khi tính phần tăng ca vượt chuẩn của TC2). congChuan2 = 0/không có nhãn DQ → dùng cChuan như cũ.
@@ -125,25 +174,33 @@
   function heSoTangCa(ma, cCTL, cTC, cLe, cChuan, cCN, cTang, heSo, cPhep, cDC, congChuan2, loai, fmlCtx) {
     var key = loai || ma;
     if (fmlCtx && fmlCtx.records && fmlCtx.records.length) {
-      var rec = FML.resolve(fmlCtx.records, { code: key, type: "OVERTIME", companyId: fmlCtx.companyId, nam: fmlCtx.nam, thang: fmlCtx.thang });
-      if (rec && rec["Biểu thức"]) {
-        try {
-          return FML.evaluate(rec["Biểu thức"], {
-            CONG_TINH_LUONG: cCTL, CONG_TRUNG_CHUYEN: cTC, CONG_LE: cLe, CONG_CHUAN: cChuan, CONG_CHU_NHAT: cCN,
-            CONG_TC: cTang, HE_SO_TC: heSo, CONG_PHEP: cPhep, CONG_DI_CHUYEN: cDC, CONG_CHUAN_2: congChuan2
-          });
-        } catch (e) {
-          if (fmlCtx.warn) fmlCtx.warn("mã tăng ca '" + key + "': công thức cấu hình (" + rec["Biểu thức"] + ") lỗi khi tính (" + e.message + ") — tạm dùng công thức mặc định, kiểm tra lại công thức trong Danh mục công thức tiền lương");
-        }
+      var t = traCongThuc(fmlCtx, key, "OVERTIME");
+      if (t && t.loi) return 0; // FORMULA_ERROR đã ghi — KHÔNG rơi xuống công thức lịch sử
+      if (t && t.rec) {
+        var ev = tinhCongThuc(fmlCtx, t.rec, "OVERTIME", {
+          CONG_TINH_LUONG: cCTL, CONG_TRUNG_CHUYEN: cTC, CONG_LE: cLe, CONG_CHUAN: cChuan, CONG_CHU_NHAT: cCN,
+          CONG_TC: cTang, HE_SO_TC: heSo, CONG_PHEP: cPhep, CONG_DI_CHUYEN: cDC, CONG_CHUAN_2: congChuan2
+        });
+        return ev.ok ? ev.v : 0;
       }
     }
-    switch (key) {
-      case "TC1": { var d = cCTL - cLe - cTC - cPhep - cTang - cChuan; return (d > 0 ? d * heSo : 0) + cTang * heSo; }
-      case "TC2": { var chuan2 = congChuan2 > 0 ? congChuan2 : cChuan; var d2 = cCTL - cLe - cTC - cPhep - cTang - cDC - chuan2; return (d2 > 0 ? d2 * heSo : 0) + cTang * heSo; }
-      case "TC6": { var d6 = cCTL - cTC - cLe - cChuan; return d6 > 0 ? d6 : 0; }
-      case "TC3": return (cTang + cCN) * heSo;
-      default: return cTang * heSo;
+    // Không có cấu hình công ty → công thức mặc định của hệ thống (dữ liệu trong formula-defaults.js, đã test tương đương switch cũ).
+    var mac = FML.defaults.overtime(key);
+    if (!mac) {
+      // P2-01 (chủ sở hữu chọn phương án B): mã tăng ca không có công thức hiệu lực của công ty và không thuộc TC1–TC6
+      // → FORMULA_ERROR (0đ + chặn chốt kỳ), KHÔNG tính ngầm theo CÔNG_TC × HỆ_SỐ. Gọi không kèm ngữ cảnh báo lỗi (test/cũ) thì giữ mặc định cũ.
+      if (fmlCtx && typeof fmlCtx.error === "function") {
+        baoLoiCongThuc(fmlCtx, { loai: "OVERTIME", maCongThuc: String(key || ""), bieuThuc: "", maLoi: "UNKNOWN_CODE", bien: "",
+          message: "mã tăng ca chưa có công thức (không thuộc TC1–TC6 và chưa khai báo trong Công thức tiền lương)",
+          huongXuLy: "Danh mục → Công thức tiền lương → Tăng ca: thêm công thức cho mã này (Nháp → Gửi duyệt → Hiệu lực) hoặc sửa mã tăng ca của nhân viên về TC1–TC6, rồi tính lại" });
+        return 0;
+      }
+      mac = FML.defaults.OVERTIME_FALLBACK;
     }
+    return FML.evaluate(mac.bieuThuc, {
+      CONG_TINH_LUONG: cCTL, CONG_TRUNG_CHUYEN: cTC, CONG_LE: cLe, CONG_CHUAN: cChuan, CONG_CHU_NHAT: cCN,
+      CONG_TC: cTang, HE_SO_TC: heSo, CONG_PHEP: cPhep, CONG_DI_CHUYEN: cDC, CONG_CHUAN_2: congChuan2
+    });
   }
 
   /** Số ngày giảm trừ của mã lương: cột "Số ngày giảm trừ" (Excel HAK Group: "Ngày giảm trừ"), không có thì lấy số sau dấu "-" trong Cách tính */
@@ -250,7 +307,15 @@
     // Dynamic Payroll Formula Engine (mục III/XII.3): nạp 1 LẦN cho cả kỳ (không phải từng nhân viên)
     // danh sách công thức do công ty cấu hình — rỗng ở hầu hết dữ liệu hiện có (chưa ai tạo công thức
     // mới), heSoTangCa() sẽ rơi xuống switch/case cũ, không có gì thay đổi so với trước.
-    var fmlCtx = { records: db.dm_congthuc, nam: nam, thang: thang, warn: function (msg) { out.canhbao.push(msg); } };
+    var tenCongTy = db.congty && db.congty[0] ? [db.congty[0]["Mã công ty"], db.congty[0]["Tên công ty"]].filter(function (x) { return x != null && String(x).trim() !== ""; }) : [];
+    // Mô hình 1 công ty/1 file: danh tính công ty = hồ sơ db.congty (Mã công ty, Tên công ty) — registry so khớp cột "Công ty" của công thức với các giá trị này
+    var fmlCtx = { records: db.dm_congthuc, nam: nam, thang: thang, companyId: tenCongTy, maNV: "",
+      warn: function (msg) { out.canhbao.push(msg); },
+      error: function (info) {
+        var rec = { maNV: fmlCtx.maNV, loai: info.loai, maCongThuc: info.maCongThuc, bieuThuc: info.bieuThuc, maLoi: info.maLoi, bien: info.bien || "", message: info.message, huongXuLy: info.huongXuLy, soTienAnhHuong: null };
+        out.loiCongThuc.push(rec);
+        out.canhbao.push("FORMULA_ERROR — " + (rec.maNV ? rec.maNV + ": " : "") + "mã " + LOAI_KHOAN[rec.loai] + " '" + rec.maCongThuc + "' — " + rec.message + (rec.bieuThuc ? " (biểu thức: " + rec.bieuThuc + ")" : "") + " — khoản này tính = 0đ, KHÔNG dùng công thức mặc định. " + rec.huongXuLy);
+      } };
     var dmLuong = hieuLuc(db.dm_luong, "Mã lương", nam, thang);
     var dmPC = hieuLuc(db.dm_phucap, "Mã phụ cấp", nam, thang);
     var dmTC = hieuLuc(db.dm_tangca, "Mã tăng ca", nam, thang);
@@ -282,7 +347,7 @@
     var comMap = {};
     (db.tiencom || []).forEach(function (r) { if (trongKy(r, "Ngày", nam, thang) && r["Mã NV"]) comMap[r["Mã NV"]] = (comMap[r["Mã NV"]] || 0) + num(r["Số suất cơm"]); });
 
-    var out = { bangluong: [], bhxh: [], tncn: [], canhbao: [] };
+    var out = { bangluong: [], bhxh: [], tncn: [], canhbao: [], loiCongThuc: [] };
     var dauKy = new Date(nam, thang - 1, 1);
     // Cách bù lương sản lượng: false = theo tháng (từng người) · true = theo ngày (liên tục) — 2 cách cũ, giữ nguyên;
     // α19 (chủ sở hữu duyệt "làm như công cụ"): "daihiep" = theo ngày bậc thang (công cụ HAK, mẫu Đại Hiệp) · "to" = theo bình quân tổ
@@ -306,6 +371,7 @@
 
     (db.nhansu || []).forEach(function (ns) {
       var ma = ns["Mã nhân viên"]; if (!ma) return;
+      fmlCtx.maNV = ma; // gắn mã NV vào FORMULA_ERROR (nếu có) của người này
       var nghi = ns["Ngày nghỉ/thay đổi"];
       if (nghi && new Date(nghi) < dauKy) return;
       var c = cc[ma] || { tongCong: 0, congChuNhat: 0, congTangCa: 0, congLe: 0, congPhep: 0, congCom: 0, congDiChuyen: 0, congTrungChuyen: 0, nhanTheoNgay: {}, congChinhTheoNgay: {}, congBT: 0, congBTTheoNgay: {} };
@@ -426,19 +492,20 @@
           var cPC, nguongPC, pcRec = null;
           // Dynamic Payroll Formula Engine (mục V): "Loại công thức" KHÔNG khớp 3 kiểu có sẵn ở trên →
           // tra db.dm_congthuc (Loại=ALLOWANCE) trước khi coi là TYLE_KHONG_TRU theo mặc định cũ.
-          if (!KIEU_PC_CO_SAN[kieuPC] && fmlCtx.records && fmlCtx.records.length) pcRec = FML.resolve(fmlCtx.records, { code: kieuPC, type: "ALLOWANCE", nam: fmlCtx.nam, thang: fmlCtx.thang });
-          if (pcRec && pcRec["Biểu thức"]) {
-            try {
-              tienPC = Math.round(FML.evaluate(pcRec["Biểu thức"], {
-                MUC_PHU_CAP: soPC, CONG_CHUAN: cChuan, CONG_HUONG_PHU_CAP: c.tongCong, NGUONG_PHU_CAP: num(pc["Tham chiếu"]),
-                CONG_TINH_LUONG: c.tongCong, CONG_LE: c.congLe, CONG_PHEP: c.congPhep, CONG_TC: c.congTangCa
-              }));
-            } catch (e) {
-              out.canhbao.push(ma + ": mã phụ cấp '" + ns["Mã phụ cấp"] + "' — công thức cấu hình (" + pcRec["Biểu thức"] + ") lỗi khi tính (" + e.message + ") — tạm dùng công thức mặc định, kiểm tra lại công thức trong Danh mục công thức tiền lương");
-              pcRec = null;
-            }
+          var pcLoi = false;
+          if (!KIEU_PC_CO_SAN[kieuPC] && fmlCtx.records && fmlCtx.records.length) {
+            var tp = traCongThuc(fmlCtx, kieuPC, "ALLOWANCE");
+            if (tp && tp.loi) pcLoi = true; else if (tp) pcRec = tp.rec;
           }
-          if (!pcRec) {
+          if (pcLoi) tienPC = 0; // FORMULA_ERROR đã ghi (kèm mã NV) — không dùng công thức mặc định
+          else if (pcRec) {
+            var ep = tinhCongThuc(fmlCtx, pcRec, "ALLOWANCE", {
+              MUC_PHU_CAP: soPC, CONG_CHUAN: cChuan, CONG_HUONG_PHU_CAP: c.tongCong, NGUONG_PHU_CAP: num(pc["Tham chiếu"]),
+              CONG_TINH_LUONG: c.tongCong, CONG_LE: c.congLe, CONG_PHEP: c.congPhep, CONG_TC: c.congTangCa
+            });
+            tienPC = ep.ok ? Math.round(ep.v) : 0;
+          }
+          else {
             if (kieuPC === "TYLE_TRU_LE_PHEP") { cPC = c.tongCong - (c.congLe || 0) - (c.congPhep || 0); nguongPC = c.tongCong; } // đối chiếu M thật HAK_DN (QR_CC_PHUCAP_TN) — chỉ áp dụng khi mã CHỌN đúng kiểu này
             else if (kieuPC === "TYLE_TRU_PHEP_TANGCA") { cPC = c.tongCong - (c.congPhep || 0) - (c.congTangCa || 0); nguongPC = cPC; }
             else { cPC = c.tongCong; nguongPC = cPC; } // TYLE_KHONG_TRU (hoặc "Loại công thức" lạ chưa có công thức cấu hình — giữ đúng hành vi cũ)
@@ -454,13 +521,11 @@
         if (loai !== "HT_THEO_NGAY" && fmlCtx.records && fmlCtx.records.length) {
           // Dynamic Payroll Formula Engine (mục VI): "Loại công thức" không phải HT_THIEU_CHUAN/HT_THEO_NGAY
           // → tra db.dm_congthuc (Loại=SUPPORT) trước khi coi là HT_THEO_NGAY theo mặc định cũ.
-          var htRec = FML.resolve(fmlCtx.records, { code: loai, type: "SUPPORT", nam: fmlCtx.nam, thang: fmlCtx.thang });
-          if (htRec && htRec["Biểu thức"]) {
-            try {
-              return Math.round(FML.evaluate(htRec["Biểu thức"], { MUC_HO_TRO: money(dm["Số tiền"]), CONG_CHUAN: cChuan, CONG_THUC_TE: c.tongCong, SO_NGAY_COM: ngay, SO_NGAY_DUOC_HUONG: ngay }));
-            } catch (e) {
-              out.canhbao.push(ma + ": mã hỗ trợ '" + (dm["Mã hỗ trợ"] || "") + "' — công thức cấu hình (" + htRec["Biểu thức"] + ") lỗi khi tính (" + e.message + ") — tạm dùng công thức mặc định, kiểm tra lại công thức trong Danh mục công thức tiền lương");
-            }
+          var th = traCongThuc(fmlCtx, loai, "SUPPORT");
+          if (th && th.loi) return 0; // FORMULA_ERROR đã ghi — không dùng công thức mặc định
+          if (th && th.rec) {
+            var eh = tinhCongThuc(fmlCtx, th.rec, "SUPPORT", { MUC_HO_TRO: money(dm["Số tiền"]), CONG_CHUAN: cChuan, CONG_THUC_TE: c.tongCong, SO_NGAY_COM: ngay, SO_NGAY_DUOC_HUONG: ngay });
+            return eh.ok ? Math.round(eh.v) : 0;
           }
         }
         return Math.round(ngay * money(dm["Số tiền"])); // HT_THEO_NGAY (hoặc "Loại công thức" lạ chưa có công thức cấu hình — giữ đúng hành vi cũ)
