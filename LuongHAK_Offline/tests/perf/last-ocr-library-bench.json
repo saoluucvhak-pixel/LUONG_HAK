@@ -1,0 +1,126 @@
+{
+ "env": {
+  "node": "v22.22.0",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 2,
+  "mem_mb": 8030
+ },
+ "lookupScaling": [
+  {
+   "samples": 100,
+   "nạp bộ nhớ (ms)": 7.68,
+   "dựng chỉ mục (ms)": 3.6,
+   "tra cứu / ô (ms)": 0.16,
+   "ô / giây": 6387
+  },
+  {
+   "samples": 1000,
+   "nạp bộ nhớ (ms)": 35.6,
+   "dựng chỉ mục (ms)": 2.22,
+   "tra cứu / ô (ms)": 0.4,
+   "ô / giây": 2500
+  },
+  {
+   "samples": 10000,
+   "nạp bộ nhớ (ms)": 351.83,
+   "dựng chỉ mục (ms)": 14.58,
+   "tra cứu / ô (ms)": 1.83,
+   "ô / giây": 548
+  },
+  {
+   "samples": 50000,
+   "nạp bộ nhớ (ms)": 1772.95,
+   "dựng chỉ mục (ms)": 97.77,
+   "tra cứu / ô (ms)": 6.46,
+   "ô / giây": 155
+  }
+ ],
+ "persist500": {
+  "ghi 500 lần sửa (ms)": 720.85,
+  "ms / lần sửa": 1.44,
+  "duyệt (ms)": 22.86,
+  "nạp lại từ đĩa (ms)": 18.92,
+  "kiểm toàn vẹn (ms)": 6.52,
+  "ok": true,
+  "dung lượng (KB)": 2198,
+  "samples": 500
+ },
+ "calibration": {
+  "sweep": [
+   {
+    "th": 0.78,
+    "auto": 952,
+    "wrong": 0,
+    "sug": 1,
+    "unr": 47,
+    "autoPrecision": 100
+   },
+   {
+    "th": 0.82,
+    "auto": 952,
+    "wrong": 0,
+    "sug": 1,
+    "unr": 47,
+    "autoPrecision": 100
+   },
+   {
+    "th": 0.86,
+    "auto": 932,
+    "wrong": 0,
+    "sug": 21,
+    "unr": 47,
+    "autoPrecision": 100
+   },
+   {
+    "th": 0.9,
+    "auto": 662,
+    "wrong": 0,
+    "sug": 291,
+    "unr": 47,
+    "autoPrecision": 100
+   },
+   {
+    "th": 0.93,
+    "auto": 334,
+    "wrong": 0,
+    "sug": 619,
+    "unr": 47,
+    "autoPrecision": 100
+   },
+   {
+    "th": 0.95,
+    "auto": 145,
+    "wrong": 0,
+    "sug": 808,
+    "unr": 47,
+    "autoPrecision": 100
+   },
+   {
+    "th": 0.97,
+    "auto": 38,
+    "wrong": 0,
+    "sug": 915,
+    "unr": 47,
+    "autoPrecision": 100
+   }
+  ],
+  "chosen": 0.93,
+  "testResult": {
+   "th": 0.93,
+   "auto": 370,
+   "wrong": 0,
+   "sug": 583,
+   "unr": 47,
+   "autoPrecision": 100
+  },
+  "note": "ngưỡng chọn trên tập hiệu chỉnh (precision AUTO ≥ 99,5%) nhưng không thấp hơn sàn an toàn 0,93; đo lại trên tập test riêng; dữ liệu tổng hợp — cần hiệu chỉnh lại trên chứng từ thật"
+ },
+ "accuracy": {
+  "n": 300,
+  "Tesseract một mình (%)": 76.7,
+  "Tesseract + thư viện (%)": 95.3,
+  "libAuto": 107,
+  "libAutoWrong": 0,
+  "note": "chữ số tổng hợp, thư viện 200 mẫu — cận trên của cơ chế, KHÔNG phải độ chính xác trên chữ viết tay thật"
+ }
+}

@@ -15,6 +15,7 @@
     "payroll.calc": "Tính lương", "payroll.close": "Chốt kỳ lương", "payroll.reopen": "Mở chốt kỳ lương",
     "report.view": "Xem báo cáo nhân sự", "import": "Nhập Excel", "export": "Xuất Excel / in",
     "retro.edit": "Sửa dữ liệu có hiệu lực hồi tố vào kỳ đã chốt",
+    "ocr.library": "Quản lý thư viện mẫu OCR (duyệt, từ chối, đổi nhãn, khôi phục mẫu)",
     "backup.restore": "Khôi phục dữ liệu từ bản sao lưu / file", "system.admin": "Quản trị người dùng, công ty, xóa toàn bộ dữ liệu"
   };
   var ALLP = Object.keys(PERMS);
@@ -22,7 +23,7 @@
   var ROLES = {
     admin: { ten: "Quản trị (Admin)", perms: ALLP },
     nhansu: { ten: "Nhân sự", perms: ["hr.view", "hr.edit", "report.view", "import", "export", "input.view"] },
-    ketoanluong: { ten: "Kế toán lương", perms: ["hr.view", "input.view", "input.edit", "dm.edit", "payroll.view", "payroll.calc", "payroll.close", "report.view", "import", "export"] },
+    ketoanluong: { ten: "Kế toán lương", perms: ["hr.view", "input.view", "input.edit", "dm.edit", "payroll.view", "payroll.calc", "payroll.close", "report.view", "import", "export", "ocr.library"] },
     ketoanthanhtoan: { ten: "Kế toán thanh toán", perms: ["payroll.view", "export", "hr.view"] },
     truongbophan: { ten: "Trưởng bộ phận", perms: ["hr.view", "input.view", "input.edit", "report.view"] },
     pheduyet: { ten: "Người phê duyệt", perms: ["hr.view", "input.view", "payroll.view", "report.view", "export", "formula.approve"] },

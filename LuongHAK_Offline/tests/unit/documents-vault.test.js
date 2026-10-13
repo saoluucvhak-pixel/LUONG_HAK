@@ -50,3 +50,11 @@ test("verify: phát hiện file bị sửa hoặc mất; không có API xóa", (
 test("read id không tồn tại → lỗi rõ ràng", () => {
   const { v } = mk(); assert.equal(v.read("DOC-nope").ok, false);
 });
+
+test("V7 tên chuẩn chứng từ: {Company}_{YYYYMM}_{Loại}_{Bộ phận}_{DocumentID}_{8 ký tự hash}.{ext}", () => {
+  const os = require("os"), fs = require("fs"), path = require("path"), { createVault } = require("../../main/documents");
+  const v = createVault(fs.mkdtempSync(path.join(os.tmpdir(), "dv-"))), r = v.add(Buffer.from("abc".repeat(50)), { name: "bảng công.png", ky: "2026-09", company: "HAK", docType: "BANGCONG", dept: "KHO 1" });
+  const m = v.find(r.id);
+  assert.match(m.storedName, /^HAK_202609_BANGCONG_KHO1_DOC-\d{6}-\d{8}-[A-Z0-9]+_[0-9a-f]{8}\.png$/);
+  assert.equal(m.sha256.slice(0, 8), m.storedName.split("_").pop().slice(0, 8));
+});

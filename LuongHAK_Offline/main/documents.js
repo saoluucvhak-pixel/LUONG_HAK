@@ -38,6 +38,12 @@ function createVault(root, opts) {
   }
 
   /** Thêm chứng từ. buf: Buffer. Trả { ok, id, sha256, duplicate, name, size } hoặc { ok:false, error }. */
+  /** Tên chuẩn của chứng từ: {CompanyID}_{YYYYMM}_{DocumentType}_{DepartmentCode}_{DocumentID}_{HashPrefix}.{ext} — dùng khi xuất / hiển thị; file lưu trong kho vẫn theo DocumentID. */
+  const tok = (x, d) => String(x || d).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[đĐ]/g, "D").replace(/[^A-Za-z0-9-]+/g, "").slice(0, 20) || d;
+  function storedNameOf(m, info) {
+    const ym = /^(\d{4})-(\d{2})$/.test(String(info && info.ky || "")) ? info.ky.replace("-", "") : m.addedAt.slice(0, 7).replace("-", "");
+    return [tok(info && info.company, "HAK"), ym, tok(info && info.docType, "BANGCONG"), tok(info && info.dept, "ALL"), m.id, m.sha256.slice(0, 8)].join("_") + "." + m.ext;
+  }
   function add(buf, info) {
     info = info || {};
     if (!Buffer.isBuffer(buf) || !buf.length) return { ok: false, error: "File rỗng" };
@@ -48,6 +54,7 @@ function createVault(root, opts) {
     const h = sha256(buf), old = bySha[h];
     if (old) return { ok: true, id: old.id, sha256: h, duplicate: true, name: old.name, size: old.size };
     const id = newId(), meta = { id, sha256: h, name, ext, size: buf.length, addedAt: now().toISOString(), addedBy: String(info.user || "").slice(0, 60), note: String(info.note || "").slice(0, 300), pages: Number(info.pages) || 0 };
+    meta.storedName = storedNameOf(meta, info); meta.docType = tok(info.docType, "BANGCONG"); meta.dept = tok(info.dept, "ALL"); meta.company = tok(info.company, "HAK"); meta.ky = /^\d{4}-\d{2}$/.test(String(info.ky || "")) ? info.ky : "";
     fs.mkdirSync(dirFor(id), { recursive: true });
     fs.writeFileSync(fileFor(meta), buf, { flag: "wx" }); // wx: không ghi đè
     fs.writeFileSync(sideFor(meta), JSON.stringify(meta, null, 1), { flag: "wx" });

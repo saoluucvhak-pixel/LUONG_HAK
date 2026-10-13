@@ -17,7 +17,7 @@ function create(o) {
   let name = "LuongHAK_FullBackup_" + stampOf(now()) + ".zip", n = 1;
   while (fs.existsSync(path.join(o.destDir, name))) name = "LuongHAK_FullBackup_" + stampOf(now()) + "_" + (++n) + ".zip";
   const dest = path.join(o.destDir, name), tmp = dest + ".tmp";
-  const warnings = [], manifest = { format: FORMAT, version: VERSION, createdAt: now().toISOString(), appVersion: String(o.appVersion || ""), createdBy: String(o.user || ""), data: null, documents: [], warnings };
+  const warnings = [], manifest = { format: FORMAT, version: VERSION, createdAt: now().toISOString(), appVersion: String(o.appVersion || ""), createdBy: String(o.user || ""), data: null, documents: [], ocrLibrary: null, warnings };
   let w;
   try {
     w = Z.createWriter(tmp, { now });
@@ -30,6 +30,12 @@ function create(o) {
       w.addFile(rel, f.file); w.addBuffer("documents/" + m.id + ".json", Buffer.from(JSON.stringify(m, null, 1), "utf8"));
       manifest.documents.push({ id: m.id, name: m.name, path: rel, size: m.size, sha256: m.sha256 });
     });
+    if (o.ocrLib) { // Thư viện mẫu OCR: nhật ký + ảnh ô, kèm SHA-256 từng file → khôi phục không phải học lại
+      const lv = o.ocrLib.verify(); if (!lv.ok) warnings.push("Thư viện mẫu OCR có " + lv.bad.length + " mẫu lỗi ảnh / " + lv.corruptLines + " dòng nhật ký hỏng — vẫn đóng gói phần còn dùng được");
+      const fl = [];
+      o.ocrLib.files().forEach((f) => { const rel = "ocr_library/" + f.rel; w.addFile(rel, f.abs); fl.push({ path: rel, size: fs.statSync(f.abs).size, sha256: sha(fs.readFileSync(f.abs)) }); });
+      manifest.ocrLibrary = { samples: o.ocrLib.lib.size(), files: fl };
+    }
     w.addBuffer("manifest.json", Buffer.from(JSON.stringify(manifest, null, 1), "utf8"));
     w.finish();
   } catch (e) { if (w) w.abort(); try { fs.unlinkSync(tmp); } catch (x) { /* chưa tạo */ } return { ok: false, error: "Không tạo được gói: " + (e.message || e) }; }
@@ -39,7 +45,7 @@ function create(o) {
   const whole = crypto.createHash("sha256"), fd = fs.openSync(dest, "r"), buf = Buffer.alloc(1 << 20); let k;
   try { while ((k = fs.readSync(fd, buf, 0, buf.length, null)) > 0) whole.update(buf.subarray(0, k)); } finally { fs.closeSync(fd); }
   const hex = whole.digest("hex"); fs.writeFileSync(dest + ".sha256", hex + "  " + name + "\n");
-  return { ok: true, file: dest, name, size: fs.statSync(dest).size, sha256: hex, docs: manifest.documents.length, warnings };
+  return { ok: true, file: dest, name, size: fs.statSync(dest).size, sha256: hex, docs: manifest.documents.length, ocrSamples: manifest.ocrLibrary ? manifest.ocrLibrary.samples : 0, warnings };
 }
 
 /** Kiểm tra gói KHÔNG ghi gì lên đĩa. @param vault (tuỳ chọn) để phân loại chứng từ new/same/conflict.
@@ -66,6 +72,11 @@ function inspect(file, vault) {
       if (vault) { const cur = vault.find(d.id); if (cur) state = cur.sha256 === d.sha256 ? "same" : "conflict"; }
       res.docs.push({ id: d.id, name: d.name, size: d.size, state });
     });
+    if (m.ocrLibrary) (m.ocrLibrary.files || []).forEach((f) => {
+      const e = zip.byName[f.path || ""]; if (!e || !/^ocr_library\/(library\.jsonl|layouts\.jsonl|images\/[0-9a-f]{2}\/[0-9a-f]{64}\.png)$/.test(f.path)) { res.problems.push("Thư viện mẫu OCR: thiếu/sai tên file " + f.path); return; }
+      try { if (zip.sha256Of(e) !== f.sha256) throw new Error("sai SHA-256"); } catch (x) { res.problems.push("Thư viện mẫu OCR " + f.path + ": " + x.message); }
+    });
+    res.ocrSamples = m.ocrLibrary ? m.ocrLibrary.samples : 0;
     res.ok = res.problems.length === 0 && !!res.dataText;
     return res;
   } finally { zip.close(); }
@@ -87,4 +98,26 @@ function importDocuments(file, vault) {
   } finally { zip.close(); }
   return out;
 }
-module.exports = { create, inspect, importDocuments, FORMAT, VERSION };
+/** Khôi phục thư viện mẫu OCR từ gói (đã qua inspect). Thư viện đích rỗng → chép nguyên; không rỗng → chỉ THÊM mẫu/sự kiện chưa có (không ghi đè). → { addedSamples, addedEdits, images } */
+function importOcrLibrary(file, store) {
+  const zip = Z.openZip(file), out = { addedSamples: 0, addedEdits: 0, images: 0 };
+  try {
+    const lye = zip.byName["ocr_library/layouts.jsonl"];
+    if (lye) { // bố cục: thêm bố cục chưa có (theo id), cộng lượt dùng không cần thiết khi khôi phục
+      const have = new Set(store.layouts().map((x) => x.id)); out.addedLayouts = 0;
+      zip.readBuffer(lye, 64 * 1048576).toString("utf8").split("\n").forEach((ln) => { if (!ln.trim()) return; let r; try { r = JSON.parse(ln); } catch (e) { return; } if (r.t === "layout" && !have.has(r.id)) { store.addLayoutRecord(r); out.addedLayouts++; } });
+    }
+    const le = zip.byName["ocr_library/library.jsonl"]; if (!le) return out;
+    store.load(); const have = new Set(store.lib.list().map((x) => x.id)), haveEd = new Set(store.lib.edits().map((x) => x.id)), newIds = new Set();
+    const text = zip.readBuffer(le, 1024 * 1048576).toString("utf8"), recs = [];
+    text.split("\n").forEach((ln) => { if (!ln.trim()) return; let r; try { r = JSON.parse(ln); } catch (e) { return; }
+      if (r.t === "sample") { if (have.has(r.id)) return; newIds.add(r.id); recs.push(r); out.addedSamples++; }
+      else if (r.t === "edit") { if (haveEd.has(r.id)) return; recs.push(r); out.addedEdits++; }
+      else if (r.t === "status" || r.t === "relabel") { if (newIds.has(r.id)) recs.push(r); }
+      else if (r.t === "refs") recs.push(r); });
+    recs.forEach((r) => { if (r.t !== "sample") return; const e = zip.byName["ocr_library/" + r.png]; if (e && !store.readImage(r.pngSha)) { store.putImage(r.pngSha, zip.readBuffer(e, 64 * 1048576)); out.images++; } });
+    store.restoreRecords(recs);
+  } finally { zip.close(); }
+  return out;
+}
+module.exports = { create, inspect, importDocuments, importOcrLibrary, FORMAT, VERSION };

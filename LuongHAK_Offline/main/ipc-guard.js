@@ -4,7 +4,7 @@
 // trong chính cửa sổ app (giới hạn đã ghi trong docs/AUDIT_V5.md). Dữ liệu vẫn chưa mã hóa trên đĩa.
 "use strict";
 const path = require("path"), url = require("url");
-const KNOWN = ["hr.view", "hr.edit", "input.view", "input.edit", "dm.edit", "formula.approve", "payroll.view", "payroll.calc", "payroll.close", "payroll.reopen", "report.view", "import", "export", "retro.edit", "backup.restore", "system.admin"];
+const KNOWN = ["hr.view", "hr.edit", "input.view", "input.edit", "dm.edit", "formula.approve", "payroll.view", "payroll.calc", "payroll.close", "payroll.reopen", "report.view", "import", "export", "retro.edit", "ocr.library", "backup.restore", "system.admin"];
 
 function createGuard(appDir) {
   const indexPath = path.resolve(appDir, "index.html");
