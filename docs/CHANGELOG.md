@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## [2.0.0-alpha.23] — pre-release V9 (chưa phải bản ổn định; chưa nghiệm thu thực địa trên Windows)
+### Chức năng mới
+- **Phân quyền do tiến trình chính quyết định**: đăng nhập được kiểm tra tại main (đọc tài khoản trên đĩa, tự băm/so mật khẩu, tự tra vai trò → quyền); giao diện không còn gửi được danh sách quyền. Thu hồi quyền (khóa/đổi vai trò/xóa tài khoản) có hiệu lực ngay; phiên tự hết hạn sau 30 phút không thao tác; chặn khung (iframe) và trang lạ.
+- **OCR học từ sửa tên nhân viên**: nhớ “chuỗi tên trên giấy ↔ Mã NV” đã được xác nhận; chỉ chọn sẵn khi đã xác nhận trên ≥ 2 chứng từ, không bao giờ tự chọn khi trùng họ tên hoặc xung đột.
+- **Cặp chữ số dễ nhầm** (1/7, 3/8, 0/6, 5/6, X/-) không còn được tự chấp nhận, luôn chuyển sang “gợi ý”.
+- **Lưới chấm công** có thêm lọc: hình thức công, dòng có ô lỗi, nguồn OCR (có/không/đã sửa tay sau nhập).
+- **Bộ lọc dùng chung** chọn nhiều giá trị (khối, phòng ban, tổ, mã lương, thanh toán, hình thức công, nhân viên), tìm không dấu, lưu bộ lọc.
+- **Cache công thức** (AST): 40.000 lượt tính ở 5.000 NV từ 205,6 ms còn 15,7 ms, kết quả không đổi.
+### Lỗi đã sửa / chặn
+- Bảng lương có **FORMULA_ERROR** không còn xuất được như bản chính thức (Excel/PDF).
+- **Khôi phục** kiểm cả nội dung (SHA-256 từng bảng + tổng snapshot kỳ đã chốt), không chỉ số dòng.
+- Chống bấm 2 lần: chốt kỳ, nhập Excel; khôi phục không chạy song song.
+- Tên người thực hiện ghi vào thư viện OCR / chứng từ / Full Backup lấy từ phiên đã xác thực ở main.
+### Thay đổi dữ liệu
+- Thêm bảng `ocr_ten` (bộ nhớ tên OCR) và dùng `chungtu_lienket`; không đổi công thức lương, không đổi kỳ đã chốt. Bản sao lưu cũ vẫn nhập được.
+### Giới hạn / lỗi đã biết
+- Chưa chạy trên máy Windows thật, chưa thử scan viết tay thật; Full Backup còn chạy trên luồng chính (không có nút hủy).
+- Nghiệp vụ lương trong giao diện (chốt/mở kỳ, sửa danh mục) vẫn kiểm quyền ở renderer; dữ liệu trên đĩa chưa mã hóa.
+- 4 điểm lệch với Excel cần quyết định của quản lý (thuế TNCN có khấu trừ vào thu nhập còn lại, KPCĐ khi tính thuế, truy thu BH, công chuẩn mã CĐ) — xem `LuongHAK_Offline/docs/V9_PAYROLL_RECONCILIATION.md`.
+### Nâng cấp / quay lại
+- Trước khi cập nhật: **Full Backup** (Công ty & Sao lưu → Full Backup). Cài đè bản mới, dữ liệu ở `%APPDATA%\Tinh Luong HAK` không bị xóa.
+- Quay lại bản cũ: cài lại bản trước, dùng Full Backup/Sao lưu tự động trong `backups\` để khôi phục.
+
 ## [2.0.0-alpha.22] — 12/10/2026 — OCR: bảng chấm công tay (dấu x, ghi giờ, số ca)
 - **Chủ sở hữu duyệt quy ước đọc** (R-69): *"x: 1 công, xx: 2 công, xxx: 3 công, ghi giờ = giờ/8"* và lịch ca *"1 ca = 1 công; "1+2" = 2 công"*.
 - Đọc ảnh chấm công → chọn **Cách đọc ô**:

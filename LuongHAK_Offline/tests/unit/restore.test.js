@@ -125,3 +125,36 @@ test("U-RS-11 khôi phục sang thư mục/ổ khác (kho chứng từ & thư vi
   const r = t.rs.stage(s.pkg.file); assert.equal(r.ok, true, r.error); assert.equal(t.rs.commitAssets(r.rid).ok, true); t.rs.finish(r.rid);
   assert.equal(t.v.list().length, 2); assert.ok(t.v.verify().every((x) => x.status === "ok")); assert.equal(t.lib.verify().ok, true);
 });
+
+test("U-RS-12 (V9) POSTCHECK so NỘI DUNG: sửa 1 ô công / đổi tổng thực lĩnh snapshot kỳ chốt dù số dòng giữ nguyên → không đạt", () => {
+  const DD = require("../../main/data-digest");
+  const base = { nhanvien: [{ "Mã NV": "A", "Họ và tên": "An" }], chamcong: [{ "Kỳ": "2026-09", "Mã NV": "A", "01": "1" }], ocr_ten: [], chungtu_lienket: [],
+    kyluong: [{ ky: "2026-09", version: 2, kq: { bangluong: [{ "Mã NV": "A", "Tổng thu nhập": 10000000, "Thực lĩnh": 9000000 }] } }] };
+  const exp = DD.digest(base);
+  assert.deepEqual(DD.compare(exp, DD.digest(JSON.parse(JSON.stringify(base)))), [], "bản sao y hệt (khác thứ tự khóa) phải khớp");
+  const reordered = JSON.parse(JSON.stringify(base)); reordered.nhanvien[0] = { "Họ và tên": "An", "Mã NV": "A" };
+  assert.deepEqual(DD.compare(exp, DD.digest(reordered)), [], "thứ tự khóa không làm lệch");
+  const c1 = JSON.parse(JSON.stringify(base)); c1.chamcong[0]["01"] = "0,5";
+  assert.match(DD.compare(exp, DD.digest(c1)).join(), /chamcong: nội dung khác/);
+  const c2 = JSON.parse(JSON.stringify(base)); c2.kyluong[0].kq.bangluong[0]["Thực lĩnh"] = 9000001;
+  assert.ok(DD.compare(exp, DD.digest(c2)).some((x) => /kỳ chốt 2026-09#v2: tổng snapshot khác/.test(x)));
+  const c3 = JSON.parse(JSON.stringify(base)); c3.kyluong = [];
+  assert.ok(DD.compare(exp, DD.digest(c3)).some((x) => /kyluong|kỳ chốt/.test(x)));
+});
+test("U-RS-13 (V9) Full Backup ghi digest vào manifest; khôi phục sai nội dung (cùng số dòng) bị POSTCHECK bắt", () => {
+  const s = source(), t = target(), r = t.rs.stage(s.pkg.file); t.rs.commitAssets(r.rid);
+  const live = JSON.parse(s.dataText); live.nhanvien[0]["Họ và tên"] = "Người khác"; t.live = JSON.stringify(live);
+  const p = t.rs.postcheck(r.rid); assert.equal(p.ok, false);
+  assert.ok(p.checks.some((c) => /nội dung dữ liệu lương/.test(c.name) && !c.ok && /nhanvien/.test(c.detail)), JSON.stringify(p.checks));
+  t.live = s.dataText; assert.equal(t.rs.postcheck(r.rid).ok, true); t.rs.rollback(r.rid);
+});
+
+test("U-RS-14 (V9) không chạy 2 lần khôi phục đồng thời: stage thứ 2 trong lúc COMMIT bị từ chối; commit lần 2 cùng phiên bị từ chối", () => {
+  const s = source(), t = target(), r1 = t.rs.stage(s.pkg.file), r2 = t.rs.stage(s.pkg.file);
+  assert.equal(r1.ok, true); assert.equal(r2.ok, true, "chuẩn bị song song được, nhưng chỉ một phiên được COMMIT");
+  assert.equal(t.rs.commitAssets(r1.rid).ok, true);
+  const again = t.rs.commitAssets(r2.rid); assert.equal(again.ok, false, "phiên thứ 2 không được commit khi phiên 1 đang chạy");
+  const st3 = t.rs.stage(s.pkg.file); assert.equal(st3.ok, false); assert.match(st3.error, /khác chưa kết thúc/);
+  t.live = s.dataText; assert.equal(t.rs.postcheck(r1.rid).ok, true); t.rs.finish(r1.rid);
+  assert.equal(t.rs.busy(), false);
+});

@@ -1,6 +1,6 @@
 # THIẾT KẾ HỆ THỐNG — Tính Lương HAK (bản offline cho Windows)
 
-> Phiên bản: **2.0.0-alpha.22** (OCR bảng chấm công tay: dấu x / ghi giờ / số ca — R-69; quy chế lương HAK Group 2026 — engine 1.8.0, R-68; alpha.20 đọc ảnh / PDF chấm công bằng OCR; alpha.19 phân bổ khối lượng; nội dung khác như alpha.18), ngày 11/10/2026, nhánh `claude/v2-quy-che-luong-2026`.
+> Phiên bản: **2.0.0-alpha.23** (OCR bảng chấm công tay: dấu x / ghi giờ / số ca — R-69; quy chế lương HAK Group 2026 — engine 1.8.0, R-68; alpha.20 đọc ảnh / PDF chấm công bằng OCR; alpha.19 phân bổ khối lượng; nội dung khác như alpha.18), ngày 11/10/2026, nhánh `claude/v2-quy-che-luong-2026`.
 > File này tổng hợp các tài liệu chi tiết sau, mỗi chủ đề xem thêm ở file tương ứng:
 > - Kiến trúc: `ARCHITECTURE.md`
 > - Cấu trúc dữ liệu: `DATABASE_SCHEMA.md`

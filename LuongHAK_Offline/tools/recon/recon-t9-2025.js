@@ -43,3 +43,7 @@ console.log("Tổng tấn Excel(NV)",tot.toFixed(2),"App(NV)",tA.toFixed(2),"T�
   let bad=0;D.RP_THLUONG.filter(x=>x["Mã tiền lương 1"]==="SP").forEach(x=>{const e=+x["Sản lượng (Tấn)"],a=by[x["Mã nhân viên/CCCD"]]||0;if(Math.abs(e-a)>0.01){bad++;console.log("LỆCH",x["Họ và tên"],e,a.toFixed(2));}});
   console.log("Phân bổ sản lượng với giả lập đủ công: lệch",bad,"/16; chưa phân bổ",s2.alloc.unallocated.toFixed(2));
 }
+if(process.env.RECON_OUT){ // xuất bảng đối chiếu chi tiết từng NV × khoản (dữ liệu cá nhân — ghi NGOÀI repo)
+  const X={"Công chuẩn":"Công chuẩn","Công tính lương":"Tổng công","Lương thời gian":"Lương thời gian","Sản lượng (Tấn)":"Sản lượng (tấn)","Lương sản lượng":"Lương sản lượng","Lương bù sản lượng":"Lương bù SL","Lương ban dăm":"Lương bơm dăm","Lương tăng ca":"Tiền tăng ca","Phụ cấp công tác":"Phụ cấp công tác","Phụ cấp TN":"Phụ cấp","Tiền cơm":"Tiền cơm","Lương hỗ trợ":"Lương hỗ trợ","Tổng thu nhập":"Tổng thu nhập","Cộng BH NLĐ":"BH trừ NLĐ","NLĐ.KPCĐ":"KPCĐ trừ NLĐ","Truy thu bảo hiểm":"Truy thu BH","Thuế TNCN":"Thuế TNCN","Tạm ứng":"Tạm ứng","Trừ khác":"Trừ khác","Tiền lương còn nhận":"Thực lĩnh"};
+  const rows=[];D.RP_THLUONG.forEach(x=>{const ma=x["Mã nhân viên/CCCD"],b=app[ma]||{};Object.keys(X).forEach(k=>{const e=+x[k]||0,a=+b[X[k]]||0;rows.push({ky:KY,ma,ten:x["Họ và tên"],mal:x["Mã tiền lương 1"],khoan:k,excel:e,app:a,diff:Math.round((a-e)*100)/100});});});
+  require("fs").writeFileSync(process.env.RECON_OUT,JSON.stringify(rows));}

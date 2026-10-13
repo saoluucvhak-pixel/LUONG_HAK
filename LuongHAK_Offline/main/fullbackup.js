@@ -56,7 +56,7 @@ function create(o) {
   while (fs.existsSync(path.join(o.destDir, name))) name = prefix + stampOf(now()) + "_" + (++n) + ".zip";
   const dest = path.join(o.destDir, name), tmp = dest + ".tmp";
   const counts = {}; Object.keys(parsed).forEach((k) => { if (Array.isArray(parsed[k])) counts[k] = parsed[k].length; });
-  const manifest = { format: FORMAT, version: VERSION, status: partial ? ST.PARTIAL : ST.SUCCESS, complete: !partial, createdAt: now().toISOString(), appVersion: String(o.appVersion || ""), createdBy: String(o.user || ""), data: null, counts, documents: [], ocrLibrary: null, restoreConfig: o.restoreConfig || null, missing, warnings };
+  const manifest = { format: FORMAT, version: VERSION, status: partial ? ST.PARTIAL : ST.SUCCESS, complete: !partial, createdAt: now().toISOString(), appVersion: String(o.appVersion || ""), createdBy: String(o.user || ""), data: null, counts, digest: require("./data-digest").digest(parsed), documents: [], ocrLibrary: null, restoreConfig: o.restoreConfig || null, missing, warnings };
   let w;
   const abortTmp = () => { try { if (w) w.abort(); } catch (e) { /* đã đóng */ } try { fs.unlinkSync(tmp); } catch (e) { /* chưa tạo */ } };
   try {

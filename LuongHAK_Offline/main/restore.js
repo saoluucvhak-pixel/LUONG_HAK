@@ -132,6 +132,7 @@ function createRestorer(o) {
     add("đọc lại dữ liệu từ đĩa", !!live, live ? "" : "không đọc được file dữ liệu sau khi ghi");
     if (live) {
       const src = JSON.parse(fs.readFileSync(path.join(s.dir, "data.json"), "utf8")), m = s.manifest;
+      if (m.digest) { try { const DD = require("./data-digest"), bad = DD.compare(m.digest, DD.digest(live)); add("nội dung dữ liệu lương (SHA-256 từng bảng + tổng snapshot kỳ chốt)", !bad.length, bad.slice(0, 6).join("; ")); } catch (e) { add("nội dung dữ liệu lương", false, String(e.message || e)); } }
       Object.keys(m.counts || {}).forEach((k) => { if (k === "nhanvien" || k === "chamcong" || k === "kyluong") add("bảng " + k, Array.isArray(live[k]) && live[k].length === m.counts[k], "mong đợi " + m.counts[k] + " dòng"); });
       if ((src.nhanvien || []).length) add("mở hồ sơ nhân viên", (live.nhanvien || []).some((r) => r && r["Mã NV"] === src.nhanvien[0]["Mã NV"]), src.nhanvien[0]["Mã NV"]);
       if ((src.chamcong || []).length) add("mở bảng chấm công", (live.chamcong || []).some((r) => r && r["Mã NV"] === src.chamcong[0]["Mã NV"] && r["Kỳ"] === src.chamcong[0]["Kỳ"]), "kỳ " + src.chamcong[0]["Kỳ"]);

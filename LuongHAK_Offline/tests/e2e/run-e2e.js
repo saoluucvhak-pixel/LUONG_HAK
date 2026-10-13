@@ -905,6 +905,24 @@ async function launch(dataDir, opt) {
     await app.close();
   }
 
+  // V9: quyền do TIẾN TRÌNH CHÍNH quyết định — renderer không tự cấp được; đăng xuất ở main thì lệnh bị chặn lại
+  {
+    ({ app, w, errs } = await launch(null, { noAuth: true }));
+    const forged = await w.evaluate(async () => {
+      const api = Object.keys(window.hakStore || {});
+      const a = window.hakStore.login("admin", "mat-khau-gia-mao1"), b = window.hakStore.login(["system.admin"], { perms: ["backup.restore"] });
+      return { api, a, b, f: await window.hakFull.create({}), r: await window.hakFull.stage({}), d: await window.hakDocs.list() };
+    });
+    ok("V9: renderer KHÔNG có API gửi danh sách quyền (không còn session/setSession); đăng nhập giả mạo bị main từ chối; backup/restore/kho chứng từ vẫn bị chặn",
+      !forged.api.includes("session") && forged.a.ok === false && forged.b.ok === false && [forged.f, forged.r, forged.d].every((r) => r.ok === false && /Chưa đăng nhập/.test(r.error || "")), JSON.stringify(forged).slice(0, 300));
+    await auth(w);
+    const st1 = await w.evaluate(() => window.hakStore.authState());
+    await w.evaluate(() => window.hakStore.logout());
+    const after = await w.evaluate(async () => ({ s: window.hakStore.authState(), l: await window.hakDocs.list() }));
+    ok("V9: sau khi main đăng xuất phiên, lệnh nhạy cảm lại bị chặn", st1.ok === true && st1.role === "admin" && after.s.ok === false && after.l.ok === false, JSON.stringify({ st1: st1.ok, after }).slice(0, 250));
+    await app.close();
+  }
+
   // Quên mật khẩu Admin → mã khôi phục (mã sai bị từ chối; dùng xong cấp mã mới)
   ({ app, w, errs } = await launch(null, { noAuth: true }));
   await w.click('button:has-text("Quên mật khẩu Admin")');

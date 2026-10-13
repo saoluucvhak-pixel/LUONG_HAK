@@ -117,6 +117,7 @@ test("U-REPO-08 app.js không ghi thẳng vào bảng nghiệp vụ ngoài các 
     "db.nhanvien.push(": 1, "db.canhan.push(": 1, "db.hopdong.push(": 1, "db.chitiethd.push(": 1, "db.chungtu.push(": 1, "db.thanhtoan.push(": 1,
     "db.hocvan.push(": 1, // α18: trợ lý thêm nhân viên mới ghi luôn Trình độ (sổ lao động) — cùng ngoại lệ trợ lý ở trên
     "db.chungtu_lienket =": 1, /* V8: liên kết ô chấm công ↔ chứng từ gốc, ghi sau khi nhập OCR đã commit */
+    "db.ocr_ten =": 1, /* V9: bộ nhớ xác nhận tên OCR ↔ Mã NV, ghi sau khi nhập OCR đã commit */
     "db[k] =": 3, "db.chamcong =": 1
   };
   assert.deepEqual(found, allowed);

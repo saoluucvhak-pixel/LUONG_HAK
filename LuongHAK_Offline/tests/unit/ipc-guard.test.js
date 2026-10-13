@@ -16,20 +16,98 @@ test("chỉ tin trang index.html của chính app (file://), bỏ qua #hash/?que
   assert.equal(g.trusted(null), false); assert.equal(g.trusted({}), false);
 });
 
-test("chưa đăng nhập → từ chối; có phiên → chỉ cho quyền vai trò có; đăng xuất → lại từ chối", () => {
-  const g = createGuard(APP);
-  assert.match(g.deny(good, "input.view"), /Chưa đăng nhập/);
-  assert.equal(g.setSession(good, PERM.ROLES.xembaocao.perms).ok, true);
-  assert.equal(g.deny(good, "payroll.view"), ""); assert.match(g.deny(good, "backup.restore"), /không có quyền/); assert.match(g.deny(good, "input.edit"), /không có quyền/);
-  g.setSession(good, PERM.ROLES.admin.perms); assert.equal(g.deny(good, "backup.restore"), "");
-  g.setSession(good, []); assert.match(g.deny(good, "export"), /Chưa đăng nhập/);
+// ---- V9: main là nguồn quyền; dựng "ổ đĩa tài khoản" giả để thử đăng nhập / thu hồi / hết hạn ----
+const crypto = require("crypto");
+const mk = (pw, vaiTro, extra) => { const salt = crypto.randomBytes(16).toString("hex"), iter = 100000; return Object.assign({ tenDangNhap: "u_" + vaiTro, vaiTro, khoa: false, salt, iter, hash: crypto.pbkdf2Sync(pw, Buffer.from(salt, "hex"), iter, 32, "sha256").toString("hex") }, extra); };
+function env(users, o) {
+  let t = 1000; const clock = { now: () => t, tick: (ms) => { t += ms; } }; const db = { users };
+  const g = createGuard(APP, Object.assign({ readUsers: () => db.users, rolePerms: (r) => (PERM.ROLES[r] ? PERM.ROLES[r].perms.slice() : []),
+    verify: (pw, u) => crypto.pbkdf2Sync(pw, Buffer.from(u.salt, "hex"), u.iter, 32, "sha256").toString("hex") === u.hash, now: clock.now }, o || {}));
+  return { g, db, clock };
+}
+const frame = (id, url) => ({ sender: { id: id || 1 }, senderFrame: { url: url || good.senderFrame.url } });
+
+test("V9: chưa đăng nhập → mọi lệnh bị từ chối; không có API nào nhận danh sách quyền từ renderer", () => {
+  const { g } = env([mk("Abcd1234", "admin")]);
+  assert.match(g.deny(frame(), "input.view"), /Chưa đăng nhập/);
+  assert.equal(g.setSession, undefined, "setSession(list) đã bị loại bỏ");
+  assert.deepEqual(g.perms(frame()), []);
 });
 
-test("nguồn lạ không đặt được phiên; quyền lạ/kiểu sai bị loại", () => {
-  const g = createGuard(APP), evil = { senderFrame: { url: "https://evil.example/" } };
-  assert.equal(g.setSession(evil, ["system.admin"]).ok, false); assert.match(g.deny(evil, ""), /Nguồn lệnh/);
-  g.setSession(good, ["system.admin", "hack.all", 5, null, { a: 1 }]); assert.deepEqual(g.perms(), ["system.admin"]);
-  g.setSession(good, "backup.restore"); assert.deepEqual(g.perms(), []);
+test("V9: renderer giả mạo Admin — gửi quyền/tên vai trò lạ vào login không cấp được quyền", () => {
+  const { g } = env([mk("Abcd1234", "xembaocao")]);
+  assert.equal(g.login(frame(), "u_xembaocao", "sai-mat-khau").ok, false);
+  assert.equal(g.login(frame(), ["system.admin"], "x").ok, false);
+  assert.equal(g.login(frame(), "u_xembaocao", { perms: ["system.admin"] }).ok, false);
+  assert.match(g.deny(frame(), "backup.restore"), /Chưa đăng nhập/);
+  const r = g.login(frame(), "u_xembaocao", "Abcd1234");
+  assert.equal(r.ok, true); assert.deepEqual(r.perms.sort(), PERM.ROLES.xembaocao.perms.slice().sort());
+  assert.match(g.deny(frame(), "backup.restore"), /không có quyền/);
+  assert.match(g.deny(frame(), "formula.approve"), /không có quyền/);
+  assert.match(g.deny(frame(), "payroll.close"), /không có quyền/);
+  assert.equal(g.deny(frame(), "payroll.view"), "");
+});
+
+test("V9: người chỉ xem không sửa được; nhân sự không đọc lương; kế toán thanh toán không Restore", () => {
+  const users = [mk("Abcd1234", "xembaocao"), mk("Abcd1234", "nhansu"), mk("Abcd1234", "ketoanthanhtoan")];
+  const { g } = env(users);
+  g.login(frame(1), "u_xembaocao", "Abcd1234"); g.login(frame(2), "u_nhansu", "Abcd1234"); g.login(frame(3), "u_ketoanthanhtoan", "Abcd1234");
+  assert.match(g.deny(frame(1), "input.edit"), /không có quyền/);
+  assert.match(g.deny(frame(2), "payroll.view"), /không có quyền/);
+  assert.match(g.deny(frame(3), "backup.restore"), /không có quyền/);
+  assert.equal(g.deny(frame(3), "payroll.view"), "");
+});
+
+test("V9: phiên gắn theo cửa sổ — cửa sổ khác không dùng được phiên của người khác", () => {
+  const { g } = env([mk("Abcd1234", "admin")]);
+  g.login(frame(1), "u_admin", "Abcd1234");
+  assert.equal(g.deny(frame(1), "backup.restore"), "");
+  assert.match(g.deny(frame(2), "backup.restore"), /Chưa đăng nhập/);
+});
+
+test("V9: IPC từ trang khác / frame khác bị từ chối kể cả khi đã đăng nhập", () => {
+  const { g } = env([mk("Abcd1234", "admin")]);
+  g.login(frame(1), "u_admin", "Abcd1234");
+  assert.match(g.deny(frame(1, "https://evil.example/"), "backup.restore"), /Nguồn lệnh/);
+  assert.equal(g.login(frame(1, "https://evil.example/"), "u_admin", "Abcd1234").ok, false);
+  const mainF = { url: good.senderFrame.url }, sub = { url: good.senderFrame.url };
+  assert.match(g.deny({ sender: { id: 1, mainFrame: mainF }, senderFrame: sub }, "backup.restore"), /Nguồn lệnh/, "iframe cùng URL vẫn bị chặn");
+  assert.equal(g.deny({ sender: { id: 1, mainFrame: mainF }, senderFrame: mainF }, "backup.restore"), "");
+});
+
+test("V9: phiên hết hạn sau thời gian không thao tác; thao tác hợp lệ gia hạn phiên", () => {
+  const { g, clock } = env([mk("Abcd1234", "admin")], { idleMs: 60000 });
+  g.login(frame(), "u_admin", "Abcd1234");
+  clock.tick(50000); assert.equal(g.deny(frame(), "export"), "");
+  clock.tick(50000); assert.equal(g.deny(frame(), "export"), "", "đã gia hạn bởi thao tác trước");
+  clock.tick(61000); assert.match(g.deny(frame(), "export"), /hết hạn|Chưa đăng nhập/);
+});
+
+test("V9: thu hồi quyền có hiệu lực ngay — đổi vai trò, khóa, xóa tài khoản", () => {
+  const { g, db } = env([mk("Abcd1234", "admin")]);
+  g.login(frame(), "u_admin", "Abcd1234"); assert.equal(g.deny(frame(), "backup.restore"), "");
+  db.users = [Object.assign({}, db.users[0], { vaiTro: "xembaocao" })]; // hạ vai trò
+  assert.match(g.deny(frame(), "report.view"), /Chưa đăng nhập|hết hạn/, "đổi vai trò → phiên cũ bị thu hồi, phải đăng nhập lại");
+  db.users = [mk("Abcd1234", "admin")]; g.login(frame(), "u_admin", "Abcd1234");
+  db.users = [Object.assign({}, db.users[0], { khoa: true })];
+  assert.match(g.deny(frame(), "export"), /Chưa đăng nhập|hết hạn/);
+  db.users = [mk("Abcd1234", "admin")]; g.login(frame(), "u_admin", "Abcd1234");
+  db.users = [];
+  assert.match(g.deny(frame(), "export"), /Chưa đăng nhập|hết hạn/);
+});
+
+test("V9: tài khoản khóa không đăng nhập được; sai mật khẩu 5 lần bị chặn tạm thời tại main", () => {
+  const { g, clock } = env([mk("Abcd1234", "admin", { khoa: true }), mk("Abcd1234", "nhansu")], { maxFails: 5, lockMs: 30000 });
+  assert.match(g.login(frame(), "u_admin", "Abcd1234").error, /khóa/);
+  for (let i = 0; i < 5; i++) assert.equal(g.login(frame(), "u_nhansu", "sai" + i).ok, false);
+  assert.match(g.login(frame(), "u_nhansu", "Abcd1234").error, /chờ/, "đúng mật khẩu nhưng đang bị khóa tạm");
+  clock.tick(31000); assert.equal(g.login(frame(), "u_nhansu", "Abcd1234").ok, true);
+});
+
+test("V9: đăng xuất xóa phiên tại main", () => {
+  const { g } = env([mk("Abcd1234", "admin")]);
+  g.login(frame(), "u_admin", "Abcd1234"); g.logout(frame());
+  assert.match(g.deny(frame(), "export"), /Chưa đăng nhập/);
 });
 
 test("KNOWN khớp danh sách quyền của core/permissions (không sót quyền mới)", () => {

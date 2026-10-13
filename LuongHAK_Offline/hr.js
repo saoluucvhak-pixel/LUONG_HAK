@@ -642,6 +642,12 @@
         var ix = buildIndex(db), y = String(nam || t.slice(0, 4)), inY = function (v) { return d10(v).slice(0, 4) === y; };
         var congOf = function (v) { var m = String(v == null ? "" : v).trim().match(/^(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : 0; };
         var ngay = function (ma, k, loc) { return rowsOf(db, k, ma, ix).filter(function (r) { return inY(r["Từ ngày"]) && r["Trạng thái duyệt"] === "Đã duyệt" && (!loc || loc(r)); }).reduce(function (a, r) { return a + (+r["Số ngày nghỉ"] || 0); }, 0); };
+        var tcBy = {};
+        (db.chamcong || []).forEach(function (r) {
+          if (!r || !/TC/i.test(String(r["Hình thức công"] || "")) || String(r["Kỳ"] || "").slice(0, 4) !== y) return;
+          var a = 0; for (var d = 1; d <= 31; d++) a += congOf(r[("0" + d).slice(-2)]);
+          tcBy[r["Mã NV"]] = (tcBy[r["Mã NV"]] || 0) + a;
+        });
         return nvs.map(function (n, i) {
           var ma = n["Mã NV"], hh = hienHanh(db, ma, null, ix), c = hh.cn || {}, hd = hh.hd || {}, ct = hh.ct || {};
           var hv = latestBy(rowsOf(db, "hocvan", ma, ix), "Ngày cấp bằng") || {};
@@ -650,8 +656,7 @@
           var pls = rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return d10(r["Hiệu lực từ"]); }).sort(function (a, b) { return d10(a["Hiệu lực từ"]) < d10(b["Hiệu lực từ"]) ? -1 : 1; });
           var nang = [];
           pls.forEach(function (r, k) { if (k && inY(r["Hiệu lực từ"]) && String(r["Lương thỏa thuận"] || "") !== String(pls[k - 1]["Lương thỏa thuận"] || "")) nang.push(d10(r["Hiệu lực từ"]) + (hidePay ? "" : ": " + (pls[k - 1]["Lương thỏa thuận"] || "?") + " → " + (r["Lương thỏa thuận"] || "?"))); });
-          var tc = (db.chamcong || []).filter(function (r) { return r && r["Mã NV"] === ma && /TC/i.test(String(r["Hình thức công"] || "")) && String(r["Kỳ"] || "").slice(0, 4) === y; })
-            .reduce(function (a, r) { for (var d = 1; d <= 31; d++) a += congOf(r[("0" + d).slice(-2)]); return a; }, 0);
+          var tc = tcBy[ma] || 0; // V9: tổng công tăng ca/NV tính 1 lần cho cả bảng (trước: lọc lại toàn bộ chấm công cho từng NV → O(NV × dòng công))
           var dt = rowsOf(db, "daotao", ma, ix).filter(function (r) { return inY(r["Từ ngày"]); }).map(function (r) { return [r["Hình thức"], r["Nội dung"]].filter(Boolean).join(": "); });
           var kl = rowsOf(db, "noiquy", ma, ix).filter(function (r) { return inY(r["Ngày"]) && (r["Hình thức kỷ luật"] || r["Bồi thường thiệt hại (trách nhiệm vật chất)"]); })
             .map(function (r) { return d10(r["Ngày"]) + " " + [r["Hình thức kỷ luật"], r["Bồi thường thiệt hại (trách nhiệm vật chất)"] ? "bồi thường " + r["Bồi thường thiệt hại (trách nhiệm vật chất)"] : ""].filter(Boolean).join(", "); });

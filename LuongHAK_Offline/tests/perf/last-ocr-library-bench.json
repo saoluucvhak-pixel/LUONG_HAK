@@ -8,66 +8,66 @@
  "lookupScaling": [
   {
    "samples": 100,
-   "nạp bộ nhớ (ms)": 7.68,
-   "dựng chỉ mục (ms)": 3.6,
-   "tra cứu / ô (ms)": 0.16,
-   "ô / giây": 6387
+   "nạp bộ nhớ (ms)": 5.64,
+   "dựng chỉ mục (ms)": 2.35,
+   "tra cứu / ô (ms)": 0.14,
+   "ô / giây": 7349
   },
   {
    "samples": 1000,
-   "nạp bộ nhớ (ms)": 35.6,
-   "dựng chỉ mục (ms)": 2.22,
-   "tra cứu / ô (ms)": 0.4,
-   "ô / giây": 2500
+   "nạp bộ nhớ (ms)": 38.31,
+   "dựng chỉ mục (ms)": 2.65,
+   "tra cứu / ô (ms)": 0.63,
+   "ô / giây": 1592
   },
   {
    "samples": 10000,
-   "nạp bộ nhớ (ms)": 351.83,
-   "dựng chỉ mục (ms)": 14.58,
-   "tra cứu / ô (ms)": 1.83,
-   "ô / giây": 548
+   "nạp bộ nhớ (ms)": 396.88,
+   "dựng chỉ mục (ms)": 19.63,
+   "tra cứu / ô (ms)": 2.13,
+   "ô / giây": 469
   },
   {
    "samples": 50000,
-   "nạp bộ nhớ (ms)": 1772.95,
-   "dựng chỉ mục (ms)": 97.77,
-   "tra cứu / ô (ms)": 6.46,
-   "ô / giây": 155
+   "nạp bộ nhớ (ms)": 1690.23,
+   "dựng chỉ mục (ms)": 75.83,
+   "tra cứu / ô (ms)": 7.5,
+   "ô / giây": 133
   }
  ],
  "persist500": {
-  "ghi 500 lần sửa (ms)": 720.85,
-  "ms / lần sửa": 1.44,
-  "duyệt (ms)": 22.86,
-  "nạp lại từ đĩa (ms)": 18.92,
-  "kiểm toàn vẹn (ms)": 6.52,
+  "ghi 500 lần sửa (ms)": 895.73,
+  "ms / lần sửa": 1.79,
+  "duyệt (ms)": 16.33,
+  "nạp lại từ đĩa (ms)": 23.9,
+  "kiểm toàn vẹn (ms)": 8.7,
   "ok": true,
-  "dung lượng (KB)": 2198,
+  "dung lượng (KB)": 2338,
   "samples": 500
  },
  "calibration": {
   "sweep": [
    {
     "th": 0.78,
-    "auto": 952,
+    "auto": 951,
     "wrong": 0,
-    "sug": 1,
+    "sug": 2,
     "unr": 47,
     "autoPrecision": 100
    },
    {
     "th": 0.82,
-    "auto": 952,
+    "auto": 951,
     "wrong": 0,
-    "sug": 1,
+    "sug": 2,
     "unr": 47,
     "autoPrecision": 100
    },
    {
     "th": 0.86,
-    "auto": 932,
+    "auto": 931,
     "wrong": 0,
-    "sug": 21,
+    "sug": 22,
     "unr": 47,
     "autoPrecision": 100
    },
@@ -119,7 +119,7 @@
   "n": 300,
   "Tesseract một mình (%)": 76.7,
   "Tesseract + thư viện (%)": 95.3,
-  "libAuto": 107,
+  "libAuto": 105,
   "libAutoWrong": 0,
   "note": "chữ số tổng hợp, thư viện 200 mẫu — cận trên của cơ chế, KHÔNG phải độ chính xác trên chữ viết tay thật"
  }

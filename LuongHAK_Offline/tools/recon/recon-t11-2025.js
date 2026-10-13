@@ -45,3 +45,7 @@ D.RP_THBL.filter(x=>(+x["Lương SL"]||0)>0).slice(0,4).forEach(x=>{const ma=byN
   const s2=HR.sanLuongKy(db2,2025,11,"sanluong"); const by={};s2.rows.forEach(x=>by[x["Mã NV"]]=(by[x["Mã NV"]]||0)+(+x["KL hàng (Tấn)"]||0));
   let bad=0;D.RP_THBL.filter(x=>(+x["Sản lượng (tấn)"]||0)>0).forEach(x=>{const e=+x["Sản lượng (tấn)"],a=by[byName[x["Họ và tên"].trim()]]||0;if(Math.abs(e-a)>0.01){bad++;console.log("LỆCH",x["Họ và tên"],e,a.toFixed(2));}});
   console.log("NOV phân bổ sản lượng khi giả lập đủ công: lệch",bad,"; chưa phân bổ",s2.alloc.unallocated.toFixed(2));}
+if(process.env.RECON_OUT){
+  const X={"Lương thời gian":["Lương thời gian"],"Sản lượng (tấn)":["Sản lượng (tấn)"],"Lương SL":["Lương sản lượng","Lương bù SL"],"Lương BD":["Lương bơm dăm"],"Lương Tăng Ca":["Tiền tăng ca"],"Phụ cấp CT":["Phụ cấp công tác"],"Tiền PCTN":["Phụ cấp"],"Lương hỗ trợ":["Lương hỗ trợ"],"Cơm ca":["Tiền cơm"],"Tạm ứng":["Tạm ứng"],"Trừ khác":["Trừ khác"],"KPCĐ":["KPCĐ trừ NLĐ"],"Bảo hiểm":["BH trừ NLĐ"],"Truy thu bảo hiểm":["Truy thu BH"],"Khấu trừ thuế TNCN":["Thuế TNCN"],"Thu nhập còn lại":["Thực lĩnh"]};
+  const rows=[];D.RP_THBL.forEach(x=>{const ma=byName[String(x["Họ và tên"]).trim()],b=app[ma]||{};Object.keys(X).forEach(k=>{const e=+x[k]||0,a=X[k].reduce((s,f)=>s+(+b[f]||0),0);rows.push({ky:KY,ma:ma||"",ten:x["Họ và tên"],mal:b["Mã lương"]||"",khoan:k,excel:e,app:a,diff:Math.round((a-e)*100)/100});});});
+  require("fs").writeFileSync(process.env.RECON_OUT,JSON.stringify(rows));}
