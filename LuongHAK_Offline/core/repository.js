@@ -17,7 +17,7 @@
 
   var MONTHLY = { chamcong: 1, sanluong: 1, bandam: 1, psluong: 1, ungluong: 1, tiencom: 1 };
   // Bảng con của hợp đồng (đổi Số HĐLĐ / xóa hợp đồng thì đổi / xóa theo) — giữ khớp hr.js HD_TABS
-  var HD_CHILD_DEFAULT = ["chitiethd", "quyenloiphep", "nghiphep", "nghiom", "khamsk", "khenthuong", "noiquy", "tailieu"];
+  var HD_CHILD_DEFAULT = ["chitiethd", "quyenloiphep", "nghiphep", "nghiom", "khamsk", "khenthuong", "noiquy", "tailieu", "hdld_tailieu"];
 
   function permFor(table) { return /^dm_/.test(table) ? "dm.edit" : MONTHLY[table] ? "input.edit" : table === "congty" ? "system.admin" : "hr.edit"; }
   function labels(ps) { return ps.map(GRD.label).join(", "); }
@@ -136,7 +136,12 @@
       } else {
         list.splice(list.indexOf(q.target), 1);
         if (q.table === "hopdong")
-          hdChildren.forEach(function (k) { if (db[k]) db[k] = db[k].filter(function (y) { return !(y["Mã NV"] === q.before["Mã NV"] && y["Số HĐLĐ"] === q.before["Số HĐLĐ"]); }); });
+          hdChildren.forEach(function (k) {
+            if (!db[k]) return;
+            // V9.2: liên kết tài liệu HĐLĐ KHÔNG bị xóa theo hợp đồng (file gốc + lịch sử phải còn truy xuất): chỉ đánh dấu "Hợp đồng đã xóa"
+            if (k === "hdld_tailieu") { db[k].forEach(function (y) { if (y["Mã NV"] === q.before["Mã NV"] && y["Số HĐLĐ"] === q.before["Số HĐLĐ"] && y["Trạng thái"] === "Hiệu lực") { y["Trạng thái"] = "Hợp đồng đã xóa"; y["Gỡ lúc"] = new Date().toISOString(); } }); return; }
+            db[k] = db[k].filter(function (y) { return !(y["Mã NV"] === q.before["Mã NV"] && y["Số HĐLĐ"] === q.before["Số HĐLĐ"]); });
+          });
       }
       var mode = o.audit == null ? "always" : o.audit;
       if (mode === "always" || (mode === "retro" && q.retro)) {

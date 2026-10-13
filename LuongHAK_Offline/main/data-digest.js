@@ -3,7 +3,8 @@
 "use strict";
 const crypto = require("crypto");
 // auditlog KHÔNG nằm trong dấu vân tay: nhật ký được ghi thêm ngay sau khi khôi phục ("Khôi phục dữ liệu…") nên luôn khác gói gốc
-const TABLES = ["nhanvien", "hopdong", "chitiethd", "chamcong", "sanluong", "bandam", "psluong", "ungluong", "tiencom", "kyluong", "kyluong_lichsu", "chungtu", "chungtu_lienket", "ocr_ten", "dm_congthuc", "congty"];
+// V9.2: dấu vân tay phủ MỌI bảng dạng danh sách (kể cả nhân thân/người phụ thuộc, danh mục thuế cha–con, tài liệu HĐLĐ, CompanyID…) — trừ nhật ký/tài khoản/bảo mật
+const SKIP = { auditlog: 1, nguoidung: 1, baomat: 1 };
 function canon(v) {
   if (Array.isArray(v)) return "[" + v.map(canon).join(",") + "]";
   if (v && typeof v === "object") return "{" + Object.keys(v).sort().map((k) => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}";
@@ -12,7 +13,7 @@ function canon(v) {
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 function digest(data) {
   const out = { tables: {}, kyChot: {} };
-  TABLES.forEach((t) => { if (Array.isArray(data[t])) out.tables[t] = { n: data[t].length, sha: sha(canon(data[t])) }; });
+  Object.keys(data || {}).sort().forEach((t) => { if (!SKIP[t] && Array.isArray(data[t])) out.tables[t] = { n: data[t].length, sha: sha(canon(data[t])) }; });
   (data.kyluong || []).forEach((k) => {
     const bl = (k && k.kq && k.kq.bangluong) || []; let tl = 0, tn = 0;
     bl.forEach((b) => { tl += +b["Thực lĩnh"] || 0; tn += +b["Tổng thu nhập"] || 0; });

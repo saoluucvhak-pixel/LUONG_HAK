@@ -8,13 +8,13 @@ const { baseDb, ccRow, staff } = require("../fixtures/build.js");
 
 function item(r, id) { return r.items.find((x) => x.id === id); }
 
-test("dữ liệu sạch: đủ 21 điểm (20 điểm V3 + FORMULA_ERROR), không điểm nào 'loi'", () => {
+test("dữ liệu sạch: đủ 22 điểm (20 điểm V3 + FORMULA_ERROR + công chuẩn), không điểm nào 'loi'", () => {
   const db = baseDb();
   db.nhansu = [staff({ "Mã tiền lương 1": "TG1", "Lương thỏa thuận": "9000000" })];
   db.chamcong = [ccRow("NV", 2026, 9)];
   const kq = E.tinhBangLuong(db, 2026, 9, false);
   const r = PCC.run({ db, kq });
-  assert.equal(r.items.length, 21);
+  assert.equal(r.items.length, 22);
   assert.equal(r.loiCount, 0);
   assert.ok(r.items.every((x) => ["ok", "canhbao", "loi"].includes(x.trangThai)));
 });
@@ -78,13 +78,13 @@ test("#15: nhãn công tác không có mã phụ cấp tương ứng → 'canhba
   assert.equal(item(r, 15).trangThai, "canhbao");
 });
 
-test("#16/#17: thuế TNCN và bảo hiểm thiếu danh mục → 'canhbao'", () => {
+test("#16/#17: thuế TNCN thiếu danh mục → 'loi' (TAX_CONFIG_ERROR là BLOCKER); bảo hiểm thiếu → 'canhbao'", () => {
   const db = baseDb();
   db.nhansu = [staff({ "Mã tiền lương 1": "TG1", "Lương thỏa thuận": "9000000", "Mã TNCN": "TNCN_LA", "Mã BHXH": "BH_LA" })];
   db.chamcong = [ccRow("NV", 2026, 9)];
   const kq = E.tinhBangLuong(db, 2026, 9, false);
   const r = PCC.run({ db, kq });
-  assert.equal(item(r, 16).trangThai, "canhbao");
+  assert.equal(item(r, 16).trangThai, "loi");
   assert.equal(item(r, 17).trangThai, "canhbao");
 });
 

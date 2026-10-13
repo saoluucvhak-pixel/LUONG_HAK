@@ -22,10 +22,14 @@
       { k: "Trình độ học vấn", req: 1 }, { k: "Chuyên môn" }, { k: "Bậc trình độ kỹ năng nghề", hint: "Sổ quản lý lao động (NĐ 145/2020 Đ3): VD Bậc 3/7, Thợ bậc 4…" }, { k: "Bằng cấp" }, { k: "Ngày cấp bằng", t: "date" }, { k: "Số hồ sơ" }, { k: "File hồ sơ (đường dẫn)" }] },
     nhanthan: { ten: "Nhân thân / Người phụ thuộc", icon: "👪", lv: "nv", f: [
       { k: "Họ tên nhân thân", req: 1 }, { k: "Quan hệ", t: "sel", o: ["Vợ/Chồng", "Con", "Cha", "Mẹ", "Khác"], req: 1 },
-      { k: "Ngày sinh", t: "date" }, { k: "Số CCCD nhân thân" }, { k: "Mã số thuế" },
-      { k: "Đăng ký phụ thuộc", t: "yesno", req: 1 }, { k: "Hiệu lực từ", t: "date", req: 1 }, { k: "Hiệu lực đến", t: "date" }],
-      cols: ["Họ tên nhân thân", "Quan hệ", "Đăng ký phụ thuộc", "Hiệu lực từ", "Hiệu lực đến"],
-      desc: "Người có 'Đăng ký phụ thuộc = Có' và còn hiệu lực trong kỳ sẽ được tính giảm trừ gia cảnh khi tính thuế TNCN." },
+      { k: "Ngày sinh", t: "date" }, { k: "Giới tính", t: "sel", o: ["Nam", "Nữ", "Khác"] },
+      { k: "Số CCCD nhân thân", hint: "lưu dạng chữ, giữ số 0 đầu; để trống nếu chưa được cấp" }, { k: "Ngày cấp CCCD", t: "date" },
+      { k: "Mã số thuế", hint: "MST của người phụ thuộc (10 hoặc 13 số); để trống nếu chưa có" }, { k: "Địa chỉ", t: "area" },
+      { k: "Đăng ký phụ thuộc", t: "yesno", req: 1 }, { k: "Trạng thái đăng ký", t: "sel", o: ["Đã đăng ký", "Chờ đăng ký", "Ngừng giảm trừ"], hint: "để trống = Đã đăng ký" },
+      { k: "Giảm trừ từ tháng", t: "month", hint: "tháng bắt đầu tính giảm trừ; để trống = theo Hiệu lực từ" }, { k: "Giảm trừ đến tháng", t: "month", hint: "tháng cuối tính giảm trừ; để trống = chưa kết thúc" },
+      { k: "Hiệu lực từ", t: "date", req: 1 }, { k: "Hiệu lực đến", t: "date" }, { k: "Ghi chú", t: "area" }],
+      cols: ["Họ tên nhân thân", "Quan hệ", "Số CCCD nhân thân", "Mã số thuế", "Đăng ký phụ thuộc", "Giảm trừ từ tháng", "Giảm trừ đến tháng", "Hiệu lực từ", "Hiệu lực đến"],
+      desc: "Chỉ người 'Đăng ký phụ thuộc = Có', không ở trạng thái Chờ đăng ký/Ngừng giảm trừ, và THÁNG tính lương nằm trong khoảng 'Giảm trừ từ–đến tháng' (bỏ trống thì theo Hiệu lực từ–đến) mới được tính giảm trừ gia cảnh. Cùng 1 người ghi 2 lần không bị đếm đôi." },
     thanhtoan: { ten: "Tài khoản nhận lương", icon: "🏦", lv: "nv", f: [
       { k: "Số tài khoản", req: 1 }, { k: "Tên ngân hàng", req: 1 }, { k: "Chi nhánh" }, { k: "Hiệu lực từ", t: "date", req: 1 }] },
     suckhoe: { ten: "Sức khỏe", icon: "❤️", lv: "nv", f: [{ k: "Tình trạng", req: 1 }, { k: "Tiền sử bệnh", t: "area" }, { k: "Hiệu lực từ", t: "date" }] },
@@ -97,8 +101,10 @@
       { k: "Loại tài liệu", t: "sel", o: ["CCCD", "Giấy khám sức khỏe", "Bằng cấp", "Hợp đồng", "Khác"], req: 1 }, { k: "Tên tài liệu", req: 1 },
       { k: "Đường dẫn file", hint: "VD: D:\\HoSo\\NV001\\cccd.pdf (file lưu trên máy, app chỉ ghi đường dẫn)" }, { k: "Ngày tài liệu", t: "date" }, { k: "Ghi chú", t: "area" }] }
   };
+  HR.hdld_tailieu = { ten: "Tài liệu đính kèm (PDF/ảnh)", icon: "📎", lv: "hd", custom: "files", f: [{ k: "Tên tài liệu", req: 1 }], cols: ["Tên tài liệu", "Loại tài liệu", "Phiên bản", "Trạng thái"],
+      desc: "Đính kèm nhiều file PDF/JPG/PNG vào hợp đồng. File lưu NGUYÊN BẢN trong kho chứng từ gốc (DocumentID + SHA-256), không ghi đè, không xóa; thay thế = phiên bản mới, bản cũ xem lại ở Lịch sử." };
   var NV_TABS = ["canhan", "hopdong", "nhanthan", "thanhtoan", "congtac", "hocvan", "daotao", "suckhoe", "tainanld", "lienhe", "nghenghiep"];
-  var HD_TABS = ["chitiethd", "quyenloiphep", "nghiphep", "nghiom", "khamsk", "khenthuong", "noiquy", "tailieu"];
+  var HD_TABS = ["chitiethd", "quyenloiphep", "nghiphep", "nghiom", "khamsk", "khenthuong", "noiquy", "tailieu", "hdld_tailieu"];
   Object.keys(HR).forEach(function (k) {
     var c = HR[k];
     c.key = k; c.hr = true;
@@ -161,13 +167,11 @@
   function chiTietHD(db, ma, soHD, asOf, ix) {
     return latestBy(rowsOf(db, "chitiethd", ma, ix).filter(function (r) { return r["Số HĐLĐ"] === soHD; }), "Hiệu lực từ", asOf);
   }
-  function soNguoiPhuThuoc(db, ma, dau, cuoi, ix) {
-    return rowsOf(db, "nhanthan", ma, ix).filter(function (r) {
-      if (r["Đăng ký phụ thuộc"] !== "Có") return false;
-      var tu = d10(r["Hiệu lực từ"]), den = d10(r["Hiệu lực đến"]);
-      return (!tu || tu <= cuoi) && (!den || den >= dau);
-    }).length;
+  var DEP = (typeof module !== "undefined" && module.exports) ? require("./core/dependents.js") : root.HAKCore.dep;
+  function dsNguoiPhuThuoc(db, ma, dau, cuoi, ix) {
+    return DEP.danhSach(rowsOf(db, "nhanthan", ma, ix), String(cuoi).slice(0, 7));
   }
+  function soNguoiPhuThuoc(db, ma, dau, cuoi, ix) { return dsNguoiPhuThuoc(db, ma, dau, cuoi, ix).length; }
   /** Thông tin hiện hành của 1 nhân viên tại ngày asOf (mặc định hôm nay). */
   /** @param ix chỉ mục từ buildIndex(db) (không bắt buộc) — dùng khi gọi cho nhiều nhân viên liên tiếp */
   function hienHanh(db, ma, asOf, ix) {
@@ -692,7 +696,7 @@
     };
   }
 
-  var api = { HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll, sanLuongKy: sanLuongKy, nghiNgay: nghiNgay, leaveCheck: leaveCheck, LEAVE_TAG: LEAVE_TAG,
+  var api = { dsNguoiPhuThuoc: dsNguoiPhuThuoc, HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll, sanLuongKy: sanLuongKy, nghiNgay: nghiNgay, leaveCheck: leaveCheck, LEAVE_TAG: LEAVE_TAG,
     seedDanhMuc: seedDanhMuc, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.HRM = api;
 })(typeof window !== "undefined" ? window : this);

@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [2.0.0-alpha.24] — pre-release V9.2 (chưa phải bản ổn định; chưa nghiệm thu thực địa trên Windows)
+### Chức năng mới
+- **Thuế TNCN cha–con**: `DM_TNCN` (mã thuế, phương pháp, hiệu lực, trạng thái) + `DM_TNCN_BIEUTHUE` (bậc). Tra theo Mã thuế trên HĐLĐ, theo kỳ và phiên bản hiệu lực; Nháp không được dùng; Ngừng bị chặn. Giao diện: thêm dòng, sao chép phiên bản, duyệt, ngừng, kiểm tra chồng/hở bậc, thử tính, lịch sử. Thuế **luôn** trừ vào thực lĩnh theo kết quả công thức (không có công tắc tắt).
+- **Thiếu/sai mã thuế hoặc biểu thuế → `TAX_CONFIG_ERROR`**: chặn chốt kỳ và xuất bảng lương; không tự chọn mã khác, không âm thầm tính 0.
+- **Người phụ thuộc**: CCCD, ngày cấp, giới tính, MST, ngày sinh, địa chỉ, kỳ giảm trừ từ/đến (tháng), trạng thái đăng ký; CCCD/MST lưu dạng chữ (giữ số 0 đầu); phát hiện trùng và chồng kỳ; chỉ giảm trừ ở tháng hợp lệ.
+- **Công chuẩn** = Ngày cơ sở − Số ngày giảm trừ (DM_LUONG), không còn số 25/30 cứng; lỗi cấu hình → `CONG_CHUAN_ERROR` chặn chốt.
+- **Tài liệu đính kèm HĐLĐ** (PDF/JPG/PNG, nhiều file/hợp đồng, bảng `HDLD_TAILIEU`) lưu trong kho chứng từ (DocumentID + SHA-256); xem trước chỉ nạp khi bấm, mở, thay thế (giữ bản cũ), gỡ liên kết (bắt buộc lý do), lịch sử, kiểm tra toàn vẹn; nằm trong Full Backup/Restore. Kiểm tra nội dung thật của file (magic bytes, cắt cụt, PDF có `/Launch`/`/JavaScript` bị từ chối — kiểm tra heuristic).
+- **Bộ lọc**: Chấm công — chọn nhiều hình thức công + “không có hình thức”; Sản lượng/Bơm dăm — dùng chung một thành phần (phòng ban nhiều lựa chọn, từ–đến ngày, tháng, kỳ lương), tổng tính lại từ đúng dòng đã lọc (theo ngày/phòng ban, đã/chờ phân bổ, phiếu trùng chỉ tính một lần), xuất Excel/PDF đúng dòng lọc.
+- **CompanyID**: nút Admin “Gán Mã công ty cho dữ liệu cũ” — chỉ chạy khi xác định được duy nhất một công ty có mã; nhiều công ty/thiếu mã → chặn, không đoán; không ghi đè; có sao lưu trước.
+### Bảo mật tiến trình chính
+- `store-save` kiểm quyền theo từng bảng (so sánh với trạng thái trên đĩa): kỳ lương bất biến, nhật ký chỉ thêm, tài khoản chỉ Admin; chốt kỳ được **tính lại ở main** và bị từ chối nếu còn blocker (gồm sản lượng chưa phân bổ).
+- Tải file bảng lương của kỳ chưa chốt còn blocker bị hủy ở main (tên file “khối lượng/sản lượng” không bị coi là bảng lương).
+- Kho chứng từ HĐLĐ: quyền `hr.view/hr.edit` kiểm ở main.
+- Khôi phục Full Backup: chỉ Admin được thay dữ liệu, và chỉ trong cửa sổ main đang giữ khóa khôi phục.
+### Chưa làm / không đạt (xem docs/V9_2_AUDIT_RELEASE.md)
+Mã hóa dữ liệu trên đĩa; tiến độ/hủy khi chuyển thư mục dữ liệu; đối chiếu với workbook nguồn (`BLOCKED_SOURCE_DATA`); chạy thật trên Windows; thử với bản scan thật.
+
 ## [2.0.0-alpha.23] — pre-release V9 (chưa phải bản ổn định; chưa nghiệm thu thực địa trên Windows)
 ### Chức năng mới
 - **Phân quyền do tiến trình chính quyết định**: đăng nhập được kiểm tra tại main (đọc tài khoản trên đĩa, tự băm/so mật khẩu, tự tra vai trò → quyền); giao diện không còn gửi được danh sách quyền. Thu hồi quyền (khóa/đổi vai trò/xóa tài khoản) có hiệu lực ngay; phiên tự hết hạn sau 30 phút không thao tác; chặn khung (iframe) và trang lạ.

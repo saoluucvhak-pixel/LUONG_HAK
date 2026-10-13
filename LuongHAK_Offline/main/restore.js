@@ -69,7 +69,8 @@ function createRestorer(o) {
     const warnings = [], counts = m.counts || {};
     Object.keys(counts).forEach((k) => { if (!Array.isArray(dataObj[k]) || dataObj[k].length !== counts[k]) warnings.push("Bảng " + k + ": manifest " + counts[k] + " dòng, data.json " + (Array.isArray(dataObj[k]) ? dataObj[k].length : "không có")); });
     if (warnings.length) return fail("VERIFY", "Số dòng dữ liệu không khớp manifest: " + warnings.join("; "));
-    const have = new Set((m.documents || []).map((d) => d.id)), dangling = (Array.isArray(dataObj.chungtu) ? dataObj.chungtu : []).filter((c) => c && c.id && !have.has(c.id)).map((c) => c.id);
+    const have = new Set((m.documents || []).map((d) => d.id)), dangling = (Array.isArray(dataObj.chungtu) ? dataObj.chungtu : []).filter((c) => c && c.id && !have.has(c.id)).map((c) => c.id)
+      .concat((Array.isArray(dataObj.hdld_tailieu) ? dataObj.hdld_tailieu : []).filter((c) => c && c.DocumentID && c["Trạng thái"] !== "Đã gỡ liên kết" && !have.has(c.DocumentID)).map((c) => c.DocumentID)); // V9.2: tài liệu HĐLĐ đang liên kết phải có file trong gói
     if (dangling.length && !rep.partial) return fail("VERIFY", dangling.length + " liên kết chứng từ trong dữ liệu không có file trong gói: " + dangling.slice(0, 5).join(", "));
     let ocrInfo = null;
     if (m.ocrLibrary) {

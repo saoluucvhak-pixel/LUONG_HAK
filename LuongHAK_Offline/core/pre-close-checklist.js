@@ -67,8 +67,8 @@
     // 15-17. Phụ cấp / Thuế / Bảo hiểm
     var nhanThieu = byMsg(/nhãn công tác '.*' .*chưa có mã phụ cấp tương ứng/);
     add(15, "Phụ cấp công tác hợp lệ (mọi nhãn chấm công có mã phụ cấp tương ứng)", nhanThieu.length ? "canhbao" : "ok", nhanThieu);
-    var thueW = byMsg(/mã thuế TNCN .* chưa có trong danh mục|thuế lũy tiến nhưng không tìm thấy|không có biểu thuế lũy tiến|người phụ thuộc nhưng không tìm thấy/);
-    add(16, "Thuế TNCN hợp lệ (đủ mã thuế, biểu thuế, mức giảm trừ)", thueW.length ? "canhbao" : "ok", thueW);
+    var thueW = (kq.loiThue || []).map(function (e) { return "TAX_CONFIG_ERROR — " + e.maNV + " (mã '" + e.maThue + "'): " + e.message; });
+    add(16, "Thuế TNCN hợp lệ (đủ mã thuế, biểu thuế, mức giảm trừ) — TAX_CONFIG_ERROR là BLOCKER", thueW.length ? "loi" : "ok", thueW);
     var bhW = byMsg(/mã BHXH '.*' chưa có trong Danh mục bảo hiểm|lương đóng BH = .*quá nhỏ|chưa có Lương cơ bản/);
     add(17, "Bảo hiểm hợp lệ (đủ mã BHXH, mức đóng)", bhW.length ? "canhbao" : "ok", bhW);
 
@@ -93,6 +93,10 @@
       return (e.maNV ? e.maNV + " · " : "") + e.loai + " '" + e.maCongThuc + "' — " + e.message + " [" + e.maLoi + (e.bien ? ": " + e.bien : "") + "] → " + e.huongXuLy;
     });
     add(21, "Công thức hiệu lực hợp lệ (không có FORMULA_ERROR)", loiCT.length ? "loi" : "ok", loiCT);
+
+    // 22. Công chuẩn của mã lương (Ngày − Giảm trừ) hợp lệ
+    var loiCC = (kq.loiCongChuan || []).map(function (e) { return "CONG_CHUAN_ERROR — " + e.maNV + " (mã lương '" + e.maLuong + "'): " + e.message; });
+    add(22, "Công chuẩn mã lương hợp lệ (Công chuẩn = Ngày − Giảm trừ)", loiCC.length ? "loi" : "ok", loiCC);
 
     var loiCount = items.filter(function (x) { return x.trangThai === "loi"; }).length;
     var canhbaoCount = items.filter(function (x) { return x.trangThai === "canhbao"; }).length;

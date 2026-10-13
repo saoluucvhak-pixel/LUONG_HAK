@@ -154,6 +154,11 @@
       });
     });
     var order = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    // V9.2: người phụ thuộc (CCCD/MST/ngày cấp/kỳ giảm trừ, đăng ký trùng/chồng kỳ) + cấu hình thuế TNCN (biểu thuế cha–con)
+    var DEPM = (typeof module !== "undefined" && module.exports) ? require("./dependents.js") : root.HAKCore.dep;
+    DEPM.check(db, new Date().toISOString().slice(0, 10)).forEach(function (x) { out.push(x); });
+    var TCM = (typeof module !== "undefined" && module.exports) ? require("./tax-config.js") : (root.HAKCore && root.HAKCore.taxcfg);
+    if (TCM) TCM.check(db).forEach(function (x) { out.push(x); });
     return out.sort(function (a, b) { return order[a.level] - order[b.level]; });
   }
 

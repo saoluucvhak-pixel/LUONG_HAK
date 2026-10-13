@@ -5,7 +5,7 @@
 
   // ---------- Kiểu cột ----------
   // Cột TIỀN: nhập kiểu Việt Nam "1.500.000" hoặc "500.000" phải hiểu là hàng nghìn.
-  var MONEY_COLS = /^(Lương thỏa thuận|Lương cơ bản|Lương phụ|Số tiền|Số tiền khoán|Đơn giá bù lương|Đơn giá bơm dăm|Tiền tăng ca \(nếu tính cố định\)|Thưởng|Thu nhập khác|Trừ khác|Tạm ứng|Thanh toán TM|Giá trị tiền thưởng|Thu nhập từ|Thu nhập đến|Thu nhập tháng \(Min\)|Thu nhập tháng \(Max\))$/;
+  var MONEY_COLS = /^(Lương thỏa thuận|Lương cơ bản|Lương phụ|Số tiền|Số tiền khoán|Đơn giá bù lương|Đơn giá bơm dăm|Tiền tăng ca \(nếu tính cố định\)|Thưởng|Thu nhập khác|Trừ khác|Tạm ứng|Thanh toán TM|Giá trị tiền thưởng|Thu nhập từ|Thu nhập đến|Trừ nhanh|Số tiền cố định|Thu nhập tháng \(Min\)|Thu nhập tháng \(Max\))$/;
   var DATE_COLS = /^(Ngày|Hiệu lực|Từ ngày|Đến ngày)/;
   // Mã định danh: luôn là CHỮ, giữ số 0 ở đầu
   var ID_COLS = { "Số CCCD": 12, "Số CCCD nhân thân": 12, "Số điện thoại": 10, "Mã số thuế": 0, "Số tài khoản": 0, "Số sổ BHXH": 10, "Mã NV": 0, "Số HĐLĐ": 0, "Phiếu cân": 0 };

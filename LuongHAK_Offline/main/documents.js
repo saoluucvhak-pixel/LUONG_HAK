@@ -4,6 +4,26 @@
 const fs = require("fs"), path = require("path"), crypto = require("crypto");
 const MAX_BYTES = 200 * 1024 * 1024;
 const EXT_OK = ["pdf", "png", "jpg", "jpeg", "bmp", "tif", "tiff", "webp", "xlsx", "xls", "csv"];
+// V9.2: tài liệu HĐLĐ (docType HDLD) — chỉ PDF/JPG/PNG, kiểm tra NỘI DUNG thật (không tin đuôi file), giới hạn dung lượng, không chứa mã chủ động trong PDF
+const HDLD_EXT = ["pdf", "png", "jpg", "jpeg"], HDLD_MAX = 25 * 1024 * 1024;
+function sniffHdld(buf, ext) {
+  const n = buf.length, tail = (k) => buf.subarray(Math.max(0, n - k));
+  if (ext === "pdf") {
+    if (buf.subarray(0, 5).toString("latin1") !== "%PDF-") return "Nội dung không phải PDF (không có chữ ký %PDF-)";
+    if (tail(2048).toString("latin1").indexOf("%%EOF") < 0) return "File PDF bị cắt/hỏng (thiếu %%EOF ở cuối file)";
+    const head = buf.toString("latin1");
+    if (/\/Launch\b/.test(head)) return "PDF chứa lệnh chạy chương trình (/Launch) — không được đính kèm";
+    if (/\/(JavaScript|JS)\b/.test(head)) return "PDF chứa mã JavaScript — không được đính kèm";
+    return "";
+  }
+  if (ext === "png") {
+    if (!(n > 20 && buf[0] === 0x89 && buf.subarray(1, 4).toString("latin1") === "PNG" && buf[4] === 0x0d && buf[5] === 0x0a && buf[6] === 0x1a && buf[7] === 0x0a)) return "Nội dung không phải ảnh PNG";
+    return tail(16).toString("latin1").indexOf("IEND") < 0 ? "Ảnh PNG bị cắt/hỏng (thiếu IEND)" : "";
+  }
+  if (!(n > 4 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff)) return "Nội dung không phải ảnh JPEG";
+  const t = tail(64); for (let i = t.length - 2; i >= 0; i--) if (t[i] === 0xff && t[i + 1] === 0xd9) return "";
+  return "Ảnh JPEG bị cắt/hỏng (thiếu dấu kết thúc FFD9)";
+}
 
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 function cleanName(n) { return String(n || "chungtu").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 120) || "chungtu"; }
@@ -28,7 +48,7 @@ function createVault(root, opts) {
       if (!st.isDirectory()) continue;
       for (const f of fs.readdirSync(d)) {
         if (!/^DOC-.*\.json$/.test(f)) continue;
-        try { const m = JSON.parse(fs.readFileSync(path.join(d, f), "utf8")); if (m && m.id && m.sha256) { byId[m.id] = m; if (!bySha[m.sha256]) bySha[m.sha256] = m; } } catch (e) { /* sidecar hỏng: verify() sẽ báo */ }
+        try { const m = JSON.parse(fs.readFileSync(path.join(d, f), "utf8")); if (m && m.id && m.sha256) { byId[m.id] = m; const bk = m.sha256 + (m.docType === "HDLD" ? "|HDLD" : ""); if (!bySha[bk]) bySha[bk] = m; } } catch (e) { /* sidecar hỏng: verify() sẽ báo */ }
       }
     }
   }
@@ -50,8 +70,14 @@ function createVault(root, opts) {
     if (buf.length > MAX_BYTES) return { ok: false, error: "File quá lớn (tối đa 200 MB)" };
     const name = cleanName(info.name), ext = extOf(name);
     if (!EXT_OK.includes(ext)) return { ok: false, error: "Loại file không được hỗ trợ: ." + (ext || "?") };
+    const hdld = tok(info.docType, "BANGCONG") === "HDLD";
+    if (hdld) {
+      if (!HDLD_EXT.includes(ext)) return { ok: false, error: "Tài liệu HĐLĐ chỉ nhận PDF, JPG, PNG (đang là ." + ext + ")" };
+      if (buf.length > HDLD_MAX) return { ok: false, error: "Tài liệu HĐLĐ tối đa " + (HDLD_MAX / 1048576) + " MB mỗi file" };
+      const bad = sniffHdld(buf, ext === "jpeg" ? "jpg" : ext); if (bad) return { ok: false, error: bad };
+    }
     scan();
-    const h = sha256(buf), old = bySha[h];
+    const h = sha256(buf), old = bySha[h + (hdld ? "|HDLD" : "")];
     if (old) return { ok: true, id: old.id, sha256: h, duplicate: true, name: old.name, size: old.size };
     const sameName = Object.values(byId).filter((m) => m.name === name && m.sha256 !== h).map((m) => m.id); // cùng tên khác nội dung: vẫn lưu bản mới, báo để người dùng biết
     const id = newId(), meta = { id, sha256: h, name, ext, size: buf.length, addedAt: now().toISOString(), addedBy: String(info.user || "").slice(0, 60), note: String(info.note || "").slice(0, 300), pages: Number(info.pages) || 0 };
@@ -59,7 +85,7 @@ function createVault(root, opts) {
     fs.mkdirSync(dirFor(id), { recursive: true });
     fs.writeFileSync(fileFor(meta), buf, { flag: "wx" }); // wx: không ghi đè
     fs.writeFileSync(sideFor(meta), JSON.stringify(meta, null, 1), { flag: "wx" });
-    bySha[h] = meta; byId[id] = meta;
+    bySha[h + (hdld ? "|HDLD" : "")] = meta; byId[id] = meta;
     return { ok: true, id, sha256: h, duplicate: false, name, size: meta.size, sameNameDifferent: sameName };
   }
   function find(id) { scan(); return byId[id] || null; }
@@ -84,10 +110,12 @@ function createVault(root, opts) {
     scan(); const old = byId[meta.id];
     if (old) return { ok: true, id: meta.id, status: old.sha256 === meta.sha256 ? "same" : "conflict" };
     const m = { id: meta.id, sha256: meta.sha256, name: cleanName(meta.name), ext: extOf(meta.name) || String(meta.ext || "").toLowerCase(), size: buf.length, addedAt: String(meta.addedAt || now().toISOString()), restoreId: String(meta.restoreId || ""), addedBy: String(meta.addedBy || ""), note: String(meta.note || ""), pages: Number(meta.pages) || 0 };
+    if (meta.docType) m.docType = tok(meta.docType, "BANGCONG"); // V9.2: giữ loại chứng từ (HDLD) để phân quyền đọc sau khi khôi phục
+    ["dept", "company", "ky", "storedName"].forEach((k) => { if (meta[k]) m[k] = String(meta[k]).slice(0, 120); });
     if (!EXT_OK.includes(m.ext)) return { ok: false, error: "Loại file không được hỗ trợ: ." + m.ext };
     fs.mkdirSync(dirFor(m.id), { recursive: true });
     fs.writeFileSync(fileFor(m), buf, { flag: "wx" }); fs.writeFileSync(sideFor(m), JSON.stringify(m, null, 1), { flag: "wx" });
-    byId[m.id] = m; if (!bySha[m.sha256]) bySha[m.sha256] = m;
+    byId[m.id] = m; { const bk = m.sha256 + (m.docType === "HDLD" ? "|HDLD" : ""); if (!bySha[bk]) bySha[bk] = m; }
     return { ok: true, id: m.id, status: "added" };
   }
   /** Đường dẫn file gốc + sidecar (để đóng gói) */
@@ -97,9 +125,9 @@ function createVault(root, opts) {
     scan(); const out = { removed: [], kept: [] };
     (ids || []).forEach((id) => { const m = byId[id]; if (!m || !restoreId || m.restoreId !== restoreId) { out.kept.push(id); return; }
       try { fs.unlinkSync(fileFor(m)); } catch (e) { /* đã mất */ } try { fs.unlinkSync(sideFor(m)); } catch (e) { /* đã mất */ }
-      delete byId[id]; if (bySha[m.sha256] && bySha[m.sha256].id === id) delete bySha[m.sha256]; out.removed.push(id); });
+      delete byId[id]; { const bk = m.sha256 + (m.docType === "HDLD" ? "|HDLD" : ""); if (bySha[bk] && bySha[bk].id === id) delete bySha[bk]; } out.removed.push(id); });
     return out;
   }
   return { importDoc, rollbackRestore, filesOf, add, list, find, read, pathOf, verify, root: () => root };
 }
-module.exports = { createVault, sha256, EXT_OK, MAX_BYTES };
+module.exports = { createVault, sha256, EXT_OK, MAX_BYTES, HDLD_MAX, sniffHdld };

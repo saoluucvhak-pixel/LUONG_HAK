@@ -108,6 +108,79 @@
     return Math.round(thue);
   }
 
+  /** Phương pháp "rút gọn" (trừ nhanh): thuế = TNTT × thuế suất của bậc chứa TNTT − Số tiền trừ nhanh (+ Số tiền cố định nếu khai). Chỉ dùng cho mã có Phương pháp = LUY_TIEN_TRU_NHANH. */
+  function tinhThueTruNhanh(tn, bieu) {
+    if (!tn || tn <= 0) return 0;
+    var hit = null;
+    bieu.forEach(function (b) {
+      var min = money(b["Thu nhập từ"] != null && b["Thu nhập từ"] !== "" ? b["Thu nhập từ"] : b["Thu nhập tháng (Min)"]);
+      var maxRaw = b["Thu nhập đến"] != null && b["Thu nhập đến"] !== "" ? b["Thu nhập đến"] : b["Thu nhập tháng (Max)"];
+      var max = (maxRaw === "" || maxRaw == null || money(maxRaw) === 0) ? Infinity : money(maxRaw);
+      if (tn > min && tn <= max) hit = b;
+    });
+    if (!hit) return 0;
+    var tyLe = pct(hit["Tỷ lệ"] != null && hit["Tỷ lệ"] !== "" ? hit["Tỷ lệ"] : hit["Tỷ lệ đóng thuế"]);
+    return Math.max(0, Math.round(tn * tyLe - money(hit["Trừ nhanh"]) + money(hit["Số tiền cố định"])));
+  }
+  function trangThaiLa(r, re) { return re.test(String((r && r["Trạng thái"]) || "")); }
+  var RE_NHAP = /^nh[áa]p/i, RE_NGUNG = /^ng[ừu]ng/i;
+  var PHUONG_PHAP = { LUY_TIEN: 1, LUY_TIEN_TRU_NHANH: 1, VANG_LAI: 1, MIEN: 1 };
+  /**
+   * V9.2 — Bộ tra thuế TNCN theo cấu trúc cha–con: DM_TNCN (dm_tncn, 1 dòng/mã/phiên bản) → DM_TNCN_BIEUTHUE (dm_bacthue, nhiều bậc).
+   * Chọn theo Mã thuế TNCN + kỳ: bản "Nháp" bị bỏ qua; bản "Ngừng" làm mã/bậc hết hiệu lực. Không hard-code bậc thuế.
+   * @returns {phuongPhap(ma), bieu(ma), tonTai(ma)} — kết quả được cache theo mã trong 1 kỳ.
+   */
+  function taxResolver(db, nam, thang) {
+    var chaAll = (db.dm_tncn || []).filter(function (r) { return r["Mã thuế TNCN"] && (r["Bậc"] === "" || r["Bậc"] == null) && !trangThaiLa(r, RE_NHAP); });
+    var cha = hieuLuc(chaAll, "Mã thuế TNCN", nam, thang);
+    var bacSrc = ((db.dm_bacthue && db.dm_bacthue.length) ? db.dm_bacthue : (db.dm_tncn || []).filter(function (r) { return r["Bậc"] !== "" && r["Bậc"] != null; }))
+      .filter(function (r) { return !trangThaiLa(r, RE_NHAP); });
+    var bacCoMa = bacSrc.some(function (r) { return r["Mã thuế TNCN"]; });
+    var bieuCache = {}, ppCache = {};
+    function bieu(maThue) {
+      if (bieuCache[maThue]) return bieuCache[maThue];
+      var src = bacCoMa ? bacSrc.filter(function (r) { return !r["Mã thuế TNCN"] || r["Mã thuế TNCN"] === maThue; }) : bacSrc;
+      var bacMap = hieuLuc(src, "Bậc", nam, thang);
+      var b = Object.keys(bacMap).map(function (k) { return bacMap[k]; })
+        .filter(function (r) { return !trangThaiLa(r, RE_NGUNG); })
+        .sort(function (a, c) { return num(a["Thu nhập từ"] || a["Thu nhập tháng (Min)"]) - num(c["Thu nhập từ"] || c["Thu nhập tháng (Min)"]); });
+      bieuCache[maThue] = b; return b;
+    }
+    function phuongPhap(maT) {
+      if (ppCache[maT]) return ppCache[maT];
+      var r;
+      if (maT === "TNCN1") r = { kieu: "VL", tyLeVL: 0.10 };
+      else if (maT === "TNCN2") r = { kieu: "LT", tyLeVL: 0 };
+      else if (maT === "TNCN0") r = { kieu: "MIEN", tyLeVL: 0 };
+      else if (!maT) r = { kieu: "LOI", loi: "hợp đồng/phụ lục chưa khai Mã thuế TNCN" };
+      else {
+        var pt = cha[maT];
+        if (!pt) r = { kieu: "LOI", loi: "mã thuế TNCN '" + maT + "' không có hiệu lực trong kỳ ở DM_TNCN" };
+        else if (trangThaiLa(pt, RE_NGUNG)) r = { kieu: "LOI", loi: "mã thuế TNCN '" + maT + "' đã ngừng hiệu lực" };
+        else {
+          var pp = String(pt["Phương pháp"] || "").trim().toUpperCase(), nd = String(pt["Nội dung"] || "");
+          if (pp && !PHUONG_PHAP[pp]) r = { kieu: "LOI", loi: "mã thuế TNCN '" + maT + "' có Phương pháp không hợp lệ: '" + pt["Phương pháp"] + "'" };
+          else {
+            var kieu = pp ? ({ LUY_TIEN: "LT", LUY_TIEN_TRU_NHANH: "LT_TN", VANG_LAI: "VL", MIEN: "MIEN" })[pp]
+              : (/vãng lai/i.test(nd) ? "VL" : (/l[ũu]y ti[ếe]n|luỹ tiến/i.test(nd) ? "LT" : "MIEN"));
+            r = { kieu: kieu, tyLeVL: kieu === "VL" && pct(pt["Mức thuế"]) > 0 ? pct(pt["Mức thuế"]) : 0.10, nguon: { ma: maT, hieuLucTu: pt["Hiệu lực từ"] || "", phuongPhap: pp || "(theo Nội dung)" } };
+          }
+        }
+      }
+      ppCache[maT] = r; return r;
+    }
+    return { bieu: bieu, phuongPhap: phuongPhap };
+  }
+  /** "Thử tính thuế" cho giao diện danh mục: cùng đường tính với bảng lương. */
+  function thuThuTNCN(db, maT, nam, thang, tntt) {
+    var res = taxResolver(db, nam, thang), pp = res.phuongPhap(maT), bieu = res.bieu(maT);
+    if (pp.kieu === "LOI") return { ok: false, loi: pp.loi, thue: 0 };
+    if (pp.kieu === "MIEN") return { ok: true, thue: 0, phuongPhap: "MIEN" };
+    if (pp.kieu === "VL") return { ok: true, thue: Math.round(tntt * pp.tyLeVL), phuongPhap: "VANG_LAI", tyLe: pp.tyLeVL };
+    if (!bieu.length) return { ok: false, loi: "mã '" + maT + "' chưa có biểu thuế hiệu lực trong kỳ", thue: 0 };
+    return { ok: true, thue: pp.kieu === "LT_TN" ? tinhThueTruNhanh(tntt, bieu) : tinhThueLuyTien(tntt, bieu), phuongPhap: pp.kieu === "LT_TN" ? "LUY_TIEN_TRU_NHANH" : "LUY_TIEN", bieu: bieu };
+  }
+
   // ===== Tra & tính công thức cấu hình (Master V5 mục V.3 — KHÔNG rơi về công thức mặc định khi cấu hình hiệu lực bị lỗi) =====
   // Phân biệt:
   //  • Không có cấu hình hiệu lực cho mã (NONE) / chỉ có cho công ty khác → dùng công thức lịch sử (tương thích ngược) — riêng
@@ -215,7 +288,25 @@
    * Công chuẩn. qc2026 (quy chế HAK Group 2026, chủ sở hữu duyệt 11/10/2026): "… tất cả ngày CN" = số ngày − số Chủ nhật;
    * các cách khác = số ngày của tháng − Số ngày giảm trừ (TG3 30 − 4 = 26). Cách cũ (1.7): trừ Chủ nhật rồi trừ tiếp số sau dấu "-".
    */
+  /**
+   * V9.2 — Công chuẩn = Ngày − Giảm trừ, cả hai khai trong mã lương (DM_LUONG: "Số ngày cơ sở" [hoặc "Ngày"] và "Số ngày giảm trừ" [hoặc "Giảm trừ"]).
+   * Chỉ áp dụng khi mã lương CÓ khai Số ngày cơ sở (số hợp lệ); mã chưa khai giữ nguyên cách tính cũ nên không đổi số liệu hiện có và kỳ đã chốt.
+   * @returns null nếu mã lương không khai ngày cơ sở; ngược lại {ngay, giamTru, cong, loi}
+   */
+  function congChuanTheoMa(dmLuongInfo) {
+    if (!dmLuongInfo) return null;
+    var raw = dmLuongInfo["Số ngày cơ sở"]; if (raw === "" || raw == null) raw = dmLuongInfo["Ngày"];
+    if (raw === "" || raw == null) return null;
+    var g = dmLuongInfo["Số ngày giảm trừ"]; if (g === "" || g == null) g = dmLuongInfo["Giảm trừ"]; if (g === "" || g == null) g = dmLuongInfo["Ngày giảm trừ"];
+    var ngay = Number(raw), gt = (g === "" || g == null) ? 0 : Number(g), loi = "";
+    if (!isFinite(ngay) || ngay <= 0) loi = "Số ngày cơ sở '" + raw + "' không hợp lệ";
+    else if (!isFinite(gt) || gt < 0) loi = "Số ngày giảm trừ '" + g + "' không hợp lệ";
+    else if (gt >= ngay) loi = "Số ngày giảm trừ (" + gt + ") ≥ Số ngày cơ sở (" + ngay + ") → công chuẩn ≤ 0";
+    return { ngay: ngay, giamTru: gt, cong: loi ? 0 : ngay - gt, loi: loi };
+  }
   function congChuan(dmLuongInfo, thang, nam, congThucTe, qc2026) {
+    var theoMa = congChuanTheoMa(dmLuongInfo);
+    if (theoMa) return theoMa.cong;
     var text = dmLuongInfo ? String(dmLuongInfo["Cách tính"] || "").toLowerCase() : "";
     var n = new Date(nam, thang, 0).getDate();
     if (/thực tế/.test(text)) { if (qc2026) { var kCN = n - ngayGiamTru(dmLuongInfo); return kCN > 0 ? kCN : 26; } return congThucTe > 0 ? congThucTe : 26; } // 2026 (C9): công nhật — công chuẩn = số ngày − Số ngày giảm trừ (tăng ca, phụ cấp, hỗ trợ); lương vẫn = đơn giá × công
@@ -322,21 +413,7 @@
     var dmHT = hieuLuc(db.dm_hotro, "Mã hỗ trợ", nam, thang);
     var dmBH = hieuLuc(db.dm_baohiem, "Mã bảo hiểm", nam, thang);
     var dmGT = hieuLuc(db.dm_giamtru, "Mã giảm trừ", nam, thang);
-    var bacSrc = (db.dm_bacthue && db.dm_bacthue.length) ? db.dm_bacthue : db.dm_tncn.filter(function (r) { return r["Bậc"] !== "" && r["Bậc"] != null; });
-    // PV-7c: biểu thuế lũy tiến có thể gắn riêng theo "Mã thuế TNCN" (như DM_BAC_TNCN thật — mỗi mã
-    // thuế 1 biểu riêng); dòng không ghi mã thuế = áp dụng chung cho mọi mã (giữ đúng số liệu cũ,
-    // trước khi danh mục có cột này). Chỉ khi CÓ ít nhất 1 dòng ghi rõ mã mới cần lọc theo từng người.
-    var bacCoMa = bacSrc.some(function (r) { return r["Mã thuế TNCN"]; });
-    var bieuCache = {};
-    function bieuCho(maThue) {
-      if (bieuCache[maThue]) return bieuCache[maThue];
-      var src = bacCoMa ? bacSrc.filter(function (r) { return !r["Mã thuế TNCN"] || r["Mã thuế TNCN"] === maThue; }) : bacSrc;
-      var bacMap = hieuLuc(src, "Bậc", nam, thang);
-      var b = Object.keys(bacMap).map(function (k) { return bacMap[k]; })
-        .sort(function (a, c) { return num(a["Thu nhập từ"] || a["Thu nhập tháng (Min)"]) - num(c["Thu nhập từ"] || c["Thu nhập tháng (Min)"]); });
-      bieuCache[maThue] = b; return b;
-    }
-    var dmPTThue = hieuLuc(db.dm_tncn.filter(function (r) { return r["Mã thuế TNCN"]; }), "Mã thuế TNCN", nam, thang);
+    var tax = taxResolver(db, nam, thang), bieuCho = tax.bieu;
     var pb = byKey(db.dm_phongban, "Mã phòng ban"), cv = byKey(db.dm_chucvu, "Mã chức vụ");
 
     var cc = tongHopChamCong(db.chamcong, nam, thang);
@@ -347,7 +424,7 @@
     var comMap = {};
     (db.tiencom || []).forEach(function (r) { if (trongKy(r, "Ngày", nam, thang) && r["Mã NV"]) comMap[r["Mã NV"]] = (comMap[r["Mã NV"]] || 0) + num(r["Số suất cơm"]); });
 
-    var out = { bangluong: [], bhxh: [], tncn: [], canhbao: [], loiCongThuc: [] };
+    var out = { bangluong: [], bhxh: [], tncn: [], canhbao: [], loiCongThuc: [], loiThue: [], loiCongChuan: [] };
     var dauKy = new Date(nam, thang - 1, 1);
     // Cách bù lương sản lượng: false = theo tháng (từng người) · true = theo ngày (liên tục) — 2 cách cũ, giữ nguyên;
     // α19 (chủ sở hữu duyệt "làm như công cụ"): "daihiep" = theo ngày bậc thang (công cụ HAK, mẫu Đại Hiệp) · "to" = theo bình quân tổ
@@ -391,6 +468,8 @@
       var dmL = dmLuong[ns["Mã tiền lương 1"]] || dmLuong[ns["Mã tiền lương 2"]] || null;
       if (!dmL && maTL1) out.canhbao.push(ma + ": mã lương '" + maTL1 + "' chưa có trong Danh mục lương (hoặc hết hiệu lực)");
       var cChuan = congChuan(dmLuong[maTL1] || null, thang, nam, c.tongCong, qc2026);
+      var ccMa = congChuanTheoMa(dmLuong[maTL1] || null);
+      if (ccMa && ccMa.loi) { out.loiCongChuan.push({ maNV: ma, maLuong: maTL1, message: ccMa.loi }); out.canhbao.push("CONG_CHUAN_ERROR — " + ma + ": mã lương '" + maTL1 + "': " + ccMa.loi + " — chặn chốt/xuất bảng lương chính thức cho đến khi sửa mã lương."); }
       var laSL = !!(dmL && /SP/i.test(dmL["Mã hình thức lương"] || ""));
 
       // Lương thời gian
@@ -468,7 +547,7 @@
       var congChuan2 = Object.keys(c.nhanTheoNgay).some(function (k) { return /DQ/i.test(c.nhanTheoNgay[k]); }) ? 40 : 0;
       if (cChuan > 0) {
         if ((maTL1 === "CN1" || maTL1 === "CN2") && qc2026) { // 2026 (C5): công nhật tính tăng ca theo công thức của mã tăng ca, công chuẩn = số ngày − Số ngày giảm trừ
-          if (dmT) { var ccCN = new Date(nam, thang, 0).getDate() - ngayGiamTru(dmLuong[maTL1]); congTCQuyDoi = heSoTangCa(ns["Mã tăng ca"], c.tongCong, c.congTrungChuyen, c.congLe, ccCN, c.congChuNhat, c.congTangCa, pct(dmT["Hệ số tăng ca"]), c.congPhep, c.congDiChuyen, congChuan2, dmT["Loại công thức"], fmlCtx); tienTC = Math.round(luongTT * congTCQuyDoi); }
+          if (dmT) { var ccCN = (congChuanTheoMa(dmLuong[maTL1]) || { cong: new Date(nam, thang, 0).getDate() - ngayGiamTru(dmLuong[maTL1]) }).cong; congTCQuyDoi = heSoTangCa(ns["Mã tăng ca"], c.tongCong, c.congTrungChuyen, c.congLe, ccCN, c.congChuNhat, c.congTangCa, pct(dmT["Hệ số tăng ca"]), c.congPhep, c.congDiChuyen, congChuan2, dmT["Loại công thức"], fmlCtx); tienTC = Math.round(luongTT * congTCQuyDoi); }
         } else if (maTL1 === "CN1" || maTL1 === "CN2") { // chủ sở hữu xác nhận (sau khi đối chiếu M thật QR_LUONGTG."Lương tăng ca"): CN1/CN2 PHẢI nhân hệ số mã tăng ca như mọi loại lương khác, không phải trường hợp riêng — không phân biệt quy chế 2026
           if (dmT) { congTCQuyDoi = heSoTangCa(ns["Mã tăng ca"], c.tongCong, c.congTrungChuyen, c.congLe, cChuan, c.congChuNhat, c.congTangCa, pct(dmT["Hệ số tăng ca"]), c.congPhep, c.congDiChuyen, congChuan2, dmT["Loại công thức"], fmlCtx); tienTC = Math.round(luongTT * congTCQuyDoi); }
         }
@@ -572,23 +651,18 @@
       var tienGTBT = gtBT ? money(gtBT["Số tiền"]) : 0, tongGTPT = npt * (gtPT ? money(gtPT["Số tiền"]) : 0);
       var chiuThue = 0, tinhThue = 0, thue = 0;
       // Phương thức thuế: mã cũ TNCN0/1/2, hoặc mã trong danh mục Thuế TNCN (Nội dung "Khấu trừ vãng lai" / "Lũy tiến")
-      var pt = dmPTThue[maT], kieu, tyLeVL = 0.10;
-      if (maT === "TNCN1") kieu = "VL";
-      else if (maT === "TNCN2") kieu = "LT";
-      else if (!maT || maT === "TNCN0") kieu = "MIEN";
-      else if (pt) {
-        var nd = String(pt["Nội dung"] || "");
-        kieu = /vãng lai/i.test(nd) ? "VL" : (/l[ũu]y ti[ếe]n|luỹ tiến/i.test(nd) ? "LT" : "MIEN");
-        if (kieu === "VL" && pct(pt["Mức thuế"]) > 0) tyLeVL = pct(pt["Mức thuế"]);
-      } else { kieu = "LT"; out.canhbao.push(ma + ": mã thuế TNCN '" + maT + "' chưa có trong danh mục — tạm tính lũy tiến"); }
-      if (kieu === "VL") { chiuThue = tongTN; tinhThue = tongTN; thue = Math.round(tongTN * tyLeVL); }
+      var ppT = tax.phuongPhap(maT), kieu = ppT.kieu, tyLeVL = ppT.tyLeVL || 0.10;
+      var loiT = function (loai, msg) { out.loiThue.push({ maNV: ma, maThue: maT, loai: loai, message: msg }); out.canhbao.push("TAX_CONFIG_ERROR — " + ma + ": " + msg + " — KHÔNG tự chọn mã khác, chặn chốt/xuất bảng lương chính thức của kỳ cho đến khi sửa cấu hình."); };
+      if (kieu === "LOI") { loiT("MA_THUE", ppT.loi); chiuThue = tongTN - bhNLD - kpcdNLD - tienCom; }
+      else if (kieu === "VL") { chiuThue = tongTN; tinhThue = tongTN; thue = Math.round(tongTN * tyLeVL); }
       else if (kieu === "MIEN") { chiuThue = tongTN - bhNLD - kpcdNLD; }
       else {
-        if (!gtBT) out.canhbao.push(ma + ": thuế lũy tiến nhưng không tìm thấy mức giảm trừ bản thân hiệu lực trong kỳ (mã '" + (ns["Mã GT_TNCN_BT"] || "") + "') — thuế có thể bị tính cao");
-        if (npt > 0 && !gtPT) out.canhbao.push(ma + ": có " + npt + " người phụ thuộc nhưng không tìm thấy mức giảm trừ người phụ thuộc hiệu lực trong kỳ");
-        var bieu = bieuCho(maT); // PV-7c: biểu thuế lũy tiến tham chiếu theo đúng Mã thuế TNCN của người này (nếu danh mục có phân biệt)
-        if (!bieu.length) out.canhbao.push(ma + ": không có biểu thuế lũy tiến hiệu lực trong kỳ (mã thuế '" + maT + "') — thuế = 0");
-        chiuThue = tongTN - bhNLD - kpcdNLD - tienCom; tinhThue = Math.max(0, chiuThue - tienGTBT - tongGTPT); thue = tinhThueLuyTien(tinhThue, bieu);
+        if (!gtBT) loiT("GIAM_TRU", "thuế lũy tiến nhưng không tìm thấy mức giảm trừ bản thân hiệu lực trong kỳ (mã '" + (ns["Mã GT_TNCN_BT"] || "") + "')");
+        if (npt > 0 && !gtPT) loiT("GIAM_TRU", "có " + npt + " người phụ thuộc nhưng không tìm thấy mức giảm trừ người phụ thuộc hiệu lực trong kỳ");
+        var bieu = bieuCho(maT); // biểu thuế (bảng con DM_TNCN_BIEUTHUE) tra theo đúng Mã thuế TNCN của người này
+        chiuThue = tongTN - bhNLD - kpcdNLD - tienCom; tinhThue = Math.max(0, chiuThue - tienGTBT - tongGTPT);
+        if (!bieu.length) loiT("BIEU_THUE", "không có biểu thuế hiệu lực trong kỳ cho mã '" + maT + "' (DM_TNCN_BIEUTHUE)");
+        else thue = kieu === "LT_TN" ? tinhThueTruNhanh(tinhThue, bieu) : tinhThueLuyTien(tinhThue, bieu);
       }
       if (thue > 0) out.tncn.push({
         "Mã NV": ma, "Họ và tên": ns["Họ và tên"], "Thu nhập chịu thuế": chiuThue,
@@ -625,7 +699,7 @@
           mucBuDmLuong: laSL && dmL ? money(dmL["Đơn giá bù lương"]) : 0,
           binhQuanTo: laSL && cheDoBu === "to" ? Math.round(binhQuanTo[ns["Mã PB"] || ""] || 0) : null,
           maPhuCap: ns["Mã phụ cấp"] || "", loaiCongThucPhuCap: pc ? (loaiPC || (trongCT ? "TYLE_TRU_PHEP_TANGCA" : "TYLE_KHONG_TRU")) : "",
-          maThueTNCN: maT, phuongPhapThue: kieu, thuNhapTinhThue: Math.round(tinhThue)
+          maThueTNCN: maT, phuongPhapThue: kieu, thuNhapTinhThue: Math.round(tinhThue), nguonThue: ppT.nguon || null
         }
       });
       // Q-19 (R-53): điều chuyển phòng ban trong kỳ → tỷ lệ chia chi phí theo công chính ở từng phòng (không đổi số tiền lương)
@@ -686,6 +760,6 @@
   }
 
   var ENGINE_VERSION = "1.8.0"; // 1.8.0: quy chế lương HAK Group 2026 (opts.quyChe "2026", R-68 — C1…C10); không bật = số như 1.7.0 · 1.5.0: Q-22 áp dụng phụ lục từ ngày hiệu lực · 1.6.0: Q-19 "Phân bổ PB" khi điều chuyển (không dùng = số tiền giống 1.4.0) · 1.7.0: thêm cách bù "daihiep" / "to" (công cụ HAK; 2 cách cũ giữ nguyên số)
-  var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, congChuan: congChuan, ngayGiamTru: ngayGiamTru, tachCong: tachCong, tongHopChamCong: tongHopChamCong, hieuLuc: hieuLuc, num: num, pct: pct, bacThang: bacThang, chiTietBuNgayDaiHiep: chiTietBuNgayDaiHiep, quyCheBuChinhThuc: quyCheBuChinhThuc };
+  var api = { ENGINE_VERSION: ENGINE_VERSION, money: money, tinhBangLuong: tinhBangLuong, tinhThueLuyTien: tinhThueLuyTien, tinhThueTruNhanh: tinhThueTruNhanh, taxResolver: taxResolver, thuThuTNCN: thuThuTNCN, congChuan: congChuan, congChuanTheoMa: congChuanTheoMa, ngayGiamTru: ngayGiamTru, tachCong: tachCong, tongHopChamCong: tongHopChamCong, hieuLuc: hieuLuc, num: num, pct: pct, bacThang: bacThang, chiTietBuNgayDaiHiep: chiTietBuNgayDaiHiep, quyCheBuChinhThuc: quyCheBuChinhThuc };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LuongEngine = api;
 })(typeof window !== "undefined" ? window : this);

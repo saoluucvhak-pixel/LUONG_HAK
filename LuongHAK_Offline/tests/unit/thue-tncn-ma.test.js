@@ -12,7 +12,7 @@ function thue(ma, extraDm, quyChe) {
   db.nhansu = [staff({ "Mã tiền lương 1": "CĐ", "Lương thỏa thuận": "40000000", "Mã TNCN": ma })];
   db.chamcong = [];
   const kq = E.tinhBangLuong(db, 2026, 9, false, quyChe ? { quyChe } : undefined), r = kq.bangluong[0];
-  return { thue: r["Thuế TNCN"], tn: r["Tổng thu nhập"], canhbao: kq.canhbao };
+  return { thue: r["Thuế TNCN"], tn: r["Tổng thu nhập"], canhbao: kq.canhbao, loiThue: kq.loiThue };
 }
 
 test("U-TAX-01 (R-70) mã lũy tiến / vãng lai → trừ thuế hằng tháng; mã miễn / không tính thuế → 0 (cả quy chế 2026 và cách cũ)", () => {
@@ -28,8 +28,9 @@ test("U-TAX-01 (R-70) mã lũy tiến / vãng lai → trừ thuế hằng tháng
   });
 });
 
-test("U-TAX-02 mã thuế chưa có trong danh mục → tạm tính lũy tiến + cảnh báo (không âm thầm miễn thuế)", () => {
-  const r = thue("XYZ"), lt = thue("LT01");
-  assert.equal(r.thue, lt.thue);
-  assert.ok(r.canhbao.some((w) => /mã thuế TNCN 'XYZ' chưa có trong danh mục/.test(w)), r.canhbao.join(" | "));
+test("U-TAX-02 (V9.2) mã thuế không có trong DM_TNCN → TAX_CONFIG_ERROR, KHÔNG tự chọn mã khác, KHÔNG che bằng 0 im lặng", () => {
+  const r = thue("XYZ");
+  assert.ok(r.canhbao.some((w) => /^TAX_CONFIG_ERROR — .*mã thuế TNCN 'XYZ' không có hiệu lực/.test(w)), r.canhbao.join(" | "));
+  assert.equal(r.loiThue.length, 1);
+  assert.equal(r.loiThue[0].loai, "MA_THUE");
 });

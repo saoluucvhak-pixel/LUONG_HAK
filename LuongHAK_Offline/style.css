@@ -349,3 +349,7 @@ table.sld-thieu button.b.chipbtn{white-space:normal;text-align:left;justify-cont
 .mselpop{position:absolute;z-index:30;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;min-width:220px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 .mselist{max-height:240px;overflow:auto;margin-top:4px}
 .mselrow{display:block;padding:2px 0;font-size:13px;cursor:pointer}
+/* V9.2 — hộp chọn nhiều giá trị dùng chung cho bộ lọc */
+details.mpick { display: inline-block; position: relative; }
+details.mpick > summary { cursor: pointer; list-style: none; user-select: none; }
+details.mpick > summary::-webkit-details-marker { display: none; }

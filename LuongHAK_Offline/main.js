@@ -8,6 +8,8 @@ const pdfSvc = require("./main/pdf");
 const { createVault } = require("./main/documents");
 const fullBackup = require("./main/fullbackup");
 const { createGuard } = require("./main/ipc-guard");
+const { createPolicy, fileSig } = require("./main/write-policy");
+const payGate = require("./main/payroll-gate");
 const cryptoNode = require("crypto"), fsNode = require("fs");
 const PERMCORE = require("./core/permissions.js");
 const kdfNode = (pw, salt, iter) => cryptoNode.pbkdf2Sync(String(pw), Buffer.from(String(salt), "hex"), Math.min(Math.max(+iter || 210000, 100000), 2000000), 32, "sha256");
@@ -64,7 +66,20 @@ function registerIpc() {
   ipcMain.on("auth-logout", (e) => { e.returnValue = guard.logout(e); });
   ipcMain.on("auth-state", (e) => { const c = guard.trusted(e) ? guard.current(e) : null; e.returnValue = c ? { ok: true, user: c.user, role: c.role, perms: c.perms } : { ok: false }; });
   ipcMain.on("store-load", (e) => { e.returnValue = storage.load(); });
-  ipcMain.on("store-save", (e, text) => { e.returnValue = storage.save(text); });
+  // V9.2: main so với bản đang lưu, tìm bảng thay đổi và kiểm quyền THEO PHIÊN ĐĂNG NHẬP CỦA MAIN (không tin renderer); chốt kỳ được tính lại để chặn lỗi
+  let wpol = null;
+  const policy = () => wpol || (wpol = createPolicy({ readText: () => { const l = storage.load(); return l && l.ok ? l.text : null; }, sigOf: fileSig(storage.dataFile), gate: payGate }));
+  ipcMain.on("store-save", (e, text) => {
+    try {
+      const c = guard.current(e), who = c ? { user: c.user, perms: c.perms } : null;
+      const v = policy().check(text, who, { restoring: !!(restorer && restorer.busy()) });
+      if (!v.ok) { e.returnValue = v.error; return; }
+      const r = storage.save(text);
+      if (r === true) policy().commit();
+      if (c && c.touch) c.touch();
+      e.returnValue = r;
+    } catch (err) { e.returnValue = "Lỗi kiểm tra quyền ghi: " + String(err && err.message || err); }
+  });
   ipcMain.on("store-info", (e) => { e.returnValue = storage.info(); });
   ipcMain.on("store-backup", (e, tag) => { try { e.returnValue = storage.backup(tag); } catch (err) { e.returnValue = null; } });
   ipcMain.on("store-has-data-file", (e) => { try { e.returnValue = storage.hasDataFile(); } catch (err) { e.returnValue = false; } });
@@ -107,14 +122,21 @@ function registerIpc() {
   ipcMain.handle("ocrlib-verify", guarded("input.view", olWrap(() => ({ report: ocrLib.verify() }))));
   // Kho chứng từ gốc (GĐ4): chỉ THÊM / ĐỌC / KIỂM TRA — không có thao tác xóa. Giao diện chỉ dùng DocumentID, không truyền đường dẫn.
   const toBuf = (d) => d instanceof ArrayBuffer ? Buffer.from(d) : ArrayBuffer.isView(d) ? Buffer.from(d.buffer, d.byteOffset, d.byteLength) : null;
-  ipcMain.handle("doc-add", guardedW("input.edit", async (e, data, info) => {
-    try { const b = toBuf(data); if (!b) return { ok: false, error: "Dữ liệu chứng từ không hợp lệ" }; if (b.length > 300 * 1024 * 1024) return { ok: false, error: "Chứng từ quá lớn (tối đa 300 MB)" }; return vault.add(b, info && typeof info === "object" ? { name: info.name, user: guard.userOf(e),  note: info.note, pages: info.pages } : {}); }
+  // V9.2: tài liệu HĐLĐ (docType HDLD) là hồ sơ nhân sự → thêm cần hr.edit, xem/mở/liệt kê cần hr.view; chứng từ chấm công giữ input.edit / input.view
+  const isHdld = (m) => !!(m && m.docType === "HDLD");
+  ipcMain.handle("doc-add", guardedW(null, async (e, data, info) => {
+    try {
+      const hd = info && typeof info === "object" && String(info.docType || "").toUpperCase() === "HDLD", d = guard.deny(e, hd ? "hr.edit" : "input.edit");
+      if (d) return { ok: false, error: d };
+      const b = toBuf(data); if (!b) return { ok: false, error: "Dữ liệu chứng từ không hợp lệ" }; if (b.length > 300 * 1024 * 1024) return { ok: false, error: "Chứng từ quá lớn (tối đa 300 MB)" };
+      return vault.add(b, Object.assign({}, info && typeof info === "object" ? info : {}, { user: guard.userOf(e) }));
+    }
     catch (err) { return { ok: false, error: String(err && err.message || err) }; }
   }));
-  ipcMain.handle("doc-list", guarded("input.view", async () => { try { return { ok: true, docs: vault.list() }; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
-  ipcMain.handle("doc-read", guarded("input.view", async (e, id) => { try { const r = vault.read(String(id || "")); return r.ok ? { ok: true, meta: r.meta, data: r.data } : r; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
-  ipcMain.handle("doc-verify", guarded("input.view", async (e, ids) => { try { return { ok: true, items: vault.verify(Array.isArray(ids) ? ids.map(String) : undefined) }; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
-  ipcMain.on("doc-open", (e, id) => { if (guard.deny(e, "input.view")) { e.returnValue = false; return; } const f = vault.pathOf(String(id || "")); if (f) shellDo("open", f); e.returnValue = !!f; });
+  ipcMain.handle("doc-list", guarded(null, async (e) => { try { const hv = !guard.deny(e, "hr.view"), iv = !guard.deny(e, "input.view"); if (!hv && !iv) return { ok: false, error: "Bạn không có quyền xem chứng từ" }; return { ok: true, docs: vault.list().filter((m) => (isHdld(m) ? hv : iv)) }; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
+  ipcMain.handle("doc-read", guarded(null, async (e, id) => { try { const m = vault.find(String(id || "")), d = guard.deny(e, isHdld(m) ? "hr.view" : "input.view"); if (d) return { ok: false, error: d }; const r = vault.read(String(id || "")); return r.ok ? { ok: true, meta: r.meta, data: r.data } : r; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
+  ipcMain.handle("doc-verify", guarded(null, async (e, ids) => { try { const hv = !guard.deny(e, "hr.view"), iv = !guard.deny(e, "input.view"); if (!hv && !iv) return { ok: false, error: "Bạn không có quyền xem chứng từ" }; const items = vault.verify(Array.isArray(ids) ? ids.map(String) : undefined); return { ok: true, items: items.filter((x) => (isHdld(vault.find(x.id)) ? hv : iv)) }; } catch (err) { return { ok: false, error: String(err.message || err) }; } }));
+  ipcMain.on("doc-open", (e, id) => { const m = vault.find(String(id || "")); if (guard.deny(e, isHdld(m) ? "hr.view" : "input.view")) { e.returnValue = false; return; } const f = vault.pathOf(String(id || "")); if (f) shellDo("open", f); e.returnValue = !!f; });
   // Full Backup / Restore (GĐ5): gói ZIP = dữ liệu + chứng từ gốc + manifest SHA-256. Giao diện không truyền đường dẫn:
   // tạo vào thư mục xuất (và chép sang thư mục sao lưu thứ hai nếu có); đọc gói qua hộp thoại chọn file hoặc theo TÊN trong thư mục xuất.
   // Thư mục Full Backup chính: cấu hình `backupDir` (Cài đặt → Lưu trữ) hoặc thư mục xuất file
@@ -257,6 +279,20 @@ function createWindow() {
   win.webContents.on("will-navigate", (ev, url) => { if (!url.startsWith("file://")) ev.preventDefault(); });
   // Tải file (xuất Excel, báo cáo, sao lưu ra file): lưu thẳng vào thư mục xuất, không ghi đè; xong → báo giao diện + (mặc định) mở thư mục chọn sẵn file
   win.webContents.session.on("will-download", (ev, item) => {
+    // V9.2: tệp có vẻ là bảng lương của kỳ CHƯA chốt mà kỳ đó còn lỗi chặn (FORMULA_ERROR, TAX_CONFIG_ERROR, CONG_CHUAN_ERROR…) → hủy tải. Kiểm tra lại từ dữ liệu trên đĩa tại main.
+    try {
+      const nm = item.getFilename();
+      if (payGate.isPayrollFile(nm)) {
+        const ky = payGate.kyFromName(nm), ld = ky ? storage.load() : null;
+        if (ky && ld && ld.ok && ld.text) {
+          const d = JSON.parse(ld.text);
+          if (!(d.kyluong || []).some((k) => k.ky === ky)) {
+            const bl = payGate.blockers(d, ky, { quyChe: ((d.congty || [])[0] || {})["Quy chế tính lương"] === "1.7" ? "1.7" : "2026" });
+            if (bl.length) { item.cancel(); if (!win.isDestroyed()) win.webContents.send("download-done", { ok: false, name: nm, state: "blocked", blocked: bl.map((b) => b.code + " ×" + b.count).join(", ") }); return; }
+          }
+        }
+      }
+    } catch (err) { /* không kiểm tra được → không chặn nhầm; renderer đã chặn ở lớp giao diện */ }
     const f = exportsDir.target(item.getFilename());
     item.setSavePath(f);
     item.once("done", (e2, state) => {

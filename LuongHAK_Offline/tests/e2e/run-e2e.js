@@ -959,14 +959,14 @@ async function launch(dataDir, opt) {
     const f = path.join(DATA, "data.json"), d0 = JSON.parse(fs.readFileSync(f, "utf8"));
     d0.nhanvien.push({ _id: "zchk1", "Mã NV": "ZCHK1", "Họ và tên": "E2E Checklist", "Trạng thái": "Đang làm việc" });
     d0.hopdong.push({ _id: "zchk1hd", "Mã NV": "ZCHK1", "Số HĐLĐ": "ZCHK1/HĐ01", "Hình thức HĐLĐ": "Xác định thời hạn", "Ngày vào làm": "2026-01-01" });
-    d0.chitiethd.push({ _id: "zchk1pl", "Mã NV": "ZCHK1", "Số HĐLĐ": "ZCHK1/HĐ01", "Hiệu lực từ": "2026-01-01", "Mã lương": "TG1", "Lương thỏa thuận": "9000000", "Thuế TNCN": "MT00", "HTTT": "Tiền mặt", "Tăng ca": "TC_KHONG_TON_TAI" });
+    d0.chitiethd.push({ _id: "zchk1pl", "Mã NV": "ZCHK1", "Số HĐLĐ": "ZCHK1/HĐ01", "Hiệu lực từ": "2026-01-01", "Mã lương": "TG1", "Lương thỏa thuận": "9000000", "Thuế TNCN": "MT00", "HTTT": "Tiền mặt" });
     // Kỳ 10/2026: đã có sẵn 11 tấn sản lượng chưa phân bổ hết (phiếu P3/P4 ở test "Chia phiếu theo tổ"
     // phía trên) → mục #9 (sai lệch khối lượng) ở mức "loi" = BLOCKER (mục XIV) — dùng chính kỳ này để
     // kiểm tra BLOCKER không có đường vượt qua, dù cũng có cảnh báo tăng ca của ZCHK1.
-    d0.chamcong.push({ "Kỳ": "2026-10", "Mã NV": "ZCHK1", "Hình thức công": "BT", "01": "1" });
+    d0.chamcong.push({ "Kỳ": "2026-10", "Mã NV": "ZCHK1", "Hình thức công": "BT", "01": "1XYZ" });
     // Kỳ 2027-01: kỳ sạch (không dùng ở test nào khác) → chỉ còn đúng 1 cảnh báo (tăng ca ZCHK1) để
     // kiểm tra đường WARNING vẫn chốt được sau khi xác nhận checklist.
-    d0.chamcong.push({ "Kỳ": "2027-01", "Mã NV": "ZCHK1", "Hình thức công": "BT", "01": "1" });
+    d0.chamcong.push({ "Kỳ": "2027-01", "Mã NV": "ZCHK1", "Hình thức công": "BT", "01": "1XYZ" });
     fs.writeFileSync(f, JSON.stringify(d0));
     ({ app, w, errs } = await launch());
     await w.click("#nav button[data-k=luong]");
@@ -975,7 +975,7 @@ async function launch(dataDir, opt) {
     await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForSelector(".dlg");
     const ckTxt = await w.locator(".dlg").innerText();
     ok("Checklist trước khi chốt: hiện đúng 20 điểm, báo mã tăng ca 'TC_KHONG_TON_TAI' chưa có trong danh mục + 1 lỗi (sản lượng chưa phân bổ hết)",
-      /\d+ lỗi/.test(ckTxt) && /TC_KHONG_TON_TAI/.test(ckTxt), ckTxt.replace(/\s+/g, " ").slice(0, 300));
+      /\d+ lỗi/.test(ckTxt) && /XYZ/.test(ckTxt), ckTxt.replace(/\s+/g, " ").slice(0, 300));
     ok("Còn LỖI (BLOCKER mục XIV) → KHÔNG có nút vượt qua, chỉ có nút đóng để sửa dữ liệu",
       (await w.locator('.dlg footer button:has-text("tiếp tục chốt")').count()) === 0 && (await w.locator('.dlg footer button:has-text("Vẫn chốt dù còn LỖI")').count()) === 0 && /KHÔNG thể vượt qua/.test(ckTxt));
     await w.click('.dlg footer button:has-text("Đóng")'); await w.waitForTimeout(150);
@@ -990,7 +990,7 @@ async function launch(dataDir, opt) {
     await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForSelector(".dlg");
     const ckTxt2 = await w.locator(".dlg").innerText();
     ok("Kỳ sạch (chỉ cảnh báo, không lỗi): hiện '0 lỗi' + đúng cảnh báo tăng ca; CÓ nút tiếp tục chốt",
-      /0 lỗi/.test(ckTxt2) && /TC_KHONG_TON_TAI/.test(ckTxt2) && (await w.locator('.dlg footer button:has-text("Đã kiểm tra, tiếp tục chốt")').count()) === 1);
+      /0 lỗi/.test(ckTxt2) && /XYZ/.test(ckTxt2) && (await w.locator('.dlg footer button:has-text("Đã kiểm tra, tiếp tục chốt")').count()) === 1);
     await w.click('.dlg footer button:has-text("Đã kiểm tra, tiếp tục chốt")'); await w.waitForSelector(".dlg");
     ok("Sau khi xác nhận checklist, vào đúng hộp xác nhận chốt kỳ như cũ", /Chốt Tháng 1\/2027|Chốt kỳ/.test(await w.locator(".dlg header h3").innerText()));
     await w.locator(".dlg input").fill("Chốt E2E checklist"); await w.click(".dlg footer button.pri"); await w.waitForSelector(".locked");
