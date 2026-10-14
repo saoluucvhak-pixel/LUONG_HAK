@@ -23,7 +23,7 @@
           var v = r[c]; if (v === "" || v == null || c === "_id") return;
           if (c === "Kỳ") { var k = V.normKy(v); if (k && k !== v) { r[c] = k; changed.ky++; } return; }
           if (V.isMoneyCol(c) && typeof v === "string") { var m = V.parseMoney(v); if (!isNaN(m) && String(m) !== v) { r[c] = String(m); changed.money++; } return; }
-          if (V.isDateCol(c) && typeof v === "string") { var d = V.normDate(v); if (d && d !== v) { r[c] = d; changed.date++; } return; }
+          if (V.isDateCol(c) && typeof v === "string") { if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return; /* dấu thời gian (vd. "Ngày lập" của công thức) — giữ nguyên giờ, không cắt thành ngày */ var d = V.normDate(v); if (d && d !== v) { r[c] = d; changed.date++; } return; }
           if (V.isIdCol(c)) { var x = V.normId(c, v); if (x !== v) { r[c] = x; changed.id++; } }
         });
       });

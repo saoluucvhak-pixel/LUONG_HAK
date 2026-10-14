@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var KEY = "luonghak_db_v1";
-  var E = window.LuongEngine, C = window.HAKCore, VAL = C.validate, IMP = C.importer, INT = C.integrity, CLS = C.close, GRD = C.guard, SCH = C.schema, PERM = C.perm, RP = C.repo, ALLOC = C.alloc, BHR = C.bh, RC = C.reconcile, PCC = C.preClose, FML = C.formula, FAP = C.formulaApproval, RF = C.reportFilter, IPAY = C.internalPayroll, RH = C.reportHtml, TCFG = C.taxcfg, GATE = C.gate, HDD = C.hdld, LF = C.lf, CMP = C.company;
+  var E = window.LuongEngine, C = window.HAKCore, VAL = C.validate, IMP = C.importer, INT = C.integrity, CLS = C.close, GRD = C.guard, SCH = C.schema, PERM = C.perm, RP = C.repo, ALLOC = C.alloc, BHR = C.bh, RC = C.reconcile, PCC = C.preClose, FML = C.formula, FAP = C.formulaApproval, OTM = C.overtimeMaster, RF = C.reportFilter, IPAY = C.internalPayroll, RH = C.reportHtml, TCFG = C.taxcfg, GATE = C.gate, HDD = C.hdld, LF = C.lf, CMP = C.company;
   var DAYS = []; for (var i = 1; i <= 31; i++) DAYS.push(("0" + i).slice(-2));
 
   // ---------- Định nghĩa bảng ----------
@@ -26,10 +26,12 @@
     dm_phongban: { ten: "Phòng ban", cols: ["Mã khối", "Tên khối", "Mã phòng ban", "Tên phòng ban", "Tài khoản chi phí", "Hiệu lực từ", "Hiệu lực đến"], hint: "'Tài khoản chi phí' dùng cho Bảng hạch toán lương (VD 622 sản xuất, 627 quản lý PX, 641 bán hàng, 642 quản lý DN). Để trống: khối Sản xuất → 622, còn lại → 642." },
     dm_chucvu: { ten: "Chức vụ", cols: ["Mã chức vụ", "Tên chức vụ", "Hiệu lực từ", "Hiệu lực đến"] },
     dm_cc: { ten: "Hình thức công", cols: ["Mã CC", "Nội dung", "Hình thức công", "Diễn giải", "Hiệu lực từ", "Hiệu lực đến"], hint: "Danh sách mã hình thức công dùng trong bảng chấm công (BT, PN, CL, TC, CC…)." },
+    // V10.2: ca kiểm thử công thức tăng ca (khóa kết quả kỳ vọng để kiểm thử hồi quy) — quản lý trong modal Danh mục tăng ca, không hiện ở Danh mục
+    dm_congthuc_kiemthu: { ten: "Ca kiểm thử công thức", cols: ["Mã tăng ca", "Tên ca", "Công quy đổi kỳ vọng", "Nguồn", "Người tạo", "Ngày tạo"], hint: "Các ca kiểm thử của công thức tăng ca (biến lấy từ dữ liệu thật lúc lưu)." },
     // Master Prompt mục III/VII: Dynamic Payroll Formula Engine — thêm/sửa công thức tăng ca, phụ cấp, hỗ trợ KHÔNG cần sửa code.
     dm_congthuc: {
       ten: "Công thức tiền lương",
-      cols: ["Hiệu lực từ", "Hiệu lực đến", "Mã công thức", "Tên công thức", "Loại", "Công ty", "Biểu thức", "Tham số", "Đơn vị tính", "Mức tiền", "Hệ số", "Đối tượng áp dụng", "Trạng thái", "Phiên bản", "Người lập", "Ngày lập", "Người duyệt", "Thời điểm duyệt", "Người kích hoạt", "Thời điểm kích hoạt", "Người ngừng", "Thời điểm ngừng", "Lý do thay đổi", "Mô tả"],
+      cols: ["Hiệu lực từ", "Hiệu lực đến", "Mã công thức", "Mã tăng ca cha", "Tên công thức", "Loại", "Công ty", "Biểu thức", "Tham số", "Đơn vị tính", "Mức tiền", "Hệ số", "Đối tượng áp dụng", "Trạng thái", "Phiên bản", "Người lập", "Ngày lập", "Người duyệt", "Thời điểm duyệt", "Người kích hoạt", "Thời điểm kích hoạt", "Người ngừng", "Thời điểm ngừng", "Lý do thay đổi", "Mô tả"],
       def: { "Trạng thái": "Nháp" },
       hint: "'Loại': OVERTIME (tăng ca) · ALLOWANCE (phụ cấp) · SUPPORT (hỗ trợ) — khớp đúng 'Mã công thức' đã gán cho nhân viên (Mã tăng ca / Mã phụ cấp / Mã hỗ trợ), engine tự tra công thức này TRƯỚC, không cần sửa phần mềm. 'Trạng thái': chỉ 'Hiệu lực' mới được dùng để tính lương chính thức — 'Nháp'/'Đã duyệt' dùng để soạn & chạy thử (tab Kiểm tra công thức) trước khi kích hoạt; 'Ngừng' = thôi áp dụng. 'Công ty': để trống = áp dụng mọi công ty; ghi cụ thể để ưu tiên hơn bản chung. 'Biểu thức' dùng tên biến ở tab Thư viện biến (CONG_TC, MUC_PHU_CAP, HE_SO_TC…), hàm MIN/MAX/ROUND/IF… Xem tab Mẫu công thức để copy công thức có sẵn."
     },
@@ -122,7 +124,7 @@
     var names = tables.concat(["auditlog"]), snap = {}, ok = false;
     names.forEach(function (k) { snap[k] = JSON.stringify(db[k] || []); });
     try { ok = fn() !== false; } catch (e) { ok = false; toast("⛔ Lỗi khi xử lý: " + (e && e.message || e)); }
-    if (ok) ok = saveNow();
+    if (ok) { ok = saveNow(); if (ok) { dbRev++; st.kqStale = true; } } // dữ liệu đã đổi → làm hết hiệu lực bản tính lương tạm
     if (!ok) { names.forEach(function (k) { db[k] = JSON.parse(snap[k]); }); dbRev++; st.kqStale = true; dirty = false; }
     return ok;
   }
@@ -1705,8 +1707,18 @@
     if (DM_CAI_DAT[st.dm]) st.dm = Object.keys(DM).filter(function (k) { return !DM_CAI_DAT[k]; })[0];
     Object.keys(DM).filter(function (k) { return !DM_CAI_DAT[k]; }).forEach(function (k) { bar.appendChild(btn(DM[k].ten + (countOf(k) ? " (" + countOf(k) + ")" : ""), st.dm === k ? "pri" : "", function () { if (st.dm !== k && !leaveOk()) return; st.dm = k; saveUi(); render(); })); });
     w.appendChild(bar);
-    w.appendChild(st.dm === "dm_tncn" ? thuePanel() : grid(st.dm, DM[st.dm]));
+    w.appendChild(st.dm === "dm_tncn" ? thuePanel() : st.dm === "dm_tangca" ? otUi().masterView() : grid(st.dm, DM[st.dm]));
     return w;
+  }
+  /** V10.2: Danh mục tăng ca dạng Master–Detail (ui/overtime-master.js). Phụ thuộc đưa vào qua một đối tượng — module không đụng DOM/db ngoài luồng repository. */
+  var OTUI = null;
+  function otUi() {
+    return OTUI || (OTUI = window.HAKUI.overtimeMaster.create({
+      h: h, btn: btn, esc: esc, fmt: fmt, $: $, st: st, db: function () { return db; }, can: can, user: function () { return session ? session.tenDangNhap : currentUser(); },
+      REPO: REPO, commit: commit, txn: txn, save: save, render: render, audit: audit, toast: toast, alert: function (m) { alert(m); }, fmtTime: fmtTime,
+      dateField: dateField, dateIso: dateIso, kqKy: kqKy, closedPeriods: function () { return db.kyluong.map(function (k) { return k.ky; }); }, pct: E.pct,
+      backup: function (tag) { if (store && store.backup) store.backup(tag); }, dirtyBump: function () { dbRev++; st.kqStale = true; }
+    }));
   }
 
   // ---------- Kiểm tra bảng lương (V10): ERROR / WARNING / INFO, đi tới dữ liệu, kiểm tra lại, xuất Excel ----------
@@ -1895,7 +1907,7 @@
   }
 
   // ---------- Cài đặt (V10): công thức lương + phương pháp bù sản lượng — KHÔNG nằm trong Danh mục ----------
-  var DM_CAI_DAT = { dm_congthuc: 1, dm_quychebu: 1 };
+  var DM_CAI_DAT = { dm_congthuc: 1, dm_quychebu: 1, dm_congthuc_kiemthu: 1 };
   /** Mô tả 2 phương pháp bù sản lượng chính thức (V10). Mã lưu giữ nguyên "to" / "daihiep" để không đổi engine. */
   var BU_METHODS = [
     { ma: "to", ten: "BÙ THEO ĐƠN GIÁ BÌNH QUÂN TỔ",
@@ -2077,7 +2089,21 @@
     CT_SUBTABS.forEach(function (t) { bar2.appendChild(btn(t[1], st.ct === t[0] ? "pri" : "", function () { st.ct = t[0]; render(); })); });
     w.appendChild(bar2);
     var loai = CT_SUBTAB_LOAI[st.ct];
-    if (loai) {
+    if (loai === "OVERTIME") {
+      var card = h("div", { class: "card", "data-ct-ot-pointer": "1" });
+      card.appendChild(h("div", { class: "hint", text: "Công thức tăng ca nay được quản lý ngay trong hồ sơ từng mã tăng ca (bảng cha → bảng con): Danh mục → Tăng ca → Quản lý công thức. Ở đó có trình thiết kế, kiểm thử trên dữ liệu thật, duyệt và lịch sử phiên bản." }));
+      card.appendChild(btn("Mở Danh mục tăng ca", "pri", function () { ktDi(["dm", "dm_tangca"]); }));
+      w.appendChild(card);
+      // Công thức tăng ca CHƯA gắn được mã cha (không có mã tăng ca dùng khóa này / nhiều mã dùng chung) — vẫn liệt kê để không bị ẩn
+      var lp = OTM.linkPlan(db), un = lp.orphans.map(function (r) { return { r: r, why: "Không có mã tăng ca nào dùng khóa công thức này" }; }).concat(lp.ambiguous.map(function (x) { return { r: x.rec, why: "Nhiều mã dùng chung: " + x.candidates.join(", ") }; })).concat(lp.invalid.map(function (x) { return { r: x.rec, why: x.problem }; }));
+      if (un.length) {
+        var c2 = h("div", { class: "card", "data-ct-ot-unlinked": "1" });
+        c2.appendChild(h("div", { class: "fh", text: "Công thức tăng ca chưa gắn được mã tăng ca cha (" + un.length + ")" }));
+        c2.appendChild(h("div", { class: "hint", text: "Chỉ xem. Muốn quản lý trong hồ sơ mã tăng ca: tạo/chọn mã tăng ca có “Loại công thức” = mã công thức này, rồi Danh mục tăng ca → Liên kết công thức cũ." }));
+        c2.appendChild(simpleTable(un.map(function (x) { return { "Mã công thức": x.r["Mã công thức"] || "", "Phiên bản": "v" + (x.r["Phiên bản"] || 1), "Trạng thái": x.r["Trạng thái"] || "Nháp", "Biểu thức": x.r["Biểu thức"] || "", "Lý do chưa gắn": x.why }; })));
+        w.appendChild(c2);
+      }
+    } else if (loai) {
       var def = Object.assign({}, DM.dm_congthuc, { def: Object.assign({}, DM.dm_congthuc.def, { "Loại": loai }), rowFilter: function (r) { return (r["Loại"] || "") === loai; } });
       w.appendChild(h("div", { class: "hint", text: "Chỉ hiện công thức Loại = " + loai + " (" + ctLoaiTen(loai) + "). Dòng mới tự gán Loại này." }));
       w.appendChild(grid("dm_congthuc", def));
@@ -2159,21 +2185,8 @@
     box.appendChild(h("div", { class: "tw" }, [t])); return box;
   }
   /** Tab "Mẫu công thức" (mục VII, tab 5) — công thức có sẵn để copy, transcribe đúng từ switch/case gốc. */
-  var CT_TEMPLATES = [
-    { loai: "OVERTIME", ten: "Vượt công chuẩn, nhân hệ số (như TC1)", bieuThuc: "IF(CONG_TINH_LUONG - CONG_LE - CONG_TRUNG_CHUYEN - CONG_PHEP - CONG_TC - CONG_CHUAN > 0, (CONG_TINH_LUONG - CONG_LE - CONG_TRUNG_CHUYEN - CONG_PHEP - CONG_TC - CONG_CHUAN) * HE_SO_TC, 0) + CONG_TC * HE_SO_TC", moTa: "Phần công vượt công chuẩn (đã trừ lễ/phép/trung chuyển/tăng ca) × hệ số, cộng thêm công tăng ca đã chấm × hệ số." },
-    { loai: "OVERTIME", ten: "Vượt công chuẩn, có Công chuẩn 2 (như TC2)", bieuThuc: "IF(CONG_TINH_LUONG - CONG_LE - CONG_TRUNG_CHUYEN - CONG_PHEP - CONG_TC - CONG_DI_CHUYEN - IF(CONG_CHUAN_2 > 0, CONG_CHUAN_2, CONG_CHUAN) > 0, (CONG_TINH_LUONG - CONG_LE - CONG_TRUNG_CHUYEN - CONG_PHEP - CONG_TC - CONG_DI_CHUYEN - IF(CONG_CHUAN_2 > 0, CONG_CHUAN_2, CONG_CHUAN)) * HE_SO_TC, 0) + CONG_TC * HE_SO_TC", moTa: "Như trên nhưng trừ thêm công di chuyển; dùng Công chuẩn 2 (nhãn DQ) thay Công chuẩn khi có." },
-    { loai: "OVERTIME", ten: "Tăng ca + Chủ nhật nhân hệ số (như TC3)", bieuThuc: "(CONG_TC + CONG_CHU_NHAT) * HE_SO_TC", moTa: "Công tăng ca cộng công Chủ nhật, nhân hệ số tăng ca." },
-    { loai: "OVERTIME", ten: "Phần vượt công chuẩn, KHÔNG nhân hệ số (như TC6)", bieuThuc: "MAX(CONG_TINH_LUONG - CONG_TC - CONG_LE - CONG_CHUAN, 0)", moTa: "Chỉ lấy phần công vượt công chuẩn, không nhân hệ số tăng ca." },
-    { loai: "OVERTIME", ten: "Công tăng ca × hệ số (mặc định)", bieuThuc: "CONG_TC * HE_SO_TC", moTa: "Công thức đơn giản nhất — dùng khi không có quy tắc đặc biệt." },
-    { loai: "ALLOWANCE", ten: "Tỷ lệ theo công, có ngưỡng (ví dụ mẫu)", bieuThuc: "IF(CONG_HUONG_PHU_CAP >= NGUONG_PHU_CAP, MUC_PHU_CAP, MUC_PHU_CAP * CONG_HUONG_PHU_CAP / CONG_CHUAN)", moTa: "Đủ ngưỡng công → hưởng đủ mức phụ cấp; chưa đủ → chia theo tỷ lệ công / công chuẩn." },
-    { loai: "ALLOWANCE", ten: "Tỷ lệ, trừ lễ+phép khi dưới ngưỡng", bieuThuc: "IF(CONG_TINH_LUONG - CONG_LE - CONG_PHEP >= CONG_CHUAN - NGUONG_PHU_CAP, MUC_PHU_CAP, ROUND(MUC_PHU_CAP / CONG_CHUAN * (CONG_TINH_LUONG - CONG_LE - CONG_PHEP)))", moTa: "Giống kiểu TYLE_TRU_LE_PHEP cũ — đối chiếu M thật HAK_DN." },
-    { loai: "ALLOWANCE", ten: "Tỷ lệ, trừ phép+tăng ca khi dưới ngưỡng", bieuThuc: "IF(CONG_TINH_LUONG - CONG_PHEP - CONG_TC >= CONG_CHUAN - NGUONG_PHU_CAP, MUC_PHU_CAP, ROUND(MUC_PHU_CAP / CONG_CHUAN * (CONG_TINH_LUONG - CONG_PHEP - CONG_TC)))", moTa: "Giống kiểu TYLE_TRU_PHEP_TANGCA cũ — quy chế 2026/C6." },
-    { loai: "ALLOWANCE", ten: "Cố định, không tính theo công", bieuThuc: "MUC_PHU_CAP", moTa: "Luôn trả đủ mức phụ cấp, không trừ gì theo công." },
-    { loai: "SUPPORT", ten: "Theo ngày / lượt được hưởng", bieuThuc: "SO_NGAY_DUOC_HUONG * MUC_HO_TRO", moTa: "Số ngày (hoặc lượt) được hưởng × đơn giá hỗ trợ." },
-    { loai: "SUPPORT", ten: "Bù thiếu công chuẩn (như HT_THIEU_CHUAN)", bieuThuc: "IF(CONG_CHUAN > 0 AND CONG_THUC_TE <= CONG_CHUAN, (CONG_CHUAN - CONG_THUC_TE) * MUC_HO_TRO, 0)", moTa: "Chỉ trả khi công thực tế chưa đạt công chuẩn — bù đúng phần còn thiếu." },
-    { loai: "SUPPORT", ten: "Theo xe / đơn vị hợp lệ", bieuThuc: "SO_XE_HOP_LE * DON_GIA_HO_TRO", moTa: "Số xe (hoặc đơn vị) hợp lệ × đơn giá hỗ trợ theo xe." },
-    { loai: "SUPPORT", ten: "Gấp đôi khi đủ điều kiện", bieuThuc: "IF(DU_DIEU_KIEN_HO_TRO = 1, SO_NGAY_DUOC_HUONG * MUC_HO_TRO * 2, SO_NGAY_DUOC_HUONG * MUC_HO_TRO)", moTa: "Đủ điều kiện (biến 0/1) → hưởng gấp đôi mức thường." }
-  ];
+  var CT_TEMPLATES = window.HAKCore.formulaTemplates.TEMPLATES; // V10.2: dữ liệu mẫu ở core/payroll/formula-templates.js
+
   function ctTemplatesPanel() {
     var box = h("div", { class: "card" });
     box.appendChild(h("div", { class: "hint", text: "Công thức có sẵn để tham khảo / copy vào ô 'Biểu thức' ở tab tương ứng (Tăng ca / Phụ cấp / Hỗ trợ), hoặc dùng ngay ở tab 'Kiểm tra công thức' để chạy thử." }));
@@ -2327,12 +2340,13 @@
       var reason = String(st.ctReason || "").trim(); // Electron không hỗ trợ prompt() → lý do nhập ở ô phía trên bảng
       if ((to === "Hiệu lực" || to === "Ngừng") && !reason) { alert("Nhập 'Lý do thay đổi' vào ô phía trên bảng trước khi " + LBL[to].toLowerCase() + " công thức."); return; }
       var vals = { "Trạng thái": to }; if (reason) vals["Lý do thay đổi"] = reason;
-      if (!commit(REPO.plan("update", "dm_congthuc", r, vals, { what: LBL[to].toLowerCase() + " công thức" }), { confirm: true, action: "Công thức tiền lương — " + LBL[to] + " " + (r["Mã công thức"] || "") })) return;
-      st.ctReason = ""; save(); toast(LBL[to] + " công thức " + (r["Mã công thức"] || "") + ": xong."); render();
+      // V10.2: lưu NGAY từng bước chuyển trạng thái (txn) — tiến trình chính kiểm từng bước một, không gộp nhiều bước vào một lần lưu trễ
+      if (!txn(["dm_congthuc"], function () { return !!commit(REPO.plan("update", "dm_congthuc", r, vals, { what: LBL[to].toLowerCase() + " công thức" }), { confirm: true, action: "Công thức tiền lương — " + LBL[to] + " " + (r["Mã công thức"] || "") }); })) return;
+      st.ctReason = ""; toast(LBL[to] + " công thức " + (r["Mã công thức"] || "") + ": xong."); render();
     };
     var saoChep = function (r) {
-      if (!commit(REPO.plan("insert", "dm_congthuc", null, FAP.copyAsDraft(r, fenv()), { what: "sao chép công thức" }), { action: "Công thức tiền lương — Sao chép thành phiên bản mới " + (r["Mã công thức"] || "") })) return;
-      save(); toast("Đã tạo phiên bản mới (Nháp) — sửa biểu thức rồi bấm 'Gửi duyệt'."); render();
+      if (!txn(["dm_congthuc"], function () { return !!commit(REPO.plan("insert", "dm_congthuc", null, FAP.copyAsDraft(r, fenv()), { what: "sao chép công thức" }), { action: "Công thức tiền lương — Sao chép thành phiên bản mới " + (r["Mã công thức"] || "") }); })) return;
+      toast("Đã tạo phiên bản mới (Nháp) — sửa biểu thức rồi bấm 'Gửi duyệt'."); render();
     };
     var inReason = h("input", { value: st.ctReason || "", placeholder: "Lý do thay đổi (bắt buộc khi Kích hoạt / Ngừng)", style: "width:60%", "data-ct-reason": "1" });
     inReason.addEventListener("input", function () { st.ctReason = inReason.value; });

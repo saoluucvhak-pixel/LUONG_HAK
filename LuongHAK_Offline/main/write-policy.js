@@ -33,6 +33,52 @@ const key1 = (r) => String(r && r["Mã phiếu"] || "");
 // danh tính: "tên đăng nhập" hoặc "Họ tên [tên đăng nhập] (máy)" (định dạng currentUser() của giao diện)
 const isMe = (v, me) => { const t = String(v == null ? "" : v).trim().toLowerCase(), m = String(me || "").trim().toLowerCase(); return !!m && (t === m || t.indexOf("[" + m + "]") >= 0); };
 const strip = (r, ks) => { const o = Object.assign({}, r); ks.forEach((k) => delete o[k]); return o; };
+// ---- V10.2: máy trạng thái công thức tiền lương kiểm tại MAIN (trước đây main chỉ kiểm quyền theo bảng — người có quyền sửa danh mục
+// có thể tự chuyển trạng thái/đặt người duyệt bằng cách gửi dữ liệu trực tiếp). Dùng đúng core/payroll/formula-approval.js như renderer.
+const FAP = require("../core/payroll/formula-approval.js");
+const STAMP_STATE = { "Đã duyệt": ["Người duyệt", "Thời điểm duyệt"], "Hiệu lực": ["Người kích hoạt", "Thời điểm kích hoạt"], "Ngừng": ["Người ngừng", "Thời điểm ngừng"] };
+const STAMP_ALL = ["Người lập", "Ngày lập", "Người duyệt", "Thời điểm duyệt", "Người kích hoạt", "Thời điểm kích hoạt", "Người ngừng", "Thời điểm ngừng"];
+/** Trả "" nếu mọi thay đổi của dm_congthuc hợp lệ, ngược lại lý do từ chối. */
+function checkCongThuc(prevObj, next, who) {
+  const has = (p) => (who && who.perms || []).indexOf(p) >= 0, me = who && who.user || "";
+  const pr = Array.isArray(prevObj && prevObj.dm_congthuc) ? prevObj.dm_congthuc : [], nx = Array.isArray(next.dm_congthuc) ? next.dm_congthuc : [];
+  const pById = {}; pr.forEach((r) => { if (r && r._id) pById[r._id] = r; });
+  const nById = {}; nx.forEach((r) => { if (r && r._id) nById[r._id] = r; });
+  const label = (r) => (r["Mã công thức"] || "?") + " v" + (r["Phiên bản"] || 1);
+  const mkEnv = (self) => ({ can: has, user: me, now: null, db: Object.assign({}, next, { dm_congthuc: nx.map((x) => (self && x._id === self._id ? self : x)) }) });
+  const noIdPrev = {}; pr.forEach((r) => { if (r && !r._id) noIdPrev[h(r)] = (noIdPrev[h(r)] || 0) + 1; }); // dữ liệu rất cũ chưa có _id: so theo nội dung
+  for (const b of pr) {
+    if (!b._id) { if (!nx.some((r) => !r._id && h(r) === h(b))) { const res0 = FAP.check("remove", b, null, mkEnv(null)); if (!res0.ok) return "công thức " + label(b) + ": " + res0.msg; } continue; }
+    if (nById[b._id]) continue;
+    const res = FAP.check("remove", b, null, mkEnv(null));
+    if (!res.ok) return "công thức " + label(b) + ": " + res.msg;
+  }
+  for (const r of nx) {
+    if (!r._id && noIdPrev[h(r)]) { noIdPrev[h(r)]--; continue; }
+    const b = r._id ? pById[r._id] : null;
+    if (!b) {
+      const res = FAP.check("insert", null, r, mkEnv(null));
+      if (!res.ok) return "công thức " + label(r) + ": " + res.msg;
+      const st0 = r["Trạng thái"] || "Nháp";
+      if (st0 !== "Nháp" && STAMP_STATE[st0] && !isMe(r[STAMP_STATE[st0][0]], me)) return "công thức " + label(r) + ": " + STAMP_STATE[st0][0] + " phải là người đang đăng nhập";
+      continue;
+    }
+    if (h(b) === h(r)) continue;
+    const after = Object.assign({}, r); STAMP_ALL.forEach((k) => { after[k] = b[k]; }); // kiểm nội dung/trạng thái trước; dấu người-thời điểm kiểm riêng bên dưới
+    const res = FAP.check("update", b, after, mkEnv(b));
+    if (!res.ok) return "công thức " + label(r) + ": " + res.msg;
+    const to = r["Trạng thái"] || "Nháp", from = b["Trạng thái"] || "Nháp", exp = to !== from && STAMP_STATE[to] ? STAMP_STATE[to] : [];
+    for (const k of STAMP_ALL) {
+      if (exp.indexOf(k) >= 0) {
+        if (!String(r[k] || "").trim()) return "công thức " + label(r) + ": thiếu " + k;
+        if (/^Người/.test(k) && !isMe(r[k], me)) return "công thức " + label(r) + ": " + k + " phải là người đang đăng nhập";
+      } else if (to === "Nháp" && from !== "Nháp" && (k === "Người duyệt" || k === "Thời điểm duyệt")) {
+        if (String(r[k] || "").trim()) return "công thức " + label(r) + ": trả về Nháp phải xóa dấu duyệt";
+      } else if (String(r[k] == null ? "" : r[k]) !== String(b[k] == null ? "" : b[k])) return "công thức " + label(r) + ": không được sửa trực tiếp '" + k + "'";
+    }
+  }
+  return "";
+}
 const NV_STATE_FIELDS = ["Trạng thái", "Người duyệt", "Ngày duyệt", "Lý do từ chối", "Đã ghi vào hồ sơ"];
 /** Đề nghị nghiệp vụ nhân sự: Nháp → Chờ duyệt → Đã duyệt | Từ chối. Trả "" nếu hợp lệ, ngược lại lý do từ chối. */
 function checkNghiepVuNS(prevObj, next, who) {
@@ -255,6 +301,10 @@ function createPolicy(opts) {
         const why = t === "ttluong" ? checkTtluong(pv0, next, who) : checkNghiepVuNS(pv0, next, who);
         if (why) return deny(why);
       }
+      if (t === "dm_congthuc") {
+        let pv1 = null; try { pv1 = JSON.parse(readText() || "null"); } catch (e) { pv1 = null; }
+        const why = checkCongThuc(pv1, next, who); if (why) return deny(why);
+      }
       const need = permsFor(t);
       if (!need.some(has)) return deny("vai trò hiện tại không có quyền sửa bảng '" + t + "' (cần " + need.join(" hoặc ") + ")");
     }
@@ -266,4 +316,4 @@ function createPolicy(opts) {
   return { check, commit, reset, permsFor };
 }
 function fileSig(file) { return () => { try { const s = fs.statSync(file); return s.mtimeMs + ":" + s.size; } catch (e) { return ""; } }; }
-module.exports = { createPolicy, permsFor, fileSig, checkNghiepVuNS, checkTtluong };
+module.exports = { createPolicy, permsFor, fileSig, checkNghiepVuNS, checkTtluong, checkCongThuc };

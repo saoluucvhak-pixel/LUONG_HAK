@@ -236,15 +236,25 @@ async function launch(dataDir, opt) {
   await w.fill('[data-ct-wizard] input[aria-label="Mã công thức"]', "WZ_E2E"); await w.dispatchEvent('[data-ct-wizard] input[aria-label="Mã công thức"]', "change");
   await w.click('[data-ct-wizard] button:has-text("Lưu thành Nháp")'); await w.waitForTimeout(300);
   await w.locator(".bar.sub button", { hasText: "Tăng ca" }).click();
-  ok("V10: Trình thiết lập — công thức lưu ở trạng thái Nháp trong tab Tăng ca", await w.locator("main tbody tr input").evaluateAll((l) => l.some((x) => x.value === "WZ_E2E")) || (await w.locator("main").innerText()).includes("WZ_E2E"));
-  await w.click('main button:has-text("Thêm mới")');
-  const ctRow = w.locator("main tbody tr.catedit").locator("input");
-  await ctRow.nth(0).fill("2020-01-01"); await ctRow.nth(0).dispatchEvent("change");
-  await ctRow.nth(2).fill("TC_E2E"); await ctRow.nth(2).dispatchEvent("change");
-  await ctRow.nth(6).fill("CONG_TC * HE_SO_TC * 2"); await ctRow.nth(6).dispatchEvent("change");
-  const ctOverIn = await ctRow.nth(4).inputValue(), ctMaIn = await ctRow.nth(2).inputValue();
-  await w.locator("main tr.catedit").locator('button:has-text("Lưu")').click(); await w.waitForTimeout(300);
-  ok("Tab Tăng ca: thêm công thức mới (Loại tự gán OVERTIME, không cần sửa code) — ghi khi bấm Lưu", ctOverIn === "OVERTIME" && ctMaIn === "TC_E2E" && (await w.locator("main tbody tr input").evaluateAll((l) => l.filter((x) => x.value === "TC_E2E").length)) === 1 && (await w.locator("main tr.catedit").count()) === 0, await w.locator("main .warn").allInnerTexts().then((x) => x.join("|")));
+  ok("V10.2: tab Tăng ca của Cài đặt chỉ trỏ sang Danh mục tăng ca (không còn lưới Excel) và vẫn liệt kê công thức chưa gắn mã cha (WZ_E2E)", (await w.locator("[data-ct-ot-pointer]").count()) === 1 && (await w.locator("[data-ct-ot-unlinked]").innerText()).includes("WZ_E2E") && (await w.locator("main tbody tr.catedit").count()) === 0);
+  // V10.2: tạo mã tăng ca TC_E2E (cha) rồi tạo công thức con ngay trong Form Modal Master–Detail
+  await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Tăng ca")');
+  ok("V10.2: Danh mục tăng ca là danh sách Master (không phải bảng nhập Excel)", (await w.locator("[data-ot-master]").count()) === 1 && (await w.locator("[data-ot-table]").count()) === 1 && (await w.locator("main tr.catedit").count()) === 0);
+  await w.click('[data-ot-master] button:has-text("Thêm mã tăng ca")'); await w.waitForSelector("[data-ot-modal]");
+  const otFill = async (key, v) => { const el = w.locator('[data-ot-modal] [data-ot-f="' + key + '"]'); await el.fill(v); await el.dispatchEvent("change"); await el.dispatchEvent("input"); };
+  await otFill("ma", "TC_E2E"); await otFill("ten", "Tăng ca kiểm thử E2E"); await otFill("heSo", "1.5"); await otFill("tu", "01/01/2020");
+  await w.click("[data-ot-save-info]"); await w.waitForTimeout(300);
+  ok("V10.2: lưu mã tăng ca mới trong modal → header hiện mã, chuyển sang chế độ chỉ xem", (await w.locator(".ot-dlg header h3").innerText()).includes("TC_E2E") && (await w.locator("[data-ot-edit-info]").count()) === 1);
+  await w.click('[data-ot-tab="ct"]'); await w.click("[data-ot-new-ver]"); await w.waitForSelector("[data-ot-designer=edit]");
+  ok("V10.2: trình thiết kế hiện thư viện biến lấy từ formula-variables (CONG_CHU_NHAT, HE_SO_TC…)", (await w.locator("[data-ot-vars]").innerText()).includes("CONG_CHU_NHAT") && (await w.locator("[data-ot-vars]").innerText()).includes("HE_SO_TC"));
+  await w.click('[data-ot-mode="adv"]');
+  await w.fill('[data-ot-designer] [data-ot-fd="tu"]', "01/01/2020"); await w.dispatchEvent('[data-ot-designer] [data-ot-fd="tu"]', "change");
+  await w.fill("[data-ot-expr]", "CONG_TC * HE_SO_TC * 2");
+  ok("V10.2: biểu thức hợp lệ được kiểm bằng cùng validator + có giải thích tiếng Việt", (await w.locator("[data-ot-syntax=ok]").count()) === 1 && (await w.locator("[data-ot-explain]").innerText()).includes("Công tăng ca"), await w.locator("[data-ot-explain]").innerText());
+  await w.click("[data-ot-save-formula]"); await w.waitForTimeout(300);
+  ok("V10.2: công thức con mới lưu ở trạng thái Nháp, hiện trong danh sách phiên bản của đúng mã cha", (await w.locator('tr[data-ot-ver="TC_E2E#1"]').innerText()).includes("Nháp"));
+  await w.click('[data-ot-close]'); await w.waitForTimeout(200);
+  await w.click("#nav button[data-k=caidat]");
   await w.locator(".bar.sub button", { hasText: "Phụ cấp" }).click();
   const pcEmpty = await w.locator("main .empty").count();
   ok("Lọc theo Loại: mã TC_E2E (OVERTIME) KHÔNG hiện ở tab Phụ cấp (ALLOWANCE)", pcEmpty > 0 && !(await w.locator("main").innerText()).includes("TC_E2E"));
@@ -271,7 +281,7 @@ async function launch(dataDir, opt) {
   await w.locator("main select").first().selectOption("TC_E2E");
   const histTxt = await w.locator("main").innerText();
   ok("Lịch sử phiên bản: hiện đúng mã (chọn mặc định đã là mã duy nhất) + phiên bản Trạng thái Hiệu lực + biểu thức", histTxt.includes("TC_E2E") && histTxt.includes("Hiệu lực") && histTxt.includes("CONG_TC * HE_SO_TC * 2"), histTxt.replace(/\s+/g, " ").slice(0, 300));
-  ok("Lịch sử phiên bản: V9.4 mọi lần Lưu danh mục đều ghi nhật ký (hiện dòng Thêm danh mục của TC_E2E)", histTxt.includes("Thêm danh mục") || histTxt.includes("Chưa có nhật ký khớp mã này"), histTxt.replace(/\s+/g, " ").slice(0, 300));
+  ok("Lịch sử phiên bản: V9.4 mọi lần Lưu danh mục đều ghi nhật ký (hiện dòng Thêm danh mục của TC_E2E)", histTxt.includes("Tạo Nháp TC_E2E") || histTxt.includes("Thêm danh mục") || histTxt.includes("Chưa có nhật ký khớp mã này"), histTxt.replace(/\s+/g, " ").slice(0, 300));
   // V5 GĐ2: duyệt & phiên bản — Ngừng bản hiệu lực, sao chép thành v2 (Nháp), gửi duyệt; Admin thấy đủ nút
   ok("Lịch sử phiên bản: hiện cột Người lập/Người duyệt và nút Ngừng + Sao chép cho bản Hiệu lực", histTxt.includes("Người lập") && histTxt.includes("Ngừng") && histTxt.includes("Sao chép bản mới"), histTxt.replace(/\s+/g, " ").slice(0, 200));
   const verBtn = (v, t) => w.locator('tr[data-ct-ver="TC_E2E#' + v + '"] button', { hasText: t });

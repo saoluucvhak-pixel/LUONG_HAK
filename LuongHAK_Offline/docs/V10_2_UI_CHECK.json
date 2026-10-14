@@ -1,0 +1,351 @@
+{
+ "generated": "2026-10-14T06:40:01.822Z",
+ "sizes": [
+  "1366x768",
+  "1920x1080"
+ ],
+ "checks": [
+  {
+   "name": "[1366x768] danh sách Master: đủ mã tăng ca, TC3 có công thức cấu hình, TC7 dùng chung công thức TC1",
+   "pass": true,
+   "extra": "7 | TC3 Tăng ca tính theo công và chủ nhật 0.5 (theo mã) Đang hiệu lực 01/09/2025 → không giới hạn v1 · TC3 2 Xem chi tiếtCh"
+  },
+  {
+   "name": "[1366x768] tìm kiếm lọc ngay trong danh sách",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] lọc 'Hết hiệu lực' còn mã đã ngừng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] modal chế độ XEM: trường chỉ đọc, không có ô nhập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] tab Thông tin (xem): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] sửa thông tin: hệ số sai hiện lỗi ngay",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] tab Thông tin (sửa, có lỗi): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] đóng khi chưa lưu: cảnh báo, chọn Hủy thì modal vẫn mở",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Lưu khi còn lỗi: vẫn ở chế độ sửa, không ghi",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Hủy sửa: về chế độ xem",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] tab Công thức tính: modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] danh sách con chỉ có phiên bản của TC3",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] xem công thức: biểu thức kỹ thuật, giải thích tiếng Việt, thư viện biến",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] trình thiết kế (xem): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] bản Nháp: công thức gốc đang áp dụng hiện để đối chiếu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] thiết kế trực quan: chọn mẫu → chip, cú pháp OK",
+   "pass": true,
+   "extra": "38"
+  },
+  {
+   "name": "[1366x768] trình thiết kế (trực quan): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] gõ biểu thức chỉ cập nhật phân tích, dưới 50ms",
+   "pass": true,
+   "extra": "0.3000000002793968"
+  },
+  {
+   "name": "[1366x768] biến ngoài thư viện bị báo ngay",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] lưu nháp sửa: vẫn v2 Nháp, không tạo bản thừa",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] tab Kiểm thử (trống): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] kiểm thử NV001: công Chủ nhật tự lấy từ chấm công, so sánh cũ/mới, có dòng chênh lệch",
+   "pass": true,
+   "extra": "Chỉ tiêu Công thức hiện tại Phiên bản thử Công chuẩn (theo quy chế) 27 27 Công tăng ca 3 3 Công Chủ nhật (từ chấm công) 2 2 Hệ số (theo danh mục) 0,5 0,5 Công quy đổi 2,5 1,5 Đơn giá / 1 công quy đổi (theo engine, nhánh THUONG) 303.704 303.704 Tiền tăng ca 759"
+  },
+  {
+   "name": "[1366x768] công thức hiện hành tái lập đúng tiền tăng ca engine",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] tab Kiểm thử (so sánh): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] lưu ca kiểm thử và chạy lại đạt",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] NV003 không chấm công → 'Chưa có dữ liệu'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] tab Lịch sử phiên bản: modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] lịch sử: v1, v2 kèm người lập/duyệt",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] kích hoạt: kiểm tra trước nêu cú pháp, chia 0, chồng hiệu lực",
+   "pass": true,
+   "extra": "Kích hoạt phiên bản v2 (TC3) ✓ Cú pháp và biến hợp lệ ✓ Không chia cho 0 (đã thử bộ biến mẫu và bộ biến bằng 0) ✓ Kết quả luôn xác định ✓ Áp dụng mọi công ty (để trống) ⚠ Sẽ đóng ngày bản v1 đang hiệu lực: Hiệu lực đến = 2026-09-30 ✓ Không chạm kỳ đã chốt nào ✓ Có công thức hiện hành để so sánh (tab Kiểm thử thực tế) Không có lỗi chặn kích hoạt. Lý do thay đổi Xác nhận Hủy"
+  },
+  {
+   "name": "[1366x768] khung kích hoạt: modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":30.71875,\"bottom\":737.265625,\"left\":93,\"right\":1273,\"vw\":1366,\"vh\":768,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1366x768] kích hoạt thiếu lý do bị chặn",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] v2 Hiệu lực; v1 được đóng ngày trước ngày hiệu lực v2 (đã ghi xuống đĩa)",
+   "pass": true,
+   "extra": "{\"den1\":\"2026-09-30\",\"tu2\":\"2026-10-01\"}"
+  },
+  {
+   "name": "[1366x768] v1 lịch sử còn nguyên biểu thức",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] hộp liên kết: nêu công thức không có mã cha (ZZ_CU)",
+   "pass": true,
+   "extra": "Gán “Mã tăng ca cha” cho các công thức tăng ca đã có. Chỉ liên kết khi suy ra DUY NHẤT; mã công thức, biểu thức, trạng thái, hiệu lực, phiên bản và lịch sử được giữ nguyên 100%. Trường hợp không chắc "
+  },
+  {
+   "name": "[1366x768] không lỗi JavaScript trong luồng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] danh sách Master: đủ mã tăng ca, TC3 có công thức cấu hình, TC7 dùng chung công thức TC1",
+   "pass": true,
+   "extra": "7 | TC3 Tăng ca tính theo công và chủ nhật 0.5 (theo mã) Đang hiệu lực 01/09/2025 → không giới hạn v1 · TC3 2 Xem chi tiếtCh"
+  },
+  {
+   "name": "[1920x1080] tìm kiếm lọc ngay trong danh sách",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] lọc 'Hết hiệu lực' còn mã đã ngừng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] modal chế độ XEM: trường chỉ đọc, không có ô nhập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] tab Thông tin (xem): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] sửa thông tin: hệ số sai hiện lỗi ngay",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] tab Thông tin (sửa, có lỗi): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] đóng khi chưa lưu: cảnh báo, chọn Hủy thì modal vẫn mở",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Lưu khi còn lỗi: vẫn ở chế độ sửa, không ghi",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Hủy sửa: về chế độ xem",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] tab Công thức tính: modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] danh sách con chỉ có phiên bản của TC3",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] xem công thức: biểu thức kỹ thuật, giải thích tiếng Việt, thư viện biến",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] trình thiết kế (xem): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] bản Nháp: công thức gốc đang áp dụng hiện để đối chiếu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] thiết kế trực quan: chọn mẫu → chip, cú pháp OK",
+   "pass": true,
+   "extra": "38"
+  },
+  {
+   "name": "[1920x1080] trình thiết kế (trực quan): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] gõ biểu thức chỉ cập nhật phân tích, dưới 50ms",
+   "pass": true,
+   "extra": "0.39999999990686774"
+  },
+  {
+   "name": "[1920x1080] biến ngoài thư viện bị báo ngay",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] lưu nháp sửa: vẫn v2 Nháp, không tạo bản thừa",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] tab Kiểm thử (trống): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] kiểm thử NV001: công Chủ nhật tự lấy từ chấm công, so sánh cũ/mới, có dòng chênh lệch",
+   "pass": true,
+   "extra": "Chỉ tiêu Công thức hiện tại Phiên bản thử Công chuẩn (theo quy chế) 27 27 Công tăng ca 3 3 Công Chủ nhật (từ chấm công) 2 2 Hệ số (theo danh mục) 0,5 0,5 Công quy đổi 2,5 1,5 Đơn giá / 1 công quy đổi (theo engine, nhánh THUONG) 303.704 303.704 Tiền tăng ca 759"
+  },
+  {
+   "name": "[1920x1080] công thức hiện hành tái lập đúng tiền tăng ca engine",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] tab Kiểm thử (so sánh): modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] lưu ca kiểm thử và chạy lại đạt",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] NV003 không chấm công → 'Chưa có dữ liệu'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] tab Lịch sử phiên bản: modal nằm trọn trong màn hình, không tràn ngang",
+   "pass": true,
+   "extra": "{\"top\":110,\"bottom\":970,\"left\":370,\"right\":1550,\"vw\":1920,\"vh\":1080,\"bodyOverX\":0,\"pageOverX\":0}"
+  },
+  {
+   "name": "[1920x1080] lịch sử: v1, v2 kèm người lập/duyệt",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] hộp liên kết: nêu công thức không có mã cha (ZZ_CU)",
+   "pass": true,
+   "extra": "Gán “Mã tăng ca cha” cho các công thức tăng ca đã có. Chỉ liên kết khi suy ra DUY NHẤT; mã công thức, biểu thức, trạng thái, hiệu lực, phiên bản và lịch sử được giữ nguyên 100%. Trường hợp không chắc "
+  },
+  {
+   "name": "[1920x1080] không lỗi JavaScript trong luồng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "liên kết dữ liệu cũ thật: mọi trường gốc giữ nguyên, TC3 được gắn cha, ZZ_CU không bị gắn",
+   "pass": true,
+   "extra": ""
+  }
+ ],
+ "perf": {
+  "mo_modal_ms_1366x768": 45,
+  "go_ky_tu_ms_1366x768": 0.3,
+  "mo_modal_ms_1920x1080": 36,
+  "go_ky_tu_ms_1920x1080": 0.4
+ },
+ "summary": {
+  "total": 66,
+  "pass": 66,
+  "fail": 0,
+  "jsErrors": 0
+ }
+}

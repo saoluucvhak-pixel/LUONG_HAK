@@ -1,0 +1,293 @@
+{
+ "soDong": 24,
+ "soNV": 8,
+ "soKy": 3,
+ "soChenhLech": 0,
+ "chenhLech": [],
+ "tongTienTruoc": 16575251,
+ "tongTienSau": 16575251,
+ "tongTienTrenTungMa": [
+  {
+   "code": "TC1",
+   "truoc": 1864673,
+   "sau": 1864673
+  },
+  {
+   "code": "TC2",
+   "truoc": 2235364,
+   "sau": 2235364
+  },
+  {
+   "code": "TC3",
+   "truoc": 2555698,
+   "sau": 2555698
+  },
+  {
+   "code": "TC4",
+   "truoc": 1376068,
+   "sau": 1376068
+  },
+  {
+   "code": "TC5",
+   "truoc": 2735043,
+   "sau": 2735043
+  },
+  {
+   "code": "TC6",
+   "truoc": 5808405,
+   "sau": 5808405
+  },
+  {
+   "code": "CN1",
+   "truoc": 0,
+   "sau": 0
+  },
+  {
+   "code": "CN2",
+   "truoc": 0,
+   "sau": 0
+  }
+ ],
+ "rows": [
+  {
+   "ky": "2026-08",
+   "ma": "NV01",
+   "code": "TC1",
+   "tienTruoc": 673077,
+   "tienSau": 673077,
+   "thucLinhTruoc": 9019000,
+   "thucLinhSau": 9019000,
+   "donGia": 269230.76923076925
+  },
+  {
+   "ky": "2026-08",
+   "ma": "NV02",
+   "code": "TC2",
+   "tienTruoc": 848077,
+   "tienSau": 848077,
+   "thucLinhTruoc": 9894000,
+   "thucLinhSau": 9894000,
+   "donGia": 282692.3076923077
+  },
+  {
+   "ky": "2026-08",
+   "ma": "NV03",
+   "code": "TC3",
+   "tienTruoc": 814423,
+   "tienSau": 814423,
+   "thucLinhTruoc": 10143000,
+   "thucLinhSau": 10143000,
+   "donGia": 296153.8461538461
+  },
+  {
+   "ky": "2026-08",
+   "ma": "NV04",
+   "code": "TC4",
+   "tienTruoc": 464423,
+   "tienSau": 464423,
+   "thucLinhTruoc": 10063000,
+   "thucLinhSau": 10063000,
+   "donGia": 309615.3846153846
+  },
+  {
+   "ky": "2026-08",
+   "ma": "NV05",
+   "code": "TC5",
+   "tienTruoc": 923077,
+   "tienSau": 923077,
+   "thucLinhTruoc": 9969000,
+   "thucLinhSau": 9969000,
+   "donGia": 230769.23076923078
+  },
+  {
+   "ky": "2026-08",
+   "ma": "NV06",
+   "code": "TC6",
+   "tienTruoc": 1850962,
+   "tienSau": 1850962,
+   "thucLinhTruoc": 12452000,
+   "thucLinhSau": 12452000,
+   "donGia": 336538.46153846156
+  },
+  {
+   "ky": "2026-08",
+   "ma": "NV07",
+   "code": "CN1",
+   "tienTruoc": 0,
+   "tienSau": 0,
+   "thucLinhTruoc": 10850000,
+   "thucLinhSau": 10850000,
+   "donGia": 350000
+  },
+  {
+   "ky": "2026-08",
+   "ma": "NV08",
+   "code": "CN2",
+   "tienTruoc": 0,
+   "tienSau": 0,
+   "thucLinhTruoc": 11631000,
+   "thucLinhSau": 11631000,
+   "donGia": 363461.53846153844
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV01",
+   "code": "TC1",
+   "tienTruoc": 673077,
+   "tienSau": 673077,
+   "thucLinhTruoc": 9019000,
+   "thucLinhSau": 9019000,
+   "donGia": 269230.76923076925
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV02",
+   "code": "TC2",
+   "tienTruoc": 706731,
+   "tienSau": 706731,
+   "thucLinhTruoc": 9470000,
+   "thucLinhSau": 9470000,
+   "donGia": 282692.3076923077
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV03",
+   "code": "TC3",
+   "tienTruoc": 814423,
+   "tienSau": 814423,
+   "thucLinhTruoc": 10143000,
+   "thucLinhSau": 10143000,
+   "donGia": 296153.8461538461
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV04",
+   "code": "TC4",
+   "tienTruoc": 464423,
+   "tienSau": 464423,
+   "thucLinhTruoc": 10063000,
+   "thucLinhSau": 10063000,
+   "donGia": 309615.3846153846
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV05",
+   "code": "TC5",
+   "tienTruoc": 923077,
+   "tienSau": 923077,
+   "thucLinhTruoc": 9646000,
+   "thucLinhSau": 9646000,
+   "donGia": 230769.23076923078
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV06",
+   "code": "TC6",
+   "tienTruoc": 1850962,
+   "tienSau": 1850962,
+   "thucLinhTruoc": 12452000,
+   "thucLinhSau": 12452000,
+   "donGia": 336538.46153846156
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV07",
+   "code": "CN1",
+   "tienTruoc": 0,
+   "tienSau": 0,
+   "thucLinhTruoc": 10850000,
+   "thucLinhSau": 10850000,
+   "donGia": 350000
+  },
+  {
+   "ky": "2026-09",
+   "ma": "NV08",
+   "code": "CN2",
+   "tienTruoc": 0,
+   "tienSau": 0,
+   "thucLinhTruoc": 11267000,
+   "thucLinhSau": 11267000,
+   "donGia": 363461.53846153844
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV01",
+   "code": "TC1",
+   "tienTruoc": 518519,
+   "tienSau": 518519,
+   "thucLinhTruoc": 8556000,
+   "thucLinhSau": 8556000,
+   "donGia": 259259.25925925927
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV02",
+   "code": "TC2",
+   "tienTruoc": 680556,
+   "tienSau": 680556,
+   "thucLinhTruoc": 9392000,
+   "thucLinhSau": 9392000,
+   "donGia": 272222.22222222225
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV03",
+   "code": "TC3",
+   "tienTruoc": 926852,
+   "tienSau": 926852,
+   "thucLinhTruoc": 10481000,
+   "thucLinhSau": 10481000,
+   "donGia": 285185.18518518517
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV04",
+   "code": "TC4",
+   "tienTruoc": 447222,
+   "tienSau": 447222,
+   "thucLinhTruoc": 9690000,
+   "thucLinhSau": 9690000,
+   "donGia": 298148.14814814815
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV05",
+   "code": "TC5",
+   "tienTruoc": 888889,
+   "tienSau": 888889,
+   "thucLinhTruoc": 9600000,
+   "thucLinhSau": 9600000,
+   "donGia": 222222.22222222222
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV06",
+   "code": "TC6",
+   "tienTruoc": 2106481,
+   "tienSau": 2106481,
+   "thucLinhTruoc": 12963000,
+   "thucLinhSau": 12963000,
+   "donGia": 324074.0740740741
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV07",
+   "code": "CN1",
+   "tienTruoc": 0,
+   "tienSau": 0,
+   "thucLinhTruoc": 10448000,
+   "thucLinhSau": 10448000,
+   "donGia": 337037.037037037
+  },
+  {
+   "ky": "2026-10",
+   "ma": "NV08",
+   "code": "CN2",
+   "tienTruoc": 0,
+   "tienSau": 0,
+   "thucLinhTruoc": 11200000,
+   "thucLinhSau": 11200000,
+   "donGia": 350000
+  }
+ ]
+}
