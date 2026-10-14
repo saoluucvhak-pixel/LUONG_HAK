@@ -404,4 +404,5 @@ ol.steps7 li{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px
 ol.steps7 li .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#e4eae6;font-weight:700;font-size:11px}
 ol.steps7 li.done{color:#2f6b3a}ol.steps7 li.done .n{background:#2f6b3a;color:#fff}
 ol.steps7 li.now{border-color:#2f6b3a;color:#1d4d28;font-weight:600}ol.steps7 li.now .n{background:#1d4d28;color:#fff}
+ol.steps7 li.block{border-color:#b3261e;color:#8a1c16;font-weight:600}ol.steps7 li.block .n{background:#b3261e;color:#fff}
 ol.steps7 li.go{cursor:pointer}ol.steps7 li.go:hover{border-color:#2f6b3a}

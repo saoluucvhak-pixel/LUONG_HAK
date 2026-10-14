@@ -9,7 +9,8 @@
   var COLS = ["Số chứng từ", "Kỳ", "Hình thức", "Mã NV", "Họ và tên", "Số tiền", "Trạng thái", "Ngày lập", "Người lập", "Ngày duyệt", "Người duyệt", "Ngày thanh toán", "Người ghi nhận", "Ghi chú", "Lý do hủy"];
   function n(v) { var x = +v; return isFinite(x) ? x : 0; }
   function s(v) { return v == null ? "" : String(v).trim(); }
-  function hinhThucCua(httt) { var t = s(httt).toLowerCase(); if (!t) return ""; return /chuy[ểe]n kho[ảa]n|^ck$/.test(t) ? HT.CK : HT.TM; }
+  /** V10.1: chỉ nhận diện đúng 2 hình thức; giá trị lạ → "" (KHÔNG mặc định thành Tiền mặt) để người dùng chọn lại. */
+  function hinhThucCua(httt) { var t = s(httt).toLowerCase(); if (!t) return ""; if (/^(chuy[ểe]n kho[ảa]n|ck|bank|ngân hàng|ngan hang)$/.test(t) || /chuy[ểe]n kho[ảa]n/.test(t)) return HT.CK; if (/^(ti[ềe]n m[ặa]t|tm|cash)$/.test(t) || /^ti[ềe]n m[ặa]t/.test(t)) return HT.TM; return ""; }
 
   /** Tổng hợp theo (kỳ, NV): đã trả / đang chờ chi. */
   function sums(lines, ky) {
@@ -27,8 +28,9 @@
     var sm = sums(lines, ky);
     return (rows || []).map(function (r) {
       var x = sm[r["Mã NV"]] || { tra: 0, cho: 0, soCT: 0 }, tl = n(r["Thực lĩnh"]);
-      var conPhaiTra = Math.max(0, tl - x.tra), denghi = Math.max(0, conPhaiTra - x.cho);
-      return { maNV: r["Mã NV"], hoTen: r["Họ và tên"], thucLinh: tl, daTra: x.tra, dangCho: x.cho, conPhaiTra: conPhaiTra, deNghiChi: denghi, vuot: x.tra + x.cho > tl,
+      // V10.1: số âm/vượt KHÔNG bị che: conPhaiTraRaw có thể âm; vuotChi = số tiền đã chi/đang chờ vượt thực lĩnh (cần điều chỉnh/thu hồi)
+      var conPhaiTraRaw = tl - x.tra, conPhaiTra = Math.max(0, conPhaiTraRaw), denghi = Math.max(0, conPhaiTra - x.cho);
+      return { maNV: r["Mã NV"], hoTen: r["Họ và tên"], thucLinh: tl, daTra: x.tra, dangCho: x.cho, conPhaiTra: conPhaiTra, conPhaiTraRaw: conPhaiTraRaw, vuotChi: Math.max(0, x.tra + x.cho - tl), deNghiChi: denghi, vuot: x.tra + x.cho > tl,
         trangThai: status(tl, x) };
     });
   }
@@ -40,10 +42,13 @@
     if (x.cho > 0) return "Đã lập chứng từ";
     return "Chưa thanh toán";
   }
+  /** Số chứng từ duy nhất: lớn hơn mọi số đang có cùng tiền tố (kể cả > 999), rồi kiểm tra tồn tại và tăng tiếp nếu va chạm. */
   function nextNo(lines, ky, ht) {
-    var pre = (ht === HT.CK ? "UNC" : "PC") + "-" + ky.replace("-", "") + "-", mx = 0;
-    (lines || []).forEach(function (l) { var t = s(l["Số chứng từ"]); if (t.indexOf(pre) === 0) mx = Math.max(mx, n(t.slice(pre.length))); });
-    return pre + ("00" + (mx + 1)).slice(-3);
+    var pre = (ht === HT.CK ? "UNC" : "PC") + "-" + ky.replace("-", "") + "-", mx = 0, have = {};
+    (lines || []).forEach(function (l) { var t = s(l["Số chứng từ"]); have[t] = 1; if (t.indexOf(pre) === 0) mx = Math.max(mx, n(t.slice(pre.length))); });
+    var no, i = mx + 1;
+    do { no = pre + (i < 1000 ? ("00" + i).slice(-3) : String(i)); i++; } while (have[no]);
+    return no;
   }
   /**
    * Lập chứng từ cho một hình thức: chỉ lấy người có HTTT khớp và "đề nghị chi" > 0 (chống lập trùng người đã có chứng từ chưa hủy).
@@ -58,7 +63,9 @@
     var so = nextNo(ctx.lines, ctx.ky, ctx.ht), dong = [], bo = [];
     (ctx.rows || []).forEach(function (r) {
       var ma = r["Mã NV"]; if (ctx.ids && ctx.ids.indexOf(ma) < 0) return;
-      var ht = hinhThucCua(r["HTTT"]); if (ht !== ctx.ht) return;
+      var ht = hinhThucCua(r["HTTT"]);
+      if (!ht) { if (n(r["Thực lĩnh"]) > 0 && (!ctx.ids || ctx.ids.indexOf(ma) >= 0)) bo.push({ maNV: ma, ly: s(r["HTTT"]) ? "hình thức thanh toán '" + s(r["HTTT"]) + "' không hợp lệ — chọn lại Chuyển khoản/Tiền mặt" : "chưa chọn hình thức thanh toán" }); return; }
+      if (ht !== ctx.ht) return;
       var o = by[ma];
       if (o.vuot) { bo.push({ maNV: ma, ly: "đã chi/đang chờ vượt thực lĩnh" }); return; }
       if (o.deNghiChi <= 0) { bo.push({ maNV: ma, ly: o.dangCho > 0 ? "đã có chứng từ đang chờ" : "không còn khoản phải trả" }); return; }

@@ -1,6 +1,6 @@
 {
- "generated": "2026-10-14T01:08:23.091Z",
- "screens": 29,
+ "generated": "2026-10-14T04:22:27.050Z",
+ "screens": 36,
  "sizes": [
   "1366x768",
   "1600x900",
@@ -145,6 +145,14 @@
   },
   {
    "size": "1366x768",
+   "screen": "rp_soct",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
    "screen": "rp_ck",
    "title": "BẢNG KÊ CHUYỂN KHOẢN",
    "pageOverflowX": false,
@@ -203,6 +211,54 @@
    "size": "1366x768",
    "screen": "baocao",
    "title": "Báo cáo nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_ns",
+   "title": "DANH SÁCH NHÂN SỰ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_sl",
+   "title": "BẢNG KÊ PHIẾU CÂN SẢN LƯỢNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_bd",
+   "title": "BẢNG KÊ BƠM DĂM",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_th",
+   "title": "BẢNG KÊ THƯỞNG / TRỪ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_tu",
+   "title": "BẢNG KÊ TẠM ỨNG LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_com",
+   "title": "TỔNG HỢP SUẤT CƠM",
    "pageOverflowX": false,
    "mainOverflowPx": 0,
    "jsErrors": 0
@@ -377,6 +433,14 @@
   },
   {
    "size": "1600x900",
+   "screen": "rp_soct",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
    "screen": "rp_ck",
    "title": "BẢNG KÊ CHUYỂN KHOẢN",
    "pageOverflowX": false,
@@ -435,6 +499,54 @@
    "size": "1600x900",
    "screen": "baocao",
    "title": "Báo cáo nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_ns",
+   "title": "DANH SÁCH NHÂN SỰ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_sl",
+   "title": "BẢNG KÊ PHIẾU CÂN SẢN LƯỢNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_bd",
+   "title": "BẢNG KÊ BƠM DĂM",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_th",
+   "title": "BẢNG KÊ THƯỞNG / TRỪ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_tu",
+   "title": "BẢNG KÊ TẠM ỨNG LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_com",
+   "title": "TỔNG HỢP SUẤT CƠM",
    "pageOverflowX": false,
    "mainOverflowPx": 0,
    "jsErrors": 0
@@ -609,6 +721,14 @@
   },
   {
    "size": "1920x1080",
+   "screen": "rp_soct",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
    "screen": "rp_ck",
    "title": "BẢNG KÊ CHUYỂN KHOẢN",
    "pageOverflowX": false,
@@ -667,6 +787,54 @@
    "size": "1920x1080",
    "screen": "baocao",
    "title": "Báo cáo nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_ns",
+   "title": "DANH SÁCH NHÂN SỰ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_sl",
+   "title": "BẢNG KÊ PHIẾU CÂN SẢN LƯỢNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_bd",
+   "title": "BẢNG KÊ BƠM DĂM",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_th",
+   "title": "BẢNG KÊ THƯỞNG / TRỪ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_tu",
+   "title": "BẢNG KÊ TẠM ỨNG LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_com",
+   "title": "TỔNG HỢP SUẤT CƠM",
    "pageOverflowX": false,
    "mainOverflowPx": 0,
    "jsErrors": 0
@@ -705,7 +873,7 @@
   }
  ],
  "summary": {
-  "total": 87,
+  "total": 108,
   "pageOverflowX": 0,
   "jsErrors": 0,
   "errors": []

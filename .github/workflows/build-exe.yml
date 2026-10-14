@@ -44,9 +44,12 @@ jobs:
       - name: Chạy E2E (xvfb)
         run: xvfb-run -a npm run test:e2e
         env: { PLAYWRIGHT_MODULE: playwright }
+      - name: Đo độ chính xác OCR theo từng ô (ảnh mẫu giả lập)
+        run: xvfb-run -a node tests/e2e/ocr-eval.js
+        env: { PLAYWRIGHT_MODULE: playwright }
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: e2e-result, path: LuongHAK_Offline/tests/e2e/last-e2e-result.json }
+        with: { name: e2e-result, path: "LuongHAK_Offline/tests/e2e/last-e2e-result.json\nLuongHAK_Offline/docs/V10_1_OCR_CHECK.json" }
   build:
     name: Build bộ cài Windows
     runs-on: windows-latest

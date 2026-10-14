@@ -1,0 +1,157 @@
+{
+ "generated": "2026-10-14T04:41:36.315Z",
+ "note": "Ảnh mẫu GIẢ LẬP (chữ in / nét x vẽ bằng máy). Không phải chữ viết tay thật.",
+ "selfTest": "OCR hoạt động — đọc thử được \"12\" trong 539 ms",
+ "cases": [
+  {
+   "name": "Bảng in — ảnh PNG",
+   "files": [
+    "bang-cham-cong-mau.png"
+   ],
+   "mode": "mặc định",
+   "doc": true,
+   "rows": 3,
+   "ms": 3028,
+   "cells": 90,
+   "dung": 90,
+   "doChinhXac": 100,
+   "nguong": 99,
+   "dat": true,
+   "theoDong": [
+    {
+     "ten": "E2E Nhân Viên",
+     "doc": "E2E Nhân Viên",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Phạm Minh Khoa",
+     "doc": "Phạm Minh Khoa",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Đỗ Thu Hằng",
+     "doc": "Đỗ Thu Hằng",
+     "ok": 30,
+     "of": 30
+    }
+   ],
+   "saiMau": []
+  },
+  {
+   "name": "Bảng in — PDF scan",
+   "files": [
+    "bang-cham-cong-mau.pdf"
+   ],
+   "mode": "mặc định",
+   "doc": true,
+   "rows": 3,
+   "ms": 3508,
+   "cells": 90,
+   "dung": 90,
+   "doChinhXac": 100,
+   "nguong": 99,
+   "dat": true,
+   "theoDong": [
+    {
+     "ten": "E2E Nhân Viên",
+     "doc": "E2E Nhân Viên",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Phạm Minh Khoa",
+     "doc": "Phạm Minh Khoa",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Đỗ Thu Hằng",
+     "doc": "Đỗ Thu Hằng",
+     "ok": 30,
+     "of": 30
+    }
+   ],
+   "saiMau": []
+  },
+  {
+   "name": "Bảng in — trang PDF do pdf.js vẽ",
+   "files": [
+    "bang-cham-cong-mau-pdfjs.png"
+   ],
+   "mode": "mặc định",
+   "doc": true,
+   "rows": 3,
+   "ms": 2921,
+   "cells": 90,
+   "dung": 90,
+   "doChinhXac": 100,
+   "nguong": 99,
+   "dat": true,
+   "theoDong": [
+    {
+     "ten": "E2E Nhân Viên",
+     "doc": "E2E Nhân Viên",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Phạm Minh Khoa",
+     "doc": "Phạm Minh Khoa",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Đỗ Thu Hằng",
+     "doc": "Đỗ Thu Hằng",
+     "ok": 30,
+     "of": 30
+    }
+   ],
+   "saiMau": []
+  },
+  {
+   "name": "Bảng tay dấu x (2 khối ngày, mỗi người 1 cột)",
+   "files": [
+    "cham-cong-tay-x-mau.png"
+   ],
+   "mode": "mark",
+   "doc": true,
+   "rows": 3,
+   "ms": 6992,
+   "cells": 90,
+   "dung": 90,
+   "doChinhXac": 100,
+   "nguong": 97,
+   "dat": true,
+   "theoDong": [
+    {
+     "ten": "Lê Văn An",
+     "doc": "Lê Văn An",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Trần Bình",
+     "doc": "Trần Bình",
+     "ok": 30,
+     "of": 30
+    },
+    {
+     "ten": "Ngô Cường",
+     "doc": "Ngô Cường",
+     "ok": 30,
+     "of": 30
+    }
+   ],
+   "saiMau": []
+  }
+ ],
+ "errorsJS": [],
+ "tongKet": {
+  "cases": 4,
+  "dat": 4,
+  "jsErrors": 0
+ }
+}

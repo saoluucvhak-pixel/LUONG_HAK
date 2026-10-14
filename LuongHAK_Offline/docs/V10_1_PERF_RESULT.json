@@ -1,0 +1,49 @@
+{
+  "node": "v22.22.0",
+  "ngay": "2026-10-14",
+  "du_lieu": "giả lập regressionDataset",
+  "ket_qua": [
+    {
+      "Số NV": 500,
+      "Tính lương (ms)": 82.8,
+      "Gate chốt (ms)": 39.5,
+      "Xác minh bản chốt (ms)": 29.2,
+      "CHI_TIET_TT vm (ms)": 3.2,
+      "Excel (ms)": 359.1,
+      "Excel (KB)": 96,
+      "HTML PDF (ms)": 17.1,
+      "HTML (KB)": 639,
+      "Cột": 46,
+      "Lỗi chặn": 0,
+      "Lệch xác minh": 0
+    },
+    {
+      "Số NV": 2000,
+      "Tính lương (ms)": 172.6,
+      "Gate chốt (ms)": 136,
+      "Xác minh bản chốt (ms)": 139.5,
+      "CHI_TIET_TT vm (ms)": 6.1,
+      "Excel (ms)": 901.7,
+      "Excel (KB)": 354,
+      "HTML PDF (ms)": 71.1,
+      "HTML (KB)": 2554,
+      "Cột": 46,
+      "Lỗi chặn": 0,
+      "Lệch xác minh": 0
+    },
+    {
+      "Số NV": 5000,
+      "Tính lương (ms)": 579.5,
+      "Gate chốt (ms)": 656.4,
+      "Xác minh bản chốt (ms)": 632,
+      "CHI_TIET_TT vm (ms)": 20.8,
+      "Excel (ms)": 3034.3,
+      "Excel (KB)": 871,
+      "HTML PDF (ms)": 167.4,
+      "HTML (KB)": 6396,
+      "Cột": 46,
+      "Lỗi chặn": 0,
+      "Lệch xác minh": 0
+    }
+  ]
+}

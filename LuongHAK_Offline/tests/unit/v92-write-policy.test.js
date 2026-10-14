@@ -40,7 +40,8 @@ test("U-WP-02 chưa đăng nhập chỉ được ghi dấu đăng nhập + nhậ
   d = clone(s.db); d.baomat = [{ khoiPhuc: "mine" }]; assert.equal(s.save(d, null).ok, false);
   // mẫu đặt lại Admin bằng mã khôi phục: đổi mật khẩu 1 Admin + đổi baomat cùng lúc
   d = clone(s.db); d.nguoidung[0].hash = "newhash"; d.baomat = [{ khoiPhuc: "new" }]; d.auditlog.push({ luc: "t3", thaoTac: "Khôi phục" });
-  assert.equal(s.save(d, null).ok, true);
+  assert.equal(s.save(d, null).ok, false, "V10.1: payload giống khôi phục nhưng main CHƯA xác minh mã → từ chối");
+  assert.equal(s.pol.check(JSON.stringify(d), null, { recovery: { user: "admin" } }).ok, true, "có phiên khôi phục do main cấp cho đúng tài khoản → được");
 });
 
 test("U-WP-03 vai trò quyết định bảng được ghi: Nhân sự không sửa danh mục thuế / chấm công; Kế toán lương không sửa người phụ thuộc", () => {
@@ -97,7 +98,10 @@ test("U-WP-07 chốt kỳ có TAX_CONFIG_ERROR / CONG_CHUAN_ERROR bị main từ
   db.chitiethd = [ct]; db.chamcong = [ccRow("NV001", 2026, 9)]; db.kyluong = []; db.kyluong_lichsu = [];
   fs.writeFileSync(file, JSON.stringify(db));
   const pol = createPolicy({ readText: () => fs.readFileSync(file, "utf8"), sigOf: fileSig(file), gate: PG });
-  const ad = who("a", "admin"), snap = { ky: "2026-09", version: 1, quyChe: "2026", buTheoNgay: false, kq: { bangluong: [], canhbao: [] } };
+  const ad = who("a", "admin"), CLSX = require("../../core/payroll-close.js");
+  // V10.1: bản chốt phải là kết quả THẬT của engine (main tính lại và đối chiếu) — không còn chấp nhận bảng lương rỗng giả
+  const real = PG.computeKy(db, "2026-09", { quyChe: "2026", bu: false }).kq;
+  const snap = CLSX.buildSnapshot(db, "2026-09", real, [], { quyChe: "2026", buTheoNgay: false });
   // sạch → được chốt
   let d = clone(db); d.kyluong = [snap];
   assert.equal(pol.check(JSON.stringify(d), ad).ok, true, JSON.stringify(pol.check(JSON.stringify(d), ad)));
@@ -147,24 +151,71 @@ test("U-WP-10 xóa dòng danh mục có mã đã dùng trong kỳ đã chốt b�
   assert.equal(save(Object.assign(clone(d3), { dm_luong: [] }), who("nl", "ketoanluong")).ok, false, "xóa mã đã dùng (kể cả khi có quyền sửa danh mục) bị chặn");
 });
 
-test("U-WP-11 (V9.4) sổ thanh toán lương: cần quyền payment.record; dòng 'Đã thanh toán' bất biến ở tiến trình chính", () => {
-  const paid = { "Số chứng từ": "UNC-202609-001", "Kỳ": "2026-09", "Mã NV": "A", "Số tiền": 100, "Trạng thái": "Đã thanh toán" };
-  const wait = { "Số chứng từ": "UNC-202609-002", "Kỳ": "2026-09", "Mã NV": "B", "Số tiền": 50, "Trạng thái": "Đã lập" };
-  const { db, save } = setup({ ttluong: [paid, wait] });
+test("U-WP-11 (V9.4→V10.1) sổ thanh toán lương: cần quyền payment.record; dòng 'Đã thanh toán' bất biến; chuyển trạng thái đúng thứ tự, danh tính do main xác định", () => {
+  const paid = { "Số chứng từ": "UNC-202609-001", "Kỳ": "2026-09", "Hình thức": "Chuyển khoản", "Mã NV": "A", "Số tiền": 100, "Trạng thái": "Đã thanh toán", "Người lập": "x" };
+  const wait = { "Số chứng từ": "UNC-202609-002", "Kỳ": "2026-09", "Hình thức": "Chuyển khoản", "Mã NV": "B", "Số tiền": 50, "Trạng thái": "Đã lập", "Người lập": "nl" };
+  const ky = [{ ky: "2026-09", version: 1, kq: { bangluong: [{ "Mã NV": "A", "Thực lĩnh": 100 }, { "Mã NV": "B", "Thực lĩnh": 50 }, { "Mã NV": "C", "Thực lĩnh": 10 }] } }];
+  const { db, save } = setup({ ttluong: [paid, wait], kyluong: ky });
   assert.deepEqual(permsFor("ttluong"), ["payment.record"]);
-  const kt = who("nl", "ketoanluong"), ns = who("ns", "nhansu");
-  const d1 = clone(db); d1.ttluong[1]["Trạng thái"] = "Đã duyệt";
+  const kt = who("nl", "ketoanluong"), ns = who("ns", "nhansu"), ad = who("admin", "admin");
+  const d1 = clone(db); Object.assign(d1.ttluong[1], { "Trạng thái": "Đã duyệt", "Người duyệt": "admin", "Ngày duyệt": "2026-10-01" });
   assert.equal(save(d1, ns).ok, false, "nhân sự không có quyền");
-  assert.equal(save(d1, kt).ok, true, "đổi trạng thái chưa thanh toán được");
+  assert.equal(save(d1, kt).ok, false, "người duyệt khai là admin nhưng phiên là nl, đồng thời nl là người lập → từ chối");
+  assert.equal(save(d1, ad).ok, true, "admin duyệt chứng từ do nl lập");
   const d2 = clone(d1); d2.ttluong[0]["Số tiền"] = 999;
-  const r = save(d2, who("admin", "admin")); assert.equal(r.ok, false); assert.match(r.error, /đã thanh toán/);
+  const r = save(d2, ad); assert.equal(r.ok, false); assert.match(r.error, /đã thanh toán/);
   const d3 = clone(d1); d3.ttluong = [d3.ttluong[1]];
-  assert.equal(save(d3, who("admin", "admin")).ok, false, "xóa dòng đã thanh toán bị chặn");
-  const d4 = clone(d1); d4.ttluong.push({ "Số chứng từ": "PC-202609-001", "Kỳ": "2026-09", "Mã NV": "C", "Số tiền": 10, "Trạng thái": "Đã lập" });
+  assert.equal(save(d3, ad).ok, false, "xóa dòng đã thanh toán bị chặn");
+  const d4 = clone(d1); d4.ttluong.push({ "Số chứng từ": "PC-202609-001", "Kỳ": "2026-09", "Hình thức": "Tiền mặt", "Mã NV": "C", "Số tiền": 10, "Trạng thái": "Đã lập", "Người lập": "nl" });
   assert.equal(save(d4, kt).ok, true, "thêm chứng từ mới được");
+});
+
+test("U-V101-PAY-01 chứng từ: không nhảy thẳng sang Đã thanh toán, không tự khai người duyệt/ghi nhận, không vượt thực lĩnh, không trùng số, hình thức hợp lệ", () => {
+  const ky = [{ ky: "2026-09", version: 1, kq: { bangluong: [{ "Mã NV": "A", "Thực lĩnh": 100 }] } }];
+  const lap = { "Số chứng từ": "UNC-202609-001", "Kỳ": "2026-09", "Hình thức": "Chuyển khoản", "Mã NV": "A", "Số tiền": 100, "Trạng thái": "Đã lập", "Người lập": "nl" };
+  const { db, save } = setup({ ttluong: [lap], kyluong: ky });
+  const kt = who("nl", "ketoanluong"), ad = who("admin", "admin");
+  let d = clone(db); Object.assign(d.ttluong[0], { "Trạng thái": "Đã thanh toán", "Người ghi nhận": "admin", "Ngày thanh toán": "2026-10-02" });
+  assert.match(save(d, ad).error, /phải duyệt chứng từ/, "nhảy cóc Đã lập → Đã thanh toán");
+  d = clone(db); Object.assign(d.ttluong[0], { "Trạng thái": "Đã duyệt", "Người duyệt": "ai-do-khac" });
+  assert.match(save(d, ad).error, /Người duyệt .* phải là người đang đăng nhập/);
+  d = clone(db); d.ttluong[0]["Số tiền"] = 5;
+  assert.match(save(d, ad).error, /không được sửa số tiền/);
+  d = clone(db); d.ttluong.push({ "Số chứng từ": "PC-202609-009", "Kỳ": "2026-09", "Hình thức": "Tiền mặt", "Mã NV": "A", "Số tiền": 1, "Trạng thái": "Đã lập", "Người lập": "nl" });
+  assert.match(save(d, kt).error, /vượt thực lĩnh/);
+  d = clone(db); d.ttluong.push({ "Số chứng từ": "UNC-202609-001", "Kỳ": "2026-09", "Hình thức": "Chuyển khoản", "Mã NV": "B", "Số tiền": 1, "Trạng thái": "Đã lập", "Người lập": "nl" });
+  assert.match(save(d, kt).error, /đã tồn tại/);
+  d = clone(db); d.ttluong[0]["Hình thức"] = "Séc"; Object.assign(d.ttluong[0], { "Trạng thái": "Đã hủy", "Lý do hủy": "x" });
+  assert.equal(save(d, ad).ok, false, "đổi hình thức khi chuyển trạng thái");
+  d = clone(db); d.ttluong.push({ "Số chứng từ": "X-1", "Kỳ": "2026-09", "Hình thức": "Séc", "Mã NV": "A", "Số tiền": 0.4, "Trạng thái": "Đã lập", "Người lập": "nl" });
+  assert.equal(save(d, kt).ok, false, "hình thức không hợp lệ");
+  d = clone(db); Object.assign(d.ttluong[0], { "Trạng thái": "Đã hủy" });
+  assert.match(save(d, ad).error, /lý do/, "hủy phải có lý do");
 });
 
 test("U-WP-12 (V9.4) tên file báo cáo lương mới đều được nhận là file bảng lương (bị chặn khi kỳ chưa chốt còn lỗi)", () => {
   for (const n of ["BangTinhLuong_2026-10.xlsx", "TongHopLuong_2026-10.xlsx", "ThanhToanLuong_2026-10.pdf", "KeChuyenKhoan_2026-10.xlsx", "ThanhToanTienMat_2026-10.xlsx", "PhieuLuong_2026-10.pdf"]) assert.equal(PG.isPayrollFile(n), true, n);
   assert.equal(PG.isPayrollFile("Phan_bo_khoi_luong_2026-10.xlsx"), false);
+});
+
+test("U-V101-CLOSE-01 main tính lại bản chốt: bảng lương bị sửa số / thiếu người / checksum sai → TỪ CHỐI; bản đúng → cho chốt", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wp-")), file = path.join(dir, "data.json");
+  const db = baseDb();
+  db.nguoidung = [{ tenDangNhap: "a", vaiTro: "admin", hash: "h", salt: "s", iter: 1, khoa: false }]; db.baomat = [{ khoiPhuc: "x" }]; db.auditlog = [];
+  db.nhanvien = [{ "Mã NV": "NV001", "Họ và tên": "A", "Trạng thái": "Đang làm việc" }];
+  db.hopdong = [{ "Mã NV": "NV001", "Số HĐLĐ": "NV001/HĐ01", "Ngày vào làm": "2025-01-01", "Hình thức HĐLĐ": "Xác định thời hạn" }];
+  db.chitiethd = [{ "Mã NV": "NV001", "Số HĐLĐ": "NV001/HĐ01", "Hiệu lực từ": "2025-01-01", "Phòng ban": "01.01", "Chức vụ": "8", "Mã lương": "CĐ", "Lương thỏa thuận": "9000000", "Mức đóng bảo hiểm": "BH00", "Thuế TNCN": "LT01" }];
+  db.chamcong = [ccRow("NV001", 2026, 9)]; db.kyluong = []; db.kyluong_lichsu = [];
+  fs.writeFileSync(file, JSON.stringify(db));
+  const pol = createPolicy({ readText: () => fs.readFileSync(file, "utf8"), sigOf: fileSig(file), gate: PG });
+  const ad = who("a", "admin"), CLSX = require("../../core/payroll-close.js");
+  const real = PG.computeKy(db, "2026-09", { quyChe: "2026", bu: false }).kq;
+  const mk = (kq) => CLSX.buildSnapshot(db, "2026-09", kq, [], { quyChe: "2026", buTheoNgay: false });
+  const tryClose = (snap) => { const d = clone(db); d.kyluong = [snap]; return pol.check(JSON.stringify(d), ad); };
+  assert.ok(real.bangluong.length >= 1);
+  assert.equal(tryClose(mk(real)).ok, true);
+  const bump = clone(real); bump.bangluong[0]["Thực lĩnh"] = (+bump.bangluong[0]["Thực lĩnh"] || 0) + 1000000;
+  let v = tryClose(mk(bump)); assert.equal(v.ok, false); assert.match(v.error, /không khớp tính lại/);
+  const empty = clone(real); empty.bangluong = []; v = tryClose(mk(empty)); assert.equal(v.ok, false); assert.match(v.error, /thiếu trong bản chốt|không khớp/);
+  const forged = mk(real); forged.kq.bangluong[0]["Thực lĩnh"] += 5; v = tryClose(forged); assert.equal(v.ok, false); assert.match(v.error, /checksum|lệch/);
 });

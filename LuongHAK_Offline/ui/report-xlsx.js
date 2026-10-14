@@ -11,10 +11,30 @@
    * @param X ExcelJS   @param vm { title, congTy, kyText, phamVi, donVi, ngayLap, trangThai, cols:[{key,label,kind}], rows, tong }
    * @param o { chuKy:[...], tenSheet, nguoiLap }
    */
+  /** V10.1: chuỗi bắt đầu bằng = + - @ (hoặc tab/CR) có thể bị Excel/Sheets coi là công thức khi người dùng mở/sửa → thêm dấu nháy đơn đứng đầu (khiên CSV/formula-injection). */
+  function safeText(v) { var t = v == null ? "" : String(v); return /^[=+\-@\t\r]/.test(t) ? "'" + t : t; }
+  var ISO_D = /^(\d{4})-(\d{2})-(\d{2})$/;
+  function isoToDate(t) { var m = ISO_D.exec(String(t || "")); if (!m) return null; var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12)); return d.getUTCMonth() === +m[2] - 1 ? d : null; }
+  function sheetName(wb, raw) {
+    var base = String(raw || "BaoCao").replace(/[\\\/\?\*\[\]:]/g, " ").slice(0, 31).trim() || "BaoCao", name = base, k = 1;
+    while (wb.getWorksheet(name)) { k++; name = base.slice(0, 31 - String(k).length - 1) + "_" + k; }
+    return name;
+  }
   function build(X, vm, o) {
     o = o || {};
     var wb = new X.Workbook(); wb.creator = o.nguoiLap || vm.nguoiLap || "Tính lương HAK"; wb.created = new Date();
-    var name = String(o.tenSheet || vm.title || "BaoCao").replace(/[\\\/\?\*\[\]:]/g, " ").slice(0, 31).trim() || "BaoCao";
+    fill(wb, vm, o, o.tenSheet || vm.title);
+    return wb;
+  }
+  /** V10.1: nhiều bảng (bảng chính + các bảng tổng hợp phụ) trong một file — mỗi bảng một sheet, cùng khối tiêu đề / chữ ký. vms[i].sheetName đặt tên sheet. */
+  function buildMany(X, vms, o) {
+    o = o || {};
+    var wb = new X.Workbook(); wb.creator = o.nguoiLap || (vms[0] && vms[0].nguoiLap) || "Tính lương HAK"; wb.created = new Date();
+    vms.forEach(function (vm) { fill(wb, vm, o, vm.sheetName || vm.title); });
+    return wb;
+  }
+  function fill(wb, vm, o, rawName) {
+    var name = sheetName(wb, rawName);
     var ws = wb.addWorksheet(name, { views: [{ state: "frozen", ySplit: 0 }] });
     var nc = vm.cols.length, last = colLetter(nc - 1);
     var put = function (r, v, st) { var c = ws.getCell(r, 1); c.value = v; if (st) Object.assign(c, st); };
@@ -26,6 +46,16 @@
     put(r, "Phạm vi: " + (vm.phamVi || "Toàn bộ") + (vm.trangThai ? " · " + vm.trangThai : ""), { font: { italic: true, size: 10 }, alignment: { horizontal: "center", wrapText: true } }); merge(r); r++;
     put(r, "Đơn vị tính: " + (vm.donVi || "Đồng (VND)") + (vm.ngayLap ? " · Ngày lập: " + vm.ngayLap : ""), { font: { size: 10 }, alignment: { horizontal: "center" } }); merge(r); r++;
     r++;
+    if (vm.groups && vm.groups.length) { // tiêu đề hai tầng: nhóm cột ở hàng trên
+      vm.groups.forEach(function (g) {
+        if (g.to > g.from) ws.mergeCells(r, g.from + 1, r, g.to + 1);
+        var gc = ws.getCell(r, g.from + 1); gc.value = g.label; gc.font = { bold: true };
+        gc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9E7DD" } };
+        gc.alignment = { horizontal: "center", vertical: "middle" };
+        for (var k = g.from; k <= g.to; k++) ws.getCell(r, k + 1).border = { top: BORDER, left: BORDER, bottom: BORDER, right: BORDER };
+      });
+      r++;
+    }
     var hr = r; ws.getRow(hr).height = 32;
     vm.cols.forEach(function (c, i) {
       var cell = ws.getCell(hr, i + 1); cell.value = c.label;
@@ -33,12 +63,15 @@
       cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; cell.border = { top: BORDER, left: BORDER, bottom: BORDER, right: BORDER };
     });
     r++;
+    var q3 = function (c) { return c.kind === "qty3"; };
+    var decCols = vm.cols.map(function (c) { return c.kind === "qty" && vm.rows.some(function (row) { var x = +row[c.key]; return isFinite(x) && Math.abs(x - Math.round(x)) > 1e-9; }); });
     vm.rows.forEach(function (row) {
       vm.cols.forEach(function (c, i) {
         var cell = ws.getCell(r, i + 1), v = row[c.key];
-        if (TEXT_COLS.test(c.label) || c.kind === "text") { cell.value = v == null ? "" : String(v); cell.numFmt = "@"; cell.alignment = { vertical: "middle", wrapText: c.label === "Nội dung" }; }
+        if (/^Ngày/.test(c.label) && isoToDate(v)) { cell.value = isoToDate(v); cell.numFmt = "dd/mm/yyyy"; cell.alignment = { horizontal: "center", vertical: "middle" }; }
+        else if (TEXT_COLS.test(c.label) || c.kind === "text") { cell.value = safeText(v); cell.numFmt = "@"; cell.alignment = { vertical: "middle", wrapText: c.label === "Nội dung" }; }
         else if (c.kind === "money") { cell.value = v === "" || v == null ? null : Math.round(+v); cell.numFmt = "#,##0;[Red]-#,##0"; }
-        else { cell.value = v === "" || v == null ? null : +v; cell.numFmt = "#,##0.###"; if (/^STT$/i.test(c.label)) cell.alignment = { horizontal: "center" }; }
+        else { cell.value = v === "" || v == null ? null : +v; cell.numFmt = q3(c) ? "#,##0.000" : decCols[i] ? "#,##0.00" : "#,##0"; if (/^STT$/i.test(c.label)) cell.alignment = { horizontal: "center" }; }
         cell.border = { top: BORDER, left: BORDER, bottom: BORDER, right: BORDER };
       });
       r++;
@@ -47,15 +80,15 @@
     if (vm.rows.length) {
       vm.cols.forEach(function (c, i) {
         var cell = ws.getCell(r, i + 1);
-        if (i === 0) cell.value = "TỔNG CỘNG";
-        else if (vm.tong && vm.tong[c.key] != null && vm.tong[c.key] !== "") { cell.value = +vm.tong[c.key]; cell.numFmt = c.kind === "money" ? "#,##0" : "#,##0.###"; }
+        if (i === 0) cell.value = vm.tongNhan || "TỔNG CỘNG";
+        else if (vm.tong && vm.tong[c.key] != null && vm.tong[c.key] !== "") { cell.value = +vm.tong[c.key]; cell.numFmt = c.kind === "money" ? "#,##0" : q3(c) ? "#,##0.000" : (decCols[i] ? "#,##0.00" : "#,##0"); }
         cell.font = { bold: true }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF4F4F4" } }; cell.border = { top: BORDER, left: BORDER, bottom: { style: "double", color: { argb: "FF444444" } }, right: BORDER };
       });
       lastData = r; r++;
     }
     // chữ ký
     r += 1;
-    var ck = o.chuKy || ["Người lập", "Kế toán trưởng", "Giám đốc"], per = Math.max(1, Math.floor(nc / ck.length));
+    var ck = o.chuKy || vm.chuKy || ["Người lập", "Kế toán trưởng", "Giám đốc"], per = Math.max(1, Math.floor(nc / ck.length));
     ck.forEach(function (t, i) {
       var c0 = Math.min(nc, i * per + 1), c1 = Math.min(nc, (i + 1) * per);
       if (c1 > c0) ws.mergeCells(r, c0, r, c1);
@@ -69,15 +102,19 @@
       var mx = String(c.label).length; vm.rows.forEach(function (row) { var v = row[c.key]; var L = v == null ? 0 : (c.kind === "money" ? String(Math.round(+v || 0)).length + 3 : String(v).length); if (L > mx) mx = L; });
       ws.getColumn(i + 1).width = /^Ký nhận$/i.test(c.label) ? 20 : Math.max(/^STT$/i.test(c.label) ? 6 : 9, Math.min(c.label === "Nội dung" ? 44 : 32, mx + 2));
     });
-    ws.pageSetup = { paperSize: nc > 14 ? 8 : 9, orientation: nc > 6 ? "landscape" : "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true,
-      margins: { left: 0.4, right: 0.4, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 }, printTitlesRow: hr + ":" + hr };
+    // Bảng > 20 cột: KHÔNG ép vào 1 trang (chữ sẽ quá nhỏ) → A3 ngang, chia ~18 cột/trang, lặp cột nhận diện (Mã NV, Họ tên) ở mọi trang
+    var wide = nc > 20, pagesW = wide ? Math.ceil(nc / 18) : 1, idName = -1;
+    vm.cols.forEach(function (c, i) { if (idName < 0 && /^Họ và tên$/i.test(c.label)) idName = i; });
+    ws.pageSetup = { paperSize: wide || nc > 14 ? 8 : 9, orientation: nc > 6 ? "landscape" : "portrait", fitToPage: true, fitToWidth: pagesW, fitToHeight: 0, horizontalCentered: true,
+      margins: { left: 0.4, right: 0.4, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 }, printTitlesRow: (vm.groups && vm.groups.length ? (hr - 1) : hr) + ":" + hr };
+    if (wide && idName >= 0) ws.pageSetup.printTitlesColumn = "A:" + colLetter(idName);
     ws.pageSetup.printArea = "A1:" + last + sigEnd;
     ws.headerFooter = { oddFooter: "&L" + (vm.congTy || "") + " · " + vm.title + "&RTrang &P / &N" };
-    ws.views = [{ state: "frozen", xSplit: 0, ySplit: hr, topLeftCell: "A" + (hr + 1) }];
+    ws.views = [{ state: "frozen", xSplit: nc > 8 && idName >= 0 ? idName + 1 : 0, ySplit: hr, topLeftCell: "A" + (hr + 1) }];
     if (vm.rows.length) ws.autoFilter = { from: { row: hr, column: 1 }, to: { row: lastData - (vm.rows.length ? 1 : 0), column: nc } };
     ws.properties.defaultRowHeight = 18;
-    return wb;
+    return ws;
   }
-  var api = { build: build, colLetter: colLetter };
+  var api = { build: build, buildMany: buildMany, colLetter: colLetter, safeText: safeText };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else { root.HAKUi = root.HAKUi || {}; root.HAKUi.reportXlsx = api; }
 })(typeof window !== "undefined" ? window : this);

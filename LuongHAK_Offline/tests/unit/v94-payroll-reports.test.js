@@ -112,13 +112,85 @@ test("U-PAY10-01 Tổng hợp chi tiết nhân viên: mỗi người một dòng
   assert.ok(PR.KHONG_CAN_CHOT.CHI_TIET_NV && !PR.KHONG_CAN_CHOT.CHI_TIET_TT);
 });
 
-test("U-PAY10-02 Chi tiết thanh toán: liệt kê dòng chứng từ của kỳ, bỏ dòng đã hủy, tổng = tổng số tiền các dòng còn hiệu lực", () => {
-  const lines = [
-    { "Số chứng từ": "UNC-202609-001", "Kỳ": "2026-09", "Hình thức": "Chuyển khoản", "Mã NV": "00123", "Họ và tên": "Nguyễn Văn Á", "Số tiền": 8000000, "Trạng thái": "Đã thanh toán", "Ngày lập": "2026-10-01" },
-    { "Số chứng từ": "PC-202609-001", "Kỳ": "2026-09", "Hình thức": "Tiền mặt", "Mã NV": "00124", "Họ và tên": "Trần Thị Bình", "Số tiền": 100, "Trạng thái": "Đã hủy" },
-    { "Số chứng từ": "PC-202608-001", "Kỳ": "2026-08", "Hình thức": "Tiền mặt", "Mã NV": "00124", "Họ và tên": "Trần Thị Bình", "Số tiền": 5, "Trạng thái": "Đã thanh toán" }
-  ];
-  const vm = PR.build("CHI_TIET_TT", { bangluong: rows(), chot: true, blockers: [] }, opt({ lines }));
-  assert.equal(vm.rows.length, 1); assert.equal(vm.tong["Số tiền"], 8000000);
-  assert.ok(vm.canhbao.some((m) => /đã hủy/.test(m)));
+const L = (so, ma, tien, tt, extra) => Object.assign({ "Số chứng từ": so, "Kỳ": "2026-09", "Hình thức": "Chuyển khoản", "Mã NV": ma, "Họ và tên": "x", "Số tiền": tien, "Trạng thái": tt }, extra || {});
+
+test("U-PAY101-01 Chi tiết thanh toán: MỘT dòng mỗi nhân viên trong phạm vi, kể cả khi chưa có chứng từ nào", () => {
+  const vm = PR.build("CHI_TIET_TT", { bangluong: rows(), chot: true, blockers: [] }, opt({ lines: [] }));
+  assert.equal(vm.rows.length, 3);
+  vm.rows.forEach((r) => { assert.equal(r["Đã thanh toán"], 0); assert.equal(r["Đang chờ chi"], 0); assert.equal(r["Còn phải thanh toán"], r["Thực lĩnh"]); });
+  assert.deepEqual(vm.groups.map((g) => g.label), ["NHÂN VIÊN", "CÔNG & SẢN LƯỢNG", "THU NHẬP", "KHẤU TRỪ", "THANH TOÁN"]);
+  assert.equal(vm.groups[vm.groups.length - 1].to, vm.cols.length - 1);
+});
+
+test("U-PAY101-02 Chi tiết thanh toán: trả một phần / chờ chi / hủy được tính đúng, tổng khớp bảng lương", () => {
+  const r0 = rows(), tl = (m) => r0.filter((x) => x["Mã NV"] === m)[0]["Thực lĩnh"];
+  const lines = [L("UNC-1", "00123", 3000000, "Đã thanh toán"), L("UNC-2", "00123", 1000000, "Đã lập"), L("UNC-3", "00124", 500, "Đã hủy")];
+  const vm = PR.build("CHI_TIET_TT", { bangluong: r0, chot: true, blockers: [] }, opt({ lines }));
+  const a = vm.rows.filter((x) => x["Mã NV"] === "00123")[0], b = vm.rows.filter((x) => x["Mã NV"] === "00124")[0];
+  assert.equal(a["Đã thanh toán"], 3000000); assert.equal(a["Đang chờ chi"], 1000000);
+  assert.equal(a["Còn phải thanh toán"], tl("00123") - 3000000); assert.equal(a["Có thể lập đề nghị chi"], tl("00123") - 4000000);
+  assert.equal(b["Đã thanh toán"], 0); assert.equal(b["Còn phải thanh toán"], tl("00124"));
+  assert.equal(vm.tong["Thực lĩnh"], r0.reduce((x, y) => x + y["Thực lĩnh"], 0));
+});
+
+test("U-PAY101-03 Chi tiết thanh toán: trả vượt thực lĩnh KHÔNG bị che bằng 0 — hiện số âm, ghi chú và lỗi chặn xuất", () => {
+  const r0 = rows(), t = r0[0]["Thực lĩnh"];
+  const vm = PR.build("CHI_TIET_TT", { bangluong: r0, chot: true, blockers: [] }, opt({ lines: [L("UNC-9", "00123", t + 1000, "Đã thanh toán")] }));
+  const a = vm.rows.filter((x) => x["Mã NV"] === "00123")[0];
+  assert.equal(a["Còn phải thanh toán"], -1000); assert.equal(a["Có thể lập đề nghị chi"], 0);
+  assert.match(a["Ghi chú"], /TRẢ VƯỢT/); assert.ok(vm.loi.some((m) => /vượt thực lĩnh/.test(m))); assert.equal(vm.choXuatChinhThuc, false);
+});
+
+test("U-PAY101-04 Sổ chứng từ thanh toán tách riêng: liệt kê dòng chứng từ của kỳ (kể cả đã hủy, kèm lý do), không thuộc bảng nhân viên", () => {
+  const lines = [L("UNC-1", "00123", 8000000, "Đã thanh toán"), L("PC-1", "00124", 100, "Đã hủy", { "Lý do hủy": "sai số" }), Object.assign(L("PC-0", "00124", 5, "Đã thanh toán"), { "Kỳ": "2026-08" })];
+  const vm = PR.build("SO_CHUNG_TU", { bangluong: rows(), chot: true, blockers: [] }, opt({ lines }));
+  assert.equal(vm.rows.length, 2); assert.match(vm.title, /SỔ CHỨNG TỪ THANH TOÁN/);
+  assert.equal(vm.rows.filter((x) => x["Trạng thái"] === "Đã hủy")[0]["Lý do hủy"], "sai số");
+});
+
+// ---------- V10.1 Phase 5: Excel chuyên nghiệp — an toàn, định dạng, in bảng rộng ----------
+const mkVm = (cols, rows, extra) => Object.assign({ title: "BÁO CÁO TEST", congTy: "CTY", kyText: "THÁNG 09/2026", phamVi: "Toàn bộ", trangThai: "Kỳ đã chốt", cols: cols.map(([l, k]) => ({ key: l, label: l, kind: k })), rows, tong: {}, soDong: rows.length }, extra || {});
+const loadWs = async (vm) => { const wb = RX.build(X, vm, {}); const b = await wb.xlsx.writeBuffer(); const w2 = new X.Workbook(); await w2.xlsx.load(b); return w2.worksheets[0]; };
+
+test("U-V101-XLS-01 chuỗi bắt đầu bằng = + - @ không thành công thức; Mã NV/CCCD/STK giữ dạng text và số 0 đầu", async () => {
+  const vm = mkVm([["STT", "qty"], ["Mã NV", "text"], ["Số CCCD", "text"], ["Ghi chú", "text"]], [
+    { STT: 1, "Mã NV": "00123", "Số CCCD": "012345678901", "Ghi chú": "=HYPERLINK(\"http://x\",\"a\")" }, { STT: 2, "Mã NV": "00124", "Số CCCD": "", "Ghi chú": "@SUM(1)" }, { STT: 3, "Mã NV": "00125", "Số CCCD": "", "Ghi chú": "+1+1" }]);
+  const ws = await loadWs(vm);
+  for (let r = 1; r <= ws.rowCount; r++) ws.getRow(r).eachCell((c) => { assert.ok(!(c.value && typeof c.value === "object" && c.value.formula), "ô " + c.address + " là công thức"); });
+  let hit = 0; ws.eachRow((row) => row.eachCell((c) => { if (c.value === "00123") { hit++; assert.equal(c.numFmt, "@"); } if (c.value === "012345678901") hit++; if (typeof c.value === "string" && /^'[=@+]/.test(c.value)) hit++; }));
+  assert.equal(hit, 5);
+});
+test("U-V101-XLS-02 ngày ISO ở cột 'Ngày…' thành ngày thật hiển thị dd/mm/yyyy, không lệch múi giờ; số thập phân hiện 2 chữ số, số nguyên không", async () => {
+  const vm = mkVm([["STT", "qty"], ["Ngày lập", "text"], ["Sản lượng (tấn)", "qty"], ["Công", "qty"]], [{ STT: 1, "Ngày lập": "2026-09-30", "Sản lượng (tấn)": 12.5, "Công": 26 }, { STT: 2, "Ngày lập": "2026-02-01", "Sản lượng (tấn)": 3, "Công": 24 }]);
+  const ws = await loadWs(vm), found = {};
+  ws.eachRow((row) => row.eachCell((c) => { if (c.value instanceof Date) { found[c.numFmt] = (found[c.numFmt] || 0) + 1; assert.ok([30, 1].includes(c.value.getUTCDate())); } if (c.value === 12.5) found.dec = c.numFmt; if (c.value === 26) found.int = c.numFmt; }));
+  assert.equal(found["dd/mm/yyyy"], 2); assert.equal(found.dec, "#,##0.00"); assert.equal(found.int, "#,##0");
+});
+test("U-V101-XLS-03 bảng > 20 cột: A3 ngang, KHÔNG ép 1 trang (≥2 trang ngang), lặp cột Mã NV–Họ tên, đóng băng đến Họ tên; bảng hẹp thì không đóng băng cột", async () => {
+  const cols = [["Mã NV", "text"], ["Họ và tên", "text"]]; for (let i = 0; i < 26; i++) cols.push(["Khoản " + i, "money"]);
+  const row = {}; cols.forEach(([l, k]) => { row[l] = k === "money" ? 1000 : "x"; });
+  const ws = await loadWs(mkVm(cols, [row]));
+  assert.equal(ws.pageSetup.paperSize, 8); assert.equal(ws.pageSetup.orientation, "landscape"); assert.ok(ws.pageSetup.fitToWidth >= 2, "fitToWidth=" + ws.pageSetup.fitToWidth);
+  assert.equal(ws.pageSetup.printTitlesColumn, "A:B"); assert.equal(ws.views[0].xSplit, 2);
+  const narrow = await loadWs(mkVm([["STT", "qty"], ["Họ và tên", "text"], ["Số tiền", "money"]], [{ STT: 1, "Họ và tên": "A", "Số tiền": 5 }]));
+  assert.equal(narrow.views[0].xSplit || 0, 0); assert.equal(narrow.pageSetup.fitToWidth, 1);
+});
+test("U-V101-XLS-04 tiêu đề hai tầng: hàng nhóm gộp đúng khoảng cột, in lặp cả hai hàng tiêu đề, AutoFilter nằm trên hàng tiêu đề cột", async () => {
+  const vm = mkVm([["Mã NV", "text"], ["Họ và tên", "text"], ["Lương", "money"], ["Thưởng", "money"]], [{ "Mã NV": "1", "Họ và tên": "A", "Lương": 5, "Thưởng": 1 }],
+    { groups: [{ label: "NHÂN VIÊN", from: 0, to: 1 }, { label: "THU NHẬP", from: 2, to: 3 }] });
+  const ws = await loadWs(vm); let gr = 0; ws.eachRow((row, n) => { if (row.getCell(1).value === "NHÂN VIÊN") gr = n; });
+  assert.ok(gr > 0); assert.equal(ws.getCell(gr, 3).value, "THU NHẬP"); assert.match(ws.pageSetup.printTitlesRow, new RegExp("^" + gr + ":" + (gr + 1) + "$"));
+  const af = ws.autoFilter && (typeof ws.autoFilter === "string" ? ws.autoFilter : (ws.autoFilter.from ? ws.autoFilter.from.row : "")); assert.ok(af, "thiếu AutoFilter"); assert.match(String(af), new RegExp(typeof af === "string" ? "[A-Z]+" + (gr + 1) + ":" : "^" + (gr + 1) + "$"));
+});
+
+test("U-V101-PDF-01 PDF bảng rộng (>16 cột) tách thành các phần cột, mỗi phần lặp Mã NV–Họ tên và tiêu đề nhóm, không thu chữ về cỡ nhỏ nhất; chuỗi nguy hiểm được escape", () => {
+  const RH = require("../../core/reporting/report-html.js");
+  const cols = ["STT", "Mã NV", "Họ và tên"]; for (let i = 0; i < 26; i++) cols.push("K" + i);
+  const row = { STT: 1, "Mã NV": "00123", "Họ và tên": "<script>x</script>" }; cols.slice(3).forEach((c) => { row[c] = 1000; });
+  const groups = [{ label: "NHÂN VIÊN", from: 0, to: 2 }, { label: "THU NHẬP", from: 3, to: 28 }];
+  const html = RH.sheets({ title: "T", sheets: [{ name: "T", cols, rows: [row], groups }] }, {});
+  const tables = html.match(/<table/g).length; assert.equal(tables, Math.ceil(26 / 11));
+  assert.equal((html.match(/<td class="t">00123<\/td>/g) || []).length, tables, "mỗi phần lặp Mã NV");
+  assert.ok(!html.includes("<script>x"), "phải escape"); assert.match(html, /THU NHẬP/); assert.match(html, /Phần 1\/3/);
+  assert.doesNotMatch(html, /font-size:6\.5pt/);
 });

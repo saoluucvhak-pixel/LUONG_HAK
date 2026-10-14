@@ -44,6 +44,29 @@ function createGuard(appDir, opts) {
     sessions.set(wcId(e), { user: u.tenDangNhap, role: u.vaiTro, at: now(), last: now(), sid: require("crypto").randomBytes(12).toString("hex") });
     return { ok: true, perms: perms.slice(), user: u.tenDangNhap, role: u.vaiTro };
   }
+  // ---- V10.1: khôi phục Admin do MAIN xác minh mã (renderer không tự quyết) ----
+  const recov = new Map(); // wcId → { user, until }
+  const REC_MS = opts.recoveryMs || 2 * 60 * 1000;
+  /** Xác minh mã khôi phục với bản ghi baomat trên đĩa. Đúng → cấp PHIÊN KHÔI PHỤC ngắn hạn cho đúng 1 tài khoản Admin. */
+  function recover(e, code, name) {
+    if (!trusted(e)) return { ok: false, error: "Nguồn lệnh không hợp lệ" };
+    if (typeof code !== "string" || typeof name !== "string" || !code || code.length > 64 || !name || name.length > 64) return { ok: false, error: "Thông tin khôi phục không hợp lệ" };
+    const k = "#recovery", f = fails.get(k);
+    if (f && f.n >= maxFails && f.until > now()) return { ok: false, error: "Nhập sai quá " + maxFails + " lần — chờ " + Math.ceil((f.until - now()) / 1000) + " giây" };
+    const rec = opts.readRecovery && opts.readRecovery();
+    if (!rec || !rec.hash) return { ok: false, error: "Dữ liệu này không có mã khôi phục" };
+    const norm2 = code.trim().toUpperCase().replace(/-/g, "");
+    const ok = !!(opts.verify && opts.verify(norm2, rec));
+    if (!ok) { const g = fails.get(k) || { n: 0, until: 0 }; g.n++; if (g.n >= maxFails) g.until = now() + lockMs; fails.set(k, g); return { ok: false, error: "Mã khôi phục không đúng" }; }
+    const u = liveUser(name);
+    if (!u || u.vaiTro !== "admin") return { ok: false, error: "Không có tài khoản Admin tên này" };
+    fails.delete(k);
+    recov.set(wcId(e), { user: norm(u.tenDangNhap), until: now() + REC_MS });
+    return { ok: true, user: u.tenDangNhap, expiresInMs: REC_MS };
+  }
+  /** Phiên khôi phục còn hiệu lực của cửa sổ này (hoặc null). */
+  function recoveryFor(e) { const r = recov.get(wcId(e)); if (!r) return null; if (r.until < now()) { recov.delete(wcId(e)); return null; } return { user: r.user }; }
+  function recoveryDone(e) { recov.delete(wcId(e)); }
   function logout(e) { if (!trusted(e)) return { ok: false }; sessions.delete(wcId(e)); return { ok: true }; }
   /** Phiên còn hiệu lực + quyền HIỆN TẠI (tra lại tài khoản). null nếu không có/hết hạn/bị thu hồi. */
   function current(e) {
@@ -62,6 +85,6 @@ function createGuard(appDir, opts) {
     c.touch(); return "";
   }
   const userOf = (e) => { const c = current(e); return c ? c.user : ""; };
-  return { trustedUrl, trusted, login, logout, current, deny, userOf, perms: (e) => { const c = current(e); return c ? c.perms.slice() : []; } };
+  return { trustedUrl, trusted, login, logout, recover, recoveryFor, recoveryDone, current, deny, userOf, perms: (e) => { const c = current(e); return c ? c.perms.slice() : []; } };
 }
 module.exports = { createGuard, KNOWN };

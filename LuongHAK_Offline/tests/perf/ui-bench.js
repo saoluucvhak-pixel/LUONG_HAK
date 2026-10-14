@@ -21,7 +21,7 @@ const F = require(path.join(APP, "tests/fixtures/build.js"));
     let t = Date.now(); await w.click("#nav button[data-k=chamcong]"); await w.waitForSelector("main tbody tr"); await w.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))));
     const tOpen = Date.now() - t;
     const rows = await w.locator("main tbody tr").count(), inputs = await w.locator("main tbody input").count();
-    t = Date.now(); await w.locator("input.search").pressSequentially("NV00", { delay: 0 }); await w.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))));
+    t = Date.now(); await w.locator("main input[data-rf-key=tuKhoa]").pressSequentially("NV00", { delay: 0 }); await w.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))));
     const tType = Date.now() - t;
     // thời gian tới khi KẾT QUẢ LỌC hiện ra (bản mới có chờ 250 ms sau phím cuối)
     await w.waitForFunction(() => /đang lọc|NV00/.test(document.querySelector("main .bar .hint") ? document.querySelector("main .bar .hint").textContent : "") , null, { timeout: 120000 }).catch(() => {});

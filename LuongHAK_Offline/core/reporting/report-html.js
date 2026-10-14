@@ -47,15 +47,28 @@
     var any = false;
     (vm.sheets || []).forEach(function (sh) {
       if (!sh.rows || !sh.rows.length) return; any = true;
-      var cols = sh.cols && sh.cols.length ? sh.cols : Object.keys(sh.rows[0]).filter(function (k) { return k.charAt(0) !== "_"; }), small = cols.length > 14 ? "font-size:6.5pt;" : cols.length > 9 ? "font-size:7.5pt;" : "";
+      var cols = sh.cols && sh.cols.length ? sh.cols : Object.keys(sh.rows[0]).filter(function (k) { return k.charAt(0) !== "_"; });
       var num = {}; cols.forEach(function (c) { num[c] = sh.rows.some(function (r) { return typeof r[c] === "number"; }) && sh.rows.every(function (r) { return r[c] === "" || r[c] == null || typeof r[c] === "number"; }); });
       if ((vm.sheets || []).length > 1 && sh.name) h += "<h2>" + esc(sh.name) + "</h2>";
-      h += "<table style=\"" + small + "\"><thead><tr>" + cols.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
-      sh.rows.forEach(function (r, i) {
-        var tot = i === sh.rows.length - 1 && /^(TỔNG|CẢ NĂM)/i.test(String(r[cols[0]] == null ? "" : r[cols[0]]));
-        h += "<tr" + (tot ? " class=\"tot\"" : "") + ">" + cols.map(function (c) { var v = r[c]; return "<td class=\"" + (num[c] ? "m" : "t") + "\">" + (typeof v === "number" ? (Number.isInteger(v) ? money(v) : qty(v)) : esc(v)) + "</td>"; }).join("") + "</tr>";
+      // V10.1: bảng RỘNG (> 16 cột) không ép nhỏ chữ vào 1 trang — tách thành các phần cột, mỗi phần lặp cột nhận diện (STT/Mã NV/Họ tên) và tiêu đề nhóm
+      var idN = 0; if (cols.length > 16) { var ix = cols.indexOf("Họ và tên"); idN = ix >= 0 && ix < 4 ? ix + 1 : 2; }
+      var segs = []; if (idN) { var rest = cols.slice(idN), per = 11; for (var k = 0; k < rest.length; k += per) segs.push(cols.slice(0, idN).concat(rest.slice(k, k + per))); } else segs.push(cols);
+      var grpOf = {}; (sh.groups || []).forEach(function (g) { for (var q = g.from; q <= g.to; q++) grpOf[cols[q]] = g.label; });
+      segs.forEach(function (sc, si) {
+        var small = sc.length > 14 ? "font-size:6.5pt;" : sc.length > 9 ? "font-size:7.5pt;" : "", br = si > 0 ? "page-break-before:always;" : "";
+        if (segs.length > 1) h += "<div class=\"loc\" style=\"" + br + "\">Phần " + (si + 1) + "/" + segs.length + " — các cột " + esc(sc.slice(idN).join(", ")) + "</div>";
+        h += "<table style=\"" + small + "\"><thead>";
+        if (sh.groups && sh.groups.length) {
+          var gr = [], prev = null; sc.forEach(function (c, ci) { var lb = ci < idN && segs.length > 1 ? "NHÂN VIÊN" : (grpOf[c] || ""); if (prev && prev.l === lb) prev.n++; else { prev = { l: lb, n: 1 }; gr.push(prev); } });
+          h += "<tr>" + gr.map(function (g) { return "<th colspan=\"" + g.n + "\" style=\"background:#d5e4d9\">" + esc(g.l) + "</th>"; }).join("") + "</tr>";
+        }
+        h += "<tr>" + sc.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
+        sh.rows.forEach(function (r, i) {
+          var tot = i === sh.rows.length - 1 && /^(TỔNG|CẢ NĂM)/i.test(String(r[cols[0]] == null ? "" : r[cols[0]]));
+          h += "<tr" + (tot ? " class=\"tot\"" : "") + ">" + sc.map(function (c) { var v = r[c]; return "<td class=\"" + (num[c] ? "m" : "t") + "\">" + (typeof v === "number" ? (Number.isInteger(v) ? money(v) : qty(v)) : esc(v)) + "</td>"; }).join("") + "</tr>";
+        });
+        h += "</tbody></table>";
       });
-      h += "</tbody></table>";
     });
     if (!any) h += "<div class=\"warn\">Không có dòng nào khớp bộ lọc.</div>";
     if (opt.chuKy && opt.chuKy.length) h += "<div class=\"sign\">" + opt.chuKy.map(function (x) { return "<div><b>" + esc(x) + "</b><br><i>(Ký, ghi rõ họ tên)</i></div>"; }).join("") + "</div>";
