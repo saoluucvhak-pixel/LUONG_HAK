@@ -70,17 +70,18 @@
     key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',
     moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
     trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
     ruler: '<path d="M3 16 16 3l5 5-13 13z"/><path d="M8 11l1.5 1.5M11 8l1.5 1.5M14 5l1.5 1.5"/>'
   };
   // Emoji/ký hiệu đứng đầu nhãn → icon
   var MAP = {
     "🏠": "home", "▶": "play", "🔒": "lock", "🔓": "unlock", "📈": "chart", "🗓": "calendar", "📅": "calendar", "⚖": "scale",
-    "🚛": "truck", "🎁": "gift", "💵": "card", "🍚": "bowl", "📷": "camera", "👥": "users", "👤": "user", "📊": "pie", "📚": "grid", "⚙": "db",
+    "🚛": "truck", "🎁": "gift", "💵": "card", "🍚": "bowl", "📷": "camera", "👥": "users", "👤": "user", "📊": "pie", "📚": "grid", "🛠": "gear", "⚙": "db",
     "⬇": "down", "⬆": "up", "📄": "file", "📑": "files", "💾": "save", "📦": "files", "📥": "down", "🔍": "search", "✎": "edit", "🕘": "clock", "⏰": "alarm",
     "⚠": "warn", "✔": "check", "✓": "check", "🖨": "printer", "📂": "folder", "📁": "folder", "🗂": "folder", "🛡": "shield", "🚑": "medical", "🗑": "trash", "🏢": "building",
     "📋": "clipboard", "📒": "book", "↔": "swap", "🧾": "receipt", "🌴": "leaf", "🏖": "sun", "🤒": "thermo", "🎂": "cake",
     "🩺": "steth", "❤": "heart", "📞": "phone", "🪪": "id", "🎓": "cap", "👪": "family", "🏦": "bank", "💼": "case", "🔀": "shuffle",
-    "🏆": "award", "📎": "clip", "＋": "plus", "✕": "close", "←": "left", "⛔": "stop", "👁": "eye", "🔑": "key", "📖": "book", "🖨️": "printer", "🌙": "moon", "📶": "trend", "📐": "ruler"
+    "🏆": "award", "📝": "clip", "📃": "files", "📎": "clip", "＋": "plus", "✕": "close", "←": "left", "⛔": "stop", "👁": "eye", "🔑": "key", "📖": "book", "🖨️": "printer", "🌙": "moon", "📶": "trend", "📐": "ruler"
   };
   var LEAD = /^\s*([←-⯿＋]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDC00-\uDFFF])️?\s*/;
   var NS = "http://www.w3.org/2000/svg";

@@ -5,7 +5,8 @@
   // Mỗi luật: mã, nhãn, hàm nhận kq (kết quả tinhBangLuong) → danh sách thông báo chi tiết
   var RULES = [
     { code: "FORMULA_ERROR", ten: "Lỗi công thức tiền lương", test: function (kq) { return (kq.loiCongThuc || []).map(function (e) { return (e.maNV ? e.maNV + " · " : "") + e.loai + " '" + e.maCongThuc + "' — " + e.message; }); } },
-    { code: "TAX_CONFIG_ERROR", ten: "Cấu hình thuế TNCN lỗi (mã thuế, biểu thuế, giảm trừ)", test: function (kq) { return (kq.loiThue || []).map(function (e) { return e.maNV + " (mã '" + e.maThue + "'): " + e.message; }); } },
+    { code: "TAX_CONFIG_CONFLICT", ten: "Biểu thuế TNCN xung đột (bậc chồng nhau)", test: function (kq) { return (kq.loiThue || []).filter(function (e) { return e.loai === "CONFLICT"; }).map(function (e) { return e.maNV + " (mã '" + e.maThue + "'): " + e.message; }); } },
+    { code: "TAX_CONFIG_ERROR", ten: "Cấu hình thuế TNCN lỗi (mã thuế, biểu thuế, giảm trừ)", test: function (kq) { return (kq.loiThue || []).filter(function (e) { return e.loai !== "CONFLICT"; }).map(function (e) { return e.maNV + " (mã '" + e.maThue + "'): " + e.message; }); } },
     { code: "CONG_CHUAN_ERROR", ten: "Công chuẩn của mã lương không hợp lệ", test: function (kq) { return (kq.loiCongChuan || []).map(function (e) { return e.maNV + " (mã lương '" + e.maLuong + "'): " + e.message; }); } },
     { code: "MA_LUONG_THIEU", ten: "Mã lương không có trong danh mục", test: function (kq) { return pick(kq, /chưa có trong Danh mục lương/); } },
     { code: "MA_TANG_CA_THIEU", ten: "Mã tăng ca không xác định", test: function (kq) { return pick(kq, /chưa có trong Danh mục tăng ca/); } },

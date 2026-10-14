@@ -72,7 +72,7 @@
     quyenloiphep: { ten: "Quyền lợi phép", icon: "🏖️", lv: "hd", f: [
       { k: "Năm áp dụng", t: "num", req: 1 }, { k: "Số ngày được cấp", t: "num", req: 1 }, { k: "Số ngày cộng dồn năm trước", t: "num" }, { k: "Ghi chú", t: "area" }] },
     nghiphep: { ten: "Nghỉ phép", icon: "🌴", lv: "hd", f: [
-      { k: "Loại nghỉ", t: "sel", o: ["Nghỉ hằng năm", "Nghỉ việc riêng có hưởng lương", "Nghỉ không hưởng lương"], hint: "Để trống = Nghỉ hằng năm (trừ vào phép năm)" },
+      { k: "Loại nghỉ", t: "sel", o: ["Nghỉ hằng năm", "Nghỉ việc riêng có hưởng lương", "Nghỉ không hưởng lương", "Nghỉ thai sản"], hint: "Để trống = Nghỉ hằng năm (trừ vào phép năm)" },
       { k: "Từ ngày", t: "date", req: 1 }, { k: "Đến ngày", t: "date", hint: "Để trống = chưa biết ngày đi làm lại (nghỉ đến khi có thông báo) — nhập ngày khi người lao động đi làm lại" }, { k: "Số ngày nghỉ", t: "num", hint: "Để trống nếu chưa biết ngày về" },
       { k: "Trạng thái duyệt", t: "sel", o: ["Chờ duyệt", "Đã duyệt", "Từ chối"], req: 1 }, { k: "Người duyệt" }, { k: "Ghi chú", t: "area" }] },
     nghiom: { ten: "Nghỉ ốm", icon: "🤒", lv: "hd", f: [
@@ -97,6 +97,13 @@
       { k: "Ngày", t: "date", req: 1 }, { k: "Loại", t: "sel", o: ["Tai nạn lao động", "Bệnh nghề nghiệp"], req: 1 },
       { k: "Nội dung", t: "area", req: 1 }, { k: "Mức suy giảm khả năng lao động (%)", t: "num" }, { k: "Chế độ đã giải quyết", t: "area" }, { k: "Ghi chú", t: "area" }],
       cols: ["Ngày", "Loại", "Nội dung", "Mức suy giảm khả năng lao động (%)", "Chế độ đã giải quyết"] },
+    // V10: Nghiệp vụ nhân sự ĐỘC LẬP — đề nghị → chờ duyệt → duyệt/từ chối; khi duyệt mới ghi vào hồ sơ (nghỉ phép/ốm, hợp đồng, quá trình công tác)
+    nghiepvu_nhansu: { ten: "Nghiệp vụ nhân sự", icon: "📝", lv: "nv", f: [
+      { k: "Mã phiếu", req: 1 }, { k: "Loại nghiệp vụ", t: "sel", o: ["Nghỉ phép năm", "Nghỉ việc riêng có lương", "Nghỉ ốm", "Nghỉ không lương", "Nghỉ thai sản", "Nghỉ việc", "Điều chuyển bộ phận", "Đổi chức vụ"], req: 1 },
+      { k: "Từ ngày", t: "date", req: 1, hint: "Nghỉ việc / điều chuyển / đổi chức vụ: ngày hiệu lực" }, { k: "Đến ngày", t: "date" }, { k: "Số ngày", t: "num" },
+      { k: "Phòng ban mới", t: "ref", ref: "dm_phongban" }, { k: "Chức vụ mới", t: "ref", ref: "dm_chucvu" }, { k: "Lý do", t: "area", req: 1 },
+      { k: "Trạng thái", t: "sel", o: ["Nháp", "Chờ duyệt", "Đã duyệt", "Từ chối"], req: 1 }, { k: "Người đề nghị" }, { k: "Ngày đề nghị", t: "date" },
+      { k: "Người duyệt" }, { k: "Ngày duyệt", t: "date" }, { k: "Lý do từ chối", t: "area" }, { k: "Đã ghi vào hồ sơ" }] },
     tailieu: { ten: "Tài liệu", icon: "📎", lv: "hd", f: [
       { k: "Loại tài liệu", t: "sel", o: ["CCCD", "Giấy khám sức khỏe", "Bằng cấp", "Hợp đồng", "Khác"], req: 1 }, { k: "Tên tài liệu", req: 1 },
       { k: "Đường dẫn file", hint: "VD: D:\\HoSo\\NV001\\cccd.pdf (file lưu trên máy, app chỉ ghi đường dẫn)" }, { k: "Ngày tài liệu", t: "date" }, { k: "Ghi chú", t: "area" }] }
@@ -117,7 +124,7 @@
   var REFS = {
     dm_phongban: ["Mã phòng ban", "Tên phòng ban"], dm_chucvu: ["Mã chức vụ", "Tên chức vụ"], dm_luong: ["Mã lương", "Hình thức lương"],
     dm_baohiem: ["Mã bảo hiểm", "Nội dung"], dm_tncn: ["Mã thuế TNCN", "Nội dung"], dm_phucap: ["Mã phụ cấp", "Tên phụ cấp"],
-    dm_hotro: ["Mã hỗ trợ", "Tên hỗ trợ"], dm_tangca: ["Mã tăng ca", "Nội dung tăng ca"], dm_giamtru: ["Mã giảm trừ", "Số tiền"] // PV-7b
+    nhanvien: ["Mã NV", "Họ và tên"], dm_hotro: ["Mã hỗ trợ", "Tên hỗ trợ"], dm_tangca: ["Mã tăng ca", "Nội dung tăng ca"], dm_giamtru: ["Mã giảm trừ", "Số tiền"] // PV-7b
   };
 
   // ---------- tiện ích ngày ----------

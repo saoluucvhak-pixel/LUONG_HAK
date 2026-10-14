@@ -23,7 +23,7 @@ test("U-TAXP-01 mã thuế riêng có biểu thuế riêng (bảng con tra theo 
   const cha = [{ "Mã thuế TNCN": "LT50", "Nội dung": "Lũy tiến biểu riêng", "Phương pháp": "LUY_TIEN", "Hiệu lực từ": "2026-01-01" }];
   const con = [bac("LT50", 1, 0, 0, 0.50)]; // 1 bậc 50% cho mọi thu nhập
   const chung = run({ nv: { "Mã TNCN": "LT01" } });
-  const rieng = run({ cha, con, nv: { "Mã TNCN": "LT50" } });
+  const rieng = run({ cha, con, thayBieu: true, nv: { "Mã TNCN": "LT50" } });
   assert.ok(rieng.r["Thuế TNCN"] > chung.r["Thuế TNCN"], "biểu 50% phải thuế cao hơn biểu chung");
   assert.equal(rieng.r["_ct"].phuongPhapThue, "LT");
   assert.equal(rieng.r["_ct"].nguonThue.ma, "LT50");
@@ -33,11 +33,11 @@ test("U-TAXP-01 mã thuế riêng có biểu thuế riêng (bảng con tra theo 
 test("U-TAXP-02 phiên bản theo kỳ: dùng bản có Hiệu lực từ lớn nhất ≤ kỳ; bản Nháp bị bỏ qua", () => {
   const cha = [{ "Mã thuế TNCN": "LT60", "Nội dung": "Lũy tiến", "Phương pháp": "LUY_TIEN", "Hiệu lực từ": "2026-01-01" }];
   const con = [bac("LT60", 1, 0, 0, 0.10), bac("LT60", 1, 0, 0, 0.90, { "Hiệu lực từ": "2026-09-01", "Trạng thái": "Nháp" })];
-  const a = run({ cha, con, nv: { "Mã TNCN": "LT60" } });
-  const b = run({ cha, con: [bac("LT60", 1, 0, 0, 0.10)], nv: { "Mã TNCN": "LT60" } });
+  const a = run({ cha, con, thayBieu: true, nv: { "Mã TNCN": "LT60" } });
+  const b = run({ cha, con: [bac("LT60", 1, 0, 0, 0.10)], thayBieu: true, nv: { "Mã TNCN": "LT60" } });
   assert.equal(a.r["Thuế TNCN"], b.r["Thuế TNCN"], "bản Nháp 90% không được áp dụng");
-  const c = run({ cha, con: [bac("LT60", 1, 0, 0, 0.10), bac("LT60", 1, 0, 0, 0.20, { "Hiệu lực từ": "2026-09-01" })], nv: { "Mã TNCN": "LT60" }, thang: 9 });
-  const d = run({ cha, con: [bac("LT60", 1, 0, 0, 0.10), bac("LT60", 1, 0, 0, 0.20, { "Hiệu lực từ": "2026-09-01" })], nv: { "Mã TNCN": "LT60" }, thang: 8 });
+  const c = run({ cha, con: [bac("LT60", 1, 0, 0, 0.10), bac("LT60", 1, 0, 0, 0.20, { "Hiệu lực từ": "2026-09-01" })], thayBieu: true, nv: { "Mã TNCN": "LT60" }, thang: 9 });
+  const d = run({ cha, con: [bac("LT60", 1, 0, 0, 0.10), bac("LT60", 1, 0, 0, 0.20, { "Hiệu lực từ": "2026-09-01" })], thayBieu: true, nv: { "Mã TNCN": "LT60" }, thang: 8 });
   assert.ok(c.r["Thuế TNCN"] > d.r["Thuế TNCN"], "tháng 9 dùng 20%, tháng 8 dùng 10%");
 });
 

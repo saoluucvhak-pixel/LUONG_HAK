@@ -46,7 +46,7 @@
       if (Math.abs(s - tt) > 1) lech.push({ maNV: r["Mã NV"], hoTen: r["Họ và tên"], tongThanhPhan: Math.round(s), tongThuNhap: Math.round(tt) });
     });
     return {
-      title: "BẢNG TÍNH LƯƠNG NỘI BỘ", ky: opt.thang && opt.nam ? ("0" + opt.thang).slice(-2) + "/" + opt.nam : "", congTy: opt.tenCongTy || "",
+      title: "BẢNG TÍNH LƯƠNG", ky: opt.thang && opt.nam ? ("0" + opt.thang).slice(-2) + "/" + opt.nam : "", congTy: opt.tenCongTy || "",
       trangThai: opt.chot ? "Kỳ đã chốt" : "Tính tạm — kỳ chưa chốt", cheDoBu: opt.cheDoBu || "",
       loc: RF.describe(opt.filter), cols: cols, groups: groups, tong: sumOf(f.rows), soDong: f.kept, soDongGoc: f.total, kiemTra: { lech: lech }
     };
@@ -63,7 +63,14 @@
     return out;
   }
 
-  var api = { build: build, toRows: toRows, MONEY: MONEY };
+  /** Dạng phẳng cho builder Excel chuyên nghiệp (ui/report-xlsx.js): từng người, tổng cuối; phạm vi lọc để in trên đầu bảng. */
+  function toXlsxVm(vm, extra) {
+    var rows = []; vm.groups.forEach(function (g) { g.rows.forEach(function (r) { rows.push(r); }); });
+    rows = rows.map(function (r, i) { var o = Object.assign({}, r); o.__i = i + 1; return o; });
+    return Object.assign({ title: vm.title, congTy: vm.congTy, kyText: ("THÁNG " + vm.ky).toLocaleUpperCase("vi-VN"), trangThai: vm.trangThai, phamVi: vm.loc && vm.loc.length ? vm.loc.join("; ") : "Toàn bộ",
+      donVi: "Đồng (VND)", cols: vm.cols, rows: rows, tong: vm.tong }, extra || {});
+  }
+  var api = { build: build, toRows: toRows, toXlsxVm: toXlsxVm, MONEY: MONEY };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.internalPayroll = api; }
 })(typeof window !== "undefined" ? window : this);

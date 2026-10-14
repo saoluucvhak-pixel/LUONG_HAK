@@ -1,0 +1,713 @@
+{
+ "generated": "2026-10-14T01:08:23.091Z",
+ "screens": 29,
+ "sizes": [
+  "1366x768",
+  "1600x900",
+  "1920x1080"
+ ],
+ "results": [
+  {
+   "size": "1366x768",
+   "screen": "home",
+   "title": "Tổng quan",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "nhansu",
+   "title": "Nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "nvns",
+   "title": "Nghiệp vụ nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "chamcong",
+   "title": "Chấm công",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "ocr",
+   "title": "Đọc ảnh bảng chấm công / chấm cơm (OCR)",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "ocrlib",
+   "title": "OCR & Chứng từ — Thư viện mẫu",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "sanluong",
+   "title": "Sản lượng",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "bandam",
+   "title": "Bơm dăm",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "psluong",
+   "title": "Thưởng / Trừ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "ungluong",
+   "title": "Tạm ứng",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "tiencom",
+   "title": "Suất cơm",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "luong",
+   "title": "Tính lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "ktbl",
+   "title": "Kiểm tra bảng lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "kyluong",
+   "title": "Kỳ lương đã chốt",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "doichieu",
+   "title": "Đối chiếu lương Power Query",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_thanhtoan",
+   "title": "BẢNG THANH TOÁN LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_cttt",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_ck",
+   "title": "BẢNG KÊ CHUYỂN KHOẢN",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_tm",
+   "title": "BẢNG THANH TOÁN LƯƠNG TIỀN MẶT",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "slips",
+   "title": "PHIẾU LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "bangtinh",
+   "title": "BẢNG TÍNH LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_tonghop",
+   "title": "BẢNG TỔNG HỢP LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "rp_ctnv",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "baocaoluong",
+   "title": "BÁO CÁO LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "baocao",
+   "title": "Báo cáo nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "dm",
+   "title": "Danh mục",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "caidat",
+   "title": "Cài đặt — Công thức & phương pháp tính lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "backup",
+   "title": "Công ty & Sao lưu",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1366x768",
+   "screen": "huongdan",
+   "title": "Hướng dẫn & Quy chế lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "home",
+   "title": "Tổng quan",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "nhansu",
+   "title": "Nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "nvns",
+   "title": "Nghiệp vụ nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "chamcong",
+   "title": "Chấm công",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "ocr",
+   "title": "Đọc ảnh bảng chấm công / chấm cơm (OCR)",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "ocrlib",
+   "title": "OCR & Chứng từ — Thư viện mẫu",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "sanluong",
+   "title": "Sản lượng",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "bandam",
+   "title": "Bơm dăm",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "psluong",
+   "title": "Thưởng / Trừ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "ungluong",
+   "title": "Tạm ứng",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "tiencom",
+   "title": "Suất cơm",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "luong",
+   "title": "Tính lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "ktbl",
+   "title": "Kiểm tra bảng lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "kyluong",
+   "title": "Kỳ lương đã chốt",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "doichieu",
+   "title": "Đối chiếu lương Power Query",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_thanhtoan",
+   "title": "BẢNG THANH TOÁN LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_cttt",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_ck",
+   "title": "BẢNG KÊ CHUYỂN KHOẢN",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_tm",
+   "title": "BẢNG THANH TOÁN LƯƠNG TIỀN MẶT",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "slips",
+   "title": "PHIẾU LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "bangtinh",
+   "title": "BẢNG TÍNH LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_tonghop",
+   "title": "BẢNG TỔNG HỢP LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "rp_ctnv",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "baocaoluong",
+   "title": "BÁO CÁO LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "baocao",
+   "title": "Báo cáo nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "dm",
+   "title": "Danh mục",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "caidat",
+   "title": "Cài đặt — Công thức & phương pháp tính lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "backup",
+   "title": "Công ty & Sao lưu",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1600x900",
+   "screen": "huongdan",
+   "title": "Hướng dẫn & Quy chế lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "home",
+   "title": "Tổng quan",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "nhansu",
+   "title": "Nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "nvns",
+   "title": "Nghiệp vụ nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "chamcong",
+   "title": "Chấm công",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "ocr",
+   "title": "Đọc ảnh bảng chấm công / chấm cơm (OCR)",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "ocrlib",
+   "title": "OCR & Chứng từ — Thư viện mẫu",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "sanluong",
+   "title": "Sản lượng",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "bandam",
+   "title": "Bơm dăm",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "psluong",
+   "title": "Thưởng / Trừ",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "ungluong",
+   "title": "Tạm ứng",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "tiencom",
+   "title": "Suất cơm",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "luong",
+   "title": "Tính lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "ktbl",
+   "title": "Kiểm tra bảng lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "kyluong",
+   "title": "Kỳ lương đã chốt",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "doichieu",
+   "title": "Đối chiếu lương Power Query",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_thanhtoan",
+   "title": "BẢNG THANH TOÁN LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_cttt",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_ck",
+   "title": "BẢNG KÊ CHUYỂN KHOẢN",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_tm",
+   "title": "BẢNG THANH TOÁN LƯƠNG TIỀN MẶT",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "slips",
+   "title": "PHIẾU LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "bangtinh",
+   "title": "BẢNG TÍNH LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_tonghop",
+   "title": "BẢNG TỔNG HỢP LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "rp_ctnv",
+   "title": "",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "baocaoluong",
+   "title": "BÁO CÁO LƯƠNG",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "baocao",
+   "title": "Báo cáo nhân sự",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "dm",
+   "title": "Danh mục",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "caidat",
+   "title": "Cài đặt — Công thức & phương pháp tính lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "backup",
+   "title": "Công ty & Sao lưu",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  },
+  {
+   "size": "1920x1080",
+   "screen": "huongdan",
+   "title": "Hướng dẫn & Quy chế lương",
+   "pageOverflowX": false,
+   "mainOverflowPx": 0,
+   "jsErrors": 0
+  }
+ ],
+ "summary": {
+  "total": 87,
+  "pageOverflowX": 0,
+  "jsErrors": 0,
+  "errors": []
+ }
+}

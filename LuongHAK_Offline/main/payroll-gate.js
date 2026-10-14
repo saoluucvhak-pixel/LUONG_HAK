@@ -32,7 +32,7 @@ function blockers(db, ky, opts) { const r = computeKy(db, ky, opts); return GATE
 
 /** Tên file xuất có vẻ là bảng lương chính thức? (cùng quy tắc với app.js PAYROLL_FILE) */
 // "luong" trong "khối lượng / sản lượng / số lượng" KHÔNG phải bảng lương (báo cáo phân bổ khối lượng là công cụ để SỬA lỗi chặn chốt kỳ, không được chặn tải)
-const PAYROLL_FILE = /(?<!khoi[ _-]?)(?<!san[ _-]?)(?<!so[ _-]?)(?<!sl[ _-]?)luong|thanhtoan|payslip|phieu ?luong|bangtinh|tonghop ?luong/i;
+const PAYROLL_FILE = /(?<!khoi[ _-]?)(?<!san[ _-]?)(?<!so[ _-]?)(?<!sl[ _-]?)luong|thanhtoan|payslip|phieu ?luong|bangtinh|tonghop ?luong|kechuyenkhoan|ke ?chuyen ?khoan|chuyenkhoan/i;
 const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
 function isPayrollFile(name) { return PAYROLL_FILE.test(String(name || "")) || PAYROLL_FILE.test(slug(name)); }
 /** Lấy kỳ YYYY-MM từ tên file (2026-09, 2026_09, 09-2026, 092026, T09_2026…) hoặc null */

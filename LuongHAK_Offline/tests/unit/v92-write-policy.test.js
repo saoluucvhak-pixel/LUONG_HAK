@@ -133,3 +133,38 @@ test("U-WP-09 khôi phục Full Backup: thay toàn bộ dữ liệu chỉ đư�
   assert.equal(pol.check(t, null, { restoring: true }).ok, false, "chưa đăng nhập");
   assert.equal(pol.check(t, who("admin", "admin"), { restoring: true }).ok, true);
 });
+
+test("U-WP-10 xóa dòng danh mục có mã đã dùng trong kỳ đã chốt bị main từ chối; sửa/ngừng hiệu lực và xóa mã chưa dùng thì được", () => {
+  const snap = { ky: "2026-01", version: 1, kq: { bangluong: [{ "Mã NV": "A", "Mã lương": "TG1" }] } };
+  const { db, save } = setup({ kyluong: [snap], dm_luong: [{ "Mã lương": "TG1", "Tên": "x" }, { "Mã lương": "CHUA_DUNG", "Tên": "y" }] });
+  const admin = who("admin", "admin");
+  const d1 = clone(db); d1.kyluong = [snap]; d1.dm_luong = [{ "Mã lương": "CHUA_DUNG", "Tên": "y" }];
+  const r1 = save(d1, admin); assert.equal(r1.ok, false); assert.match(r1.error, /TG1.*Ngừng hiệu lực/);
+  const d2 = clone(db); d2.dm_luong = [{ "Mã lương": "TG1", "Tên": "x", "Trạng thái": "Ngừng" }, { "Mã lương": "CHUA_DUNG", "Tên": "y" }];
+  assert.equal(save(d2, admin).ok, true, "ngừng hiệu lực (sửa dòng) được phép");
+  const d3 = clone(d2); d3.dm_luong = [d3.dm_luong[0]];
+  assert.equal(save(d3, admin).ok, true, "xóa mã chưa dùng được phép");
+  assert.equal(save(Object.assign(clone(d3), { dm_luong: [] }), who("nl", "ketoanluong")).ok, false, "xóa mã đã dùng (kể cả khi có quyền sửa danh mục) bị chặn");
+});
+
+test("U-WP-11 (V9.4) sổ thanh toán lương: cần quyền payment.record; dòng 'Đã thanh toán' bất biến ở tiến trình chính", () => {
+  const paid = { "Số chứng từ": "UNC-202609-001", "Kỳ": "2026-09", "Mã NV": "A", "Số tiền": 100, "Trạng thái": "Đã thanh toán" };
+  const wait = { "Số chứng từ": "UNC-202609-002", "Kỳ": "2026-09", "Mã NV": "B", "Số tiền": 50, "Trạng thái": "Đã lập" };
+  const { db, save } = setup({ ttluong: [paid, wait] });
+  assert.deepEqual(permsFor("ttluong"), ["payment.record"]);
+  const kt = who("nl", "ketoanluong"), ns = who("ns", "nhansu");
+  const d1 = clone(db); d1.ttluong[1]["Trạng thái"] = "Đã duyệt";
+  assert.equal(save(d1, ns).ok, false, "nhân sự không có quyền");
+  assert.equal(save(d1, kt).ok, true, "đổi trạng thái chưa thanh toán được");
+  const d2 = clone(d1); d2.ttluong[0]["Số tiền"] = 999;
+  const r = save(d2, who("admin", "admin")); assert.equal(r.ok, false); assert.match(r.error, /đã thanh toán/);
+  const d3 = clone(d1); d3.ttluong = [d3.ttluong[1]];
+  assert.equal(save(d3, who("admin", "admin")).ok, false, "xóa dòng đã thanh toán bị chặn");
+  const d4 = clone(d1); d4.ttluong.push({ "Số chứng từ": "PC-202609-001", "Kỳ": "2026-09", "Mã NV": "C", "Số tiền": 10, "Trạng thái": "Đã lập" });
+  assert.equal(save(d4, kt).ok, true, "thêm chứng từ mới được");
+});
+
+test("U-WP-12 (V9.4) tên file báo cáo lương mới đều được nhận là file bảng lương (bị chặn khi kỳ chưa chốt còn lỗi)", () => {
+  for (const n of ["BangTinhLuong_2026-10.xlsx", "TongHopLuong_2026-10.xlsx", "ThanhToanLuong_2026-10.pdf", "KeChuyenKhoan_2026-10.xlsx", "ThanhToanTienMat_2026-10.xlsx", "PhieuLuong_2026-10.pdf"]) assert.equal(PG.isPayrollFile(n), true, n);
+  assert.equal(PG.isPayrollFile("Phan_bo_khoi_luong_2026-10.xlsx"), false);
+});

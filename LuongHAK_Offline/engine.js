@@ -130,6 +130,20 @@
    * Chọn theo Mã thuế TNCN + kỳ: bản "Nháp" bị bỏ qua; bản "Ngừng" làm mã/bậc hết hiệu lực. Không hard-code bậc thuế.
    * @returns {phuongPhap(ma), bieu(ma), tonTai(ma)} — kết quả được cache theo mã trong 1 kỳ.
    */
+  /** Biểu bậc đã sắp theo "Thu nhập từ": null nếu hợp lệ; {loai:"CONFLICT"|"ERROR", msg} nếu bậc chồng nhau / hở / lệch. */
+  function bacXungDot(b) {
+    for (var i = 0; i < b.length; i++) {
+      var tu = num(b[i]["Thu nhập từ"] || b[i]["Thu nhập tháng (Min)"]), tl = pct(b[i]["Tỷ lệ"]);
+      if (tl < 0 || tl > 1) return { loai: "ERROR", msg: "bậc " + b[i]["Bậc"] + " có tỷ lệ ngoài 0–100%" };
+      if (i > 0) {
+        var prevDen = num(b[i - 1]["Thu nhập đến"] || b[i - 1]["Thu nhập tháng (Max)"]);
+        if (!prevDen) return { loai: "CONFLICT", msg: "bậc " + b[i - 1]["Bậc"] + " không giới hạn nhưng còn bậc " + b[i]["Bậc"] };
+        if (tu < prevDen) return { loai: "CONFLICT", msg: "bậc " + b[i - 1]["Bậc"] + " và " + b[i]["Bậc"] + " chồng khoảng thu nhập" };
+        if (tu > prevDen) return { loai: "ERROR", msg: "hở khoảng thu nhập giữa bậc " + b[i - 1]["Bậc"] + " và " + b[i]["Bậc"] + " (không có bậc phù hợp)" };
+      }
+    }
+    return null;
+  }
   function taxResolver(db, nam, thang) {
     var chaAll = (db.dm_tncn || []).filter(function (r) { return r["Mã thuế TNCN"] && (r["Bậc"] === "" || r["Bậc"] == null) && !trangThaiLa(r, RE_NHAP); });
     var cha = hieuLuc(chaAll, "Mã thuế TNCN", nam, thang);
@@ -163,7 +177,9 @@
           else {
             var kieu = pp ? ({ LUY_TIEN: "LT", LUY_TIEN_TRU_NHANH: "LT_TN", VANG_LAI: "VL", MIEN: "MIEN" })[pp]
               : (/vãng lai/i.test(nd) ? "VL" : (/l[ũu]y ti[ếe]n|luỹ tiến/i.test(nd) ? "LT" : "MIEN"));
-            r = { kieu: kieu, tyLeVL: kieu === "VL" && pct(pt["Mức thuế"]) > 0 ? pct(pt["Mức thuế"]) : 0.10, nguon: { ma: maT, hieuLucTu: pt["Hiệu lực từ"] || "", phuongPhap: pp || "(theo Nội dung)" } };
+            var cf = (kieu === "LT" || kieu === "LT_TN") ? bacXungDot(bieu(maT)) : null;
+            if (cf) r = { kieu: "LOI", loai: cf.loai, loi: (cf.loai === "CONFLICT" ? "TAX_CONFIG_CONFLICT — " : "TAX_CONFIG_ERROR — ") + "mã '" + maT + "': " + cf.msg };
+            else r = { kieu: kieu, tyLeVL: kieu === "VL" && pct(pt["Mức thuế"]) > 0 ? pct(pt["Mức thuế"]) : 0.10, nguon: { ma: maT, hieuLucTu: pt["Hiệu lực từ"] || "", phuongPhap: pp || "(theo Nội dung)" } };
           }
         }
       }
@@ -653,7 +669,7 @@
       // Phương thức thuế: mã cũ TNCN0/1/2, hoặc mã trong danh mục Thuế TNCN (Nội dung "Khấu trừ vãng lai" / "Lũy tiến")
       var ppT = tax.phuongPhap(maT), kieu = ppT.kieu, tyLeVL = ppT.tyLeVL || 0.10;
       var loiT = function (loai, msg) { out.loiThue.push({ maNV: ma, maThue: maT, loai: loai, message: msg }); out.canhbao.push("TAX_CONFIG_ERROR — " + ma + ": " + msg + " — KHÔNG tự chọn mã khác, chặn chốt/xuất bảng lương chính thức của kỳ cho đến khi sửa cấu hình."); };
-      if (kieu === "LOI") { loiT("MA_THUE", ppT.loi); chiuThue = tongTN - bhNLD - kpcdNLD - tienCom; }
+      if (kieu === "LOI") { loiT(ppT.loai || "MA_THUE", ppT.loi); chiuThue = tongTN - bhNLD - kpcdNLD - tienCom; }
       else if (kieu === "VL") { chiuThue = tongTN; tinhThue = tongTN; thue = Math.round(tongTN * tyLeVL); }
       else if (kieu === "MIEN") { chiuThue = tongTN - bhNLD - kpcdNLD; }
       else {
@@ -699,7 +715,9 @@
           mucBuDmLuong: laSL && dmL ? money(dmL["Đơn giá bù lương"]) : 0,
           binhQuanTo: laSL && cheDoBu === "to" ? Math.round(binhQuanTo[ns["Mã PB"] || ""] || 0) : null,
           maPhuCap: ns["Mã phụ cấp"] || "", loaiCongThucPhuCap: pc ? (loaiPC || (trongCT ? "TYLE_TRU_PHEP_TANGCA" : "TYLE_KHONG_TRU")) : "",
-          maThueTNCN: maT, phuongPhapThue: kieu, thuNhapTinhThue: Math.round(tinhThue), nguonThue: ppT.nguon || null
+          maThueTNCN: maT, phuongPhapThue: kieu, thuNhapTinhThue: Math.round(tinhThue), nguonThue: ppT.nguon || null,
+          thuNhapChiuThue: Math.round(chiuThue), giamTruBanThan: kieu === "VL" ? 0 : tienGTBT, giamTruPhuThuoc: kieu === "VL" ? 0 : tongGTPT, soNPT: npt,
+          maGTBT: ns["Mã GT_TNCN_BT"] || "", maGTPT: ns["Mã GT_TNCN_PT"] || "", tyLeVangLai: kieu === "VL" ? tyLeVL : null, loiThueNV: out.loiThue.filter(function (e) { return e.maNV === ma; }).map(function (e) { return e.loai + ": " + e.message; })
         }
       });
       // Q-19 (R-53): điều chuyển phòng ban trong kỳ → tỷ lệ chia chi phí theo công chính ở từng phòng (không đổi số tiền lương)

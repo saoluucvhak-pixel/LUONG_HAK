@@ -28,7 +28,9 @@
 
   function createService(o) {
     var api = o.api, userFn = o.user || function () { return ""; }, cfgFn = o.cfg || function () { return {}; };
-    var queue = [], learned = 0, lastError = "", ramOnly = 0, txSeq = 0;
+    var queue = [], learned = 0, lastError = "", ramOnly = 0, txSeq = 0, events = [];
+    /** Nhật ký trạng thái từng lần sửa (hiển thị cho người dùng): saved | missing | queued | error */
+    function note(ref, state, extra) { var e = Object.assign({ ref: ref, state: state, at: Date.now() }, extra || {}); events.push(e); if (events.length > 500) events.shift(); return e; }
     function newTx() { txSeq++; return "TX" + Date.now().toString(36) + txSeq.toString(36) + Math.random().toString(36).slice(2, 8); }
     function ctxPayload(c) {
       var cell = c.cell || null, cr = cell ? cropCell(c.res, cell) : null; var pg = c.pg || {};
@@ -44,9 +46,9 @@
       if (!api || !c || String(c.before == null ? "" : c.before).trim() === String(c.after == null ? "" : c.after).trim()) return Promise.resolve({ ok: true, skipped: true });
       var p = ctxPayload(c);
       return api.record(p).then(function (r) {
-        if (r && r.ok) { learned++; lastError = ""; return { ok: true, sampleId: r.sampleId, note: r.note, missingSource: !!r.missingSource }; }
+        if (r && r.ok) { learned++; lastError = ""; note(c.ref, r.missingSource ? "missing" : "saved", { sampleId: r.sampleId }); return { ok: true, sampleId: r.sampleId, note: r.note, missingSource: !!r.missingSource }; }
         throw new Error(r && r.error || "ghi thất bại");
-      }).catch(function (e) { lastError = String(e && e.message || e); return enqueue(p); });
+      }).catch(function (e) { lastError = String(e && e.message || e); return enqueue(p).then(function (q) { note(c.ref, q && q.queued ? "queued" : "error", { error: lastError, durable: !!(q && q.durable) }); return q; }); });
     }
     function enqueue(p) {
       queue.push(p);
@@ -97,7 +99,7 @@
       if (!items.length) return Promise.resolve({});
       return api.lookup(items).then(function (r) { var out = {}; if (r && r.ok) r.results.forEach(function (x, i) { out[keys[i]] = x; }); return out; }, function () { return {}; });
     }
-    return { onEdit: onEdit, onViewedUnchanged: onViewedUnchanged, flush: flush, approveCells: approveCells, restoreQueue: restoreQueue, ramOnly: function () { return ramOnly; }, lookupCells: lookupCells, pending: function () { return queue.length; }, learned: function () { return learned; }, lastError: function () { return lastError; } };
+    return { onEdit: onEdit, onViewedUnchanged: onViewedUnchanged, flush: flush, approveCells: approveCells, restoreQueue: restoreQueue, ramOnly: function () { return ramOnly; }, lookupCells: lookupCells, pending: function () { return queue.length; }, events: function () { return events.slice(); }, stats: function () { var m = {}; events.forEach(function (e) { m[e.ref] = e.state; }); var c = { saved: 0, missing: 0, queued: 0, error: 0 }; Object.keys(m).forEach(function (k) { c[m[k]] = (c[m[k]] || 0) + 1; }); return c; }, stateOf: function (ref) { var l = null; events.forEach(function (e) { if (e.ref === ref) l = e; }); return l; }, learned: function () { return learned; }, lastError: function () { return lastError; } };
   }
   var API = { createService: createService, cropCell: cropCell, cellKey: cellKey };
   if (typeof module !== "undefined" && module.exports) module.exports = API; else { root.HAKCore = root.HAKCore || {}; root.HAKCore.ocrLearn = API; }

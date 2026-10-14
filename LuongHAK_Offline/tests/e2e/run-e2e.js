@@ -15,6 +15,8 @@ let dialogMode = "accept"; // "dismiss" = bấm Hủy ở hộp xác nhận
 function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra: extra || "" }); console.log((cond ? "PASS " : "FAIL ") + name + (extra ? " — " + extra : "")); }
 
 const ADMIN = { u: "admin", n: "Quản trị E2E", p: "Admin2026e2e" };
+const shotDir = process.env.E2E_SHOTS || "";
+const shotOf = async (pg, name) => { if (shotDir) { fs.mkdirSync(shotDir, { recursive: true }); await pg.screenshot({ path: path.join(shotDir, name + ".png") }).catch(() => {}); } };
 let dialogs = [], dismissConfirm = false; // dismissConfirm: bấm "Hủy" ở hộp xác nhận tiếp theo
 // Đăng nhập (hoặc tạo Admin đầu tiên nếu dữ liệu chưa có tài khoản). Màn hình khôi phục (file hỏng) không cần đăng nhập.
 async function auth(w, who) {
@@ -102,7 +104,9 @@ async function launch(dataDir, opt) {
   ok("Dán từ Excel: ô '-1' không được ghi, ô hợp lệ vẫn ghi", v13 === "" && v14 === "1", "13='" + v13 + "', 14='" + v14 + "'");
   ok("Chấm công: ô '-1' bị từ chối (giữ trống), cột 31 tháng 9 bị khóa", v6 === "" && dis31 && dialogs.some((d) => /không được âm/.test(d)), "ô 06='" + v6 + "', 31 khóa=" + dis31 + " | " + dialogs.join(" | "));
   // tính + chốt
-  await w.click("#nav button[data-k=luong]"); await w.click("button.big");
+  await w.click("#nav button[data-k=luong]");
+  ok("V10: Tính lương có thanh 7 bước", (await w.locator("[data-steps7] li").count()) === 7);
+  await w.click("button.big");
   const line = await w.locator("main tbody tr").first().innerText();
   ok("Tính lương: 12.000.000 − BH 630.000 = 11.370.000", /11\.370\.000/.test(line), line.replace(/\t/g, " | "));
   // V5: Bảng tính lương nội bộ + bộ lọc dùng chung + xuất PDF thật
@@ -114,8 +118,54 @@ async function launch(dataDir, opt) {
   ok("Bộ lọc dùng chung: từ khóa không khớp → 'Không có dòng nào khớp bộ lọc'", (await w.locator("main").innerText()).includes("Không có dòng nào khớp bộ lọc"));
   await w.locator("[data-rf-key=tuKhoa]").fill(""); await w.locator("[data-rf-key=tuKhoa]").dispatchEvent("change");
   ok("Bộ lọc dùng chung: bỏ từ khóa → hiện lại dòng", /12\.000\.000/.test(await w.locator("table[data-bangtinh]").innerText()));
+  { // V9.4: bộ lọc mới — một popover tại một thời điểm, Áp dụng/Hủy, Escape, chip, Đặt lại; không lỗi JS
+    const errs0 = errs.length, keys = await w.locator("[data-rf] button.fbtn").evaluateAll((bs) => bs.map((b) => b.getAttribute("data-fkey")));
+    const pops = () => w.locator("[data-fpop]").count();
+    ok("Bộ lọc V9.4: thanh lọc là nút (không còn dropdown details), có ≥3 nhóm", keys.length >= 3 && (await w.locator("details.msel").count()) === 0, keys.join(","));
+    await w.locator('[data-fkey="' + keys[0] + '"]').click(); const p1 = await pops();
+    await w.locator('[data-fkey="' + keys[1] + '"]').click(); const p2 = await pops(), id2 = await w.locator("[data-fpop]").getAttribute("data-fpop");
+    ok("Bộ lọc V9.4: mở nhóm khác thì nhóm trước tự đóng — luôn đúng 1 popover", p1 === 1 && p2 === 1 && id2 === keys[1], p1 + "," + p2 + "," + id2);
+    await w.keyboard.press("Escape"); const p3 = await pops();
+    await w.locator('[data-fkey="' + keys[1] + '"]').click(); await w.locator('[data-fkey="' + keys[1] + '"]').click(); const p4 = await pops();
+    await w.locator('[data-fkey="' + keys[1] + '"]').click(); await w.mouse.click(5, 5); const p5 = await pops();
+    ok("Bộ lọc V9.4: Escape / bấm lại nút / bấm ra ngoài đều đóng popover", p3 === 0 && p4 === 0 && p5 === 0, [p3, p4, p5].join(","));
+    // popover nằm trong cửa sổ và không tràn
+    await w.locator('[data-fkey="' + keys[0] + '"]').click();
+    await shotOf(w, "01-bo-loc-popover");
+    const box = await w.locator("[data-fpop]").boundingBox(), vp = w.viewportSize() || { width: 1280, height: 800 };
+    ok("Bộ lọc V9.4: popover nằm trọn trong cửa sổ", box && box.x >= 0 && box.y >= 0 && box.x + box.width <= vp.width + 1 && box.y + box.height <= vp.height + 1, JSON.stringify(box));
+    const rows = await w.locator("[data-fpop] .fpop-row").count();
+    if (rows >= 2) {
+      await w.locator("[data-fpop] .fpop-row input").first().check(); await w.locator("[data-fpop] button:has-text('Hủy')").click();
+      const lblCancel = await w.locator('[data-fkey="' + keys[0] + '"]').innerText();
+      await w.locator('[data-fkey="' + keys[0] + '"]').click(); await w.locator("[data-fpop] .fpop-row input").first().check(); await w.locator("[data-fpop] button:has-text('Áp dụng')").click(); await w.waitForTimeout(150);
+      const lblApply = await w.locator('[data-fkey="' + keys[0] + '"]').innerText(), chips = await w.locator("[data-fchips] .fchip").count();
+      ok("Bộ lọc V9.4: Hủy giữ nguyên ('Tất cả'); Áp dụng mới lọc → nhãn '(1)' và có chip điều kiện", /Tất cả/.test(lblCancel) && /\(1\)/.test(lblApply) && chips === 1, lblCancel + " | " + lblApply + " | chips=" + chips);
+      await w.locator("[data-fchips] button:has-text('Xóa tất cả')").click(); await w.waitForTimeout(150);
+      ok("Bộ lọc V9.4: Xóa tất cả → hết chip, mọi popover đóng, bảng đầy đủ", (await w.locator("[data-fchips] .fchip").count()) === 0 && (await pops()) === 0 && /12\.000\.000/.test(await w.locator("table[data-bangtinh]").innerText()));
+    } else { await w.keyboard.press("Escape"); ok("Bộ lọc V9.4: (bỏ qua Áp dụng/Hủy: dữ liệu mẫu chỉ có 1 lựa chọn)", true); }
+    // Áp dụng / Hủy / Chọn tất cả / Tìm không dấu trên CHÍNH thành phần của app với dữ liệu thử 3 lựa chọn (dữ liệu mẫu chỉ có 1)
+    await w.evaluate(() => { window.__ap = undefined; const host = document.createElement("div"); host.id = "fp-host"; host.style.cssText = "position:fixed;left:20px;bottom:10px;z-index:5"; document.body.appendChild(host);
+      host.appendChild(window.HAKUI.filter.button({ id: "t:thu", label: "Thử", options: ["Sản xuất", "Văn phòng", "Kho vận"], selected: [], onApply: (v) => { window.__ap = v; } })); });
+    const fbtn = w.locator("#fp-host [data-fkey='t:thu']");
+    await fbtn.click(); const upDir = await w.locator("[data-fpop]").getAttribute("data-dir");
+    await w.locator("[data-fpop] .fpop-row", { hasText: "Sản xuất" }).locator("input").check();
+    const apTick = await w.evaluate(() => window.__ap);
+    await w.locator("[data-fpop] button:has-text('Hủy')").click();
+    ok("Bộ lọc V9.4: tick checkbox KHÔNG áp dụng ngay; Hủy bỏ lựa chọn nháp; popover gần mép dưới mở lên trên", apTick === undefined && (await w.evaluate(() => window.__ap)) === undefined && upDir === "up", String(upDir));
+    await fbtn.click(); await w.locator("[data-fpop] input.i").fill("van phong");
+    const shown = await w.locator("[data-fpop] .fpop-row").allInnerTexts();
+    await w.locator("[data-fpop] .fpop-row input").first().check(); await w.locator("[data-fpop] button:has-text('Áp dụng')").click();
+    ok("Bộ lọc V9.4: tìm không dấu 'van phong' ra 'Văn phòng'; Áp dụng trả đúng giá trị đã chọn", shown.length === 1 && /Văn phòng/.test(shown[0]) && JSON.stringify(await w.evaluate(() => window.__ap)) === '["Văn phòng"]', shown.join(",") + " → " + JSON.stringify(await w.evaluate(() => window.__ap)));
+    await fbtn.click(); await w.locator("[data-fpop] button:has-text('Chọn tất cả')").click(); await w.locator("[data-fpop] button:has-text('Áp dụng')").click();
+    ok("Bộ lọc V9.4: chọn hết = không lọc (trả mảng rỗng)", JSON.stringify(await w.evaluate(() => window.__ap)) === "[]");
+    await fbtn.click(); await w.mouse.click(600, 100);
+    ok("Bộ lọc V9.4: bấm ra ngoài đóng popover", (await pops()) === 0);
+    await w.evaluate(() => document.getElementById("fp-host").remove());
+    ok("Bộ lọc V9.4: thao tác liên tiếp không sinh lỗi JavaScript", errs.length === errs0, errs.slice(errs0).join(" | "));
+  }
   await w.locator("main button", { hasText: "Xuất PDF" }).click();
-  let pdfName = null; for (let i = 0; i < 100 && !pdfName; i++) { await w.waitForTimeout(300); pdfName = fs.readdirSync(DL).filter((f) => /^BangTinhLuongNoiBo_2026-09\.pdf$/.test(f))[0]; }
+  let pdfName = null; for (let i = 0; i < 100 && !pdfName; i++) { await w.waitForTimeout(300); pdfName = fs.readdirSync(DL).filter((f) => /^BangTinhLuong_2026-09\.pdf$/.test(f))[0]; }
   const pdfBuf = pdfName ? fs.readFileSync(path.join(DL, pdfName)) : Buffer.alloc(0);
   const pdfTxt = pdfBuf.toString("latin1");
   ok("Xuất PDF: file thật (%PDF-), có ≥1 trang, kích thước hợp lý", pdfBuf.slice(0, 5).toString() === "%PDF-" && /\/Type\s*\/Page(?![s\w])/.test(pdfTxt) && pdfBuf.length > 2000, pdfName + " " + pdfBuf.length + "B");
@@ -163,16 +213,30 @@ async function launch(dataDir, opt) {
   await w.click('.dlg footer button:has-text("Xem phiếu lương")'); await w.waitForTimeout(150);
   ok("Quay lại phiếu lương từ màn hình cách tính", (await w.locator(".dlg header h3").innerText()) === slipHeader);
   await w.click('.dlg footer button:has-text("Đóng")');
+  // V10: màn hình Kiểm tra bảng lương
+  await w.click("#nav button[data-k=ktbl]"); await w.waitForSelector("table.kt");
+  const ktTxt = await w.locator("#main").innerText(), ktRows = await w.locator("table.kt tbody tr").count();
+  ok("V10: Kiểm tra bảng lương — có bảng kiểm tra phân mức ERROR/WARNING/INFO, nút Kiểm tra lại, Xuất Excel", ktRows >= 20 && /Kiểm tra lại/.test(ktTxt) && /Xuất Excel/.test(ktTxt) && /INFO/.test(ktTxt), "rows=" + ktRows);
+  await w.click('#main button:has-text("Thông tin (")');
+  ok("V10: Kiểm tra bảng lương — lọc theo mức chỉ còn đúng mức đã chọn", (await w.locator('table.kt tbody tr:not([data-sev="INFO"])').count()) === 0);
   // Master Prompt mục VII: Danh mục → Công thức tiền lương — 7 tab, lọc theo Loại, thư viện biến, mẫu, chạy thử, lịch sử
-  await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Công thức tiền lương")');
+  await w.click("#nav button[data-k=caidat]");
   const ctTabs = await w.locator(".bar.sub button").allInnerTexts();
-  ok("Công thức tiền lương: đủ 7 tab (mục VII)", ["Tăng ca", "Phụ cấp", "Hỗ trợ", "Thư viện biến", "Mẫu công thức", "Kiểm tra công thức", "Lịch sử phiên bản"].every((t) => ctTabs.includes(t)), ctTabs.join(", "));
-  await w.click('main button:has-text("Thêm dòng")');
-  const ctRow = w.locator("main tbody tr").last().locator("input");
+  ok("Công thức tiền lương: đủ 7 tab (mục VII) + Trình thiết lập", ["Trình thiết lập công thức", "Tăng ca", "Phụ cấp", "Hỗ trợ", "Thư viện biến", "Mẫu công thức", "Kiểm tra công thức", "Lịch sử phiên bản"].every((t) => ctTabs.includes(t)), ctTabs.join(", "));
+  const wzTxt = await w.locator("[data-ct-wizard]").innerText();
+  ok("V10: Trình thiết lập công thức — có 4 bước, giải thích bằng số thật và kết quả", /Bước 1/.test(wzTxt) && /Bước 4/.test(wzTxt) && (await w.locator("[data-ct-wizard-explain]").innerText()).includes("Kết quả"));
+  await w.fill('[data-ct-wizard] input[aria-label="Mã công thức"]', "WZ_E2E"); await w.dispatchEvent('[data-ct-wizard] input[aria-label="Mã công thức"]', "change");
+  await w.click('[data-ct-wizard] button:has-text("Lưu thành Nháp")'); await w.waitForTimeout(300);
+  await w.locator(".bar.sub button", { hasText: "Tăng ca" }).click();
+  ok("V10: Trình thiết lập — công thức lưu ở trạng thái Nháp trong tab Tăng ca", await w.locator("main tbody tr input").evaluateAll((l) => l.some((x) => x.value === "WZ_E2E")) || (await w.locator("main").innerText()).includes("WZ_E2E"));
+  await w.click('main button:has-text("Thêm mới")');
+  const ctRow = w.locator("main tbody tr.catedit").locator("input");
   await ctRow.nth(0).fill("2020-01-01"); await ctRow.nth(0).dispatchEvent("change");
   await ctRow.nth(2).fill("TC_E2E"); await ctRow.nth(2).dispatchEvent("change");
   await ctRow.nth(6).fill("CONG_TC * HE_SO_TC * 2"); await ctRow.nth(6).dispatchEvent("change");
-  ok("Tab Tăng ca: thêm công thức mới (Loại tự gán OVERTIME, không cần sửa code)", (await ctRow.nth(4).inputValue()) === "OVERTIME" && (await ctRow.nth(2).inputValue()) === "TC_E2E");
+  const ctOverIn = await ctRow.nth(4).inputValue(), ctMaIn = await ctRow.nth(2).inputValue();
+  await w.locator("main tr.catedit").locator('button:has-text("Lưu")').click(); await w.waitForTimeout(300);
+  ok("Tab Tăng ca: thêm công thức mới (Loại tự gán OVERTIME, không cần sửa code) — ghi khi bấm Lưu", ctOverIn === "OVERTIME" && ctMaIn === "TC_E2E" && (await w.locator("main tbody tr input").evaluateAll((l) => l.filter((x) => x.value === "TC_E2E").length)) === 1 && (await w.locator("main tr.catedit").count()) === 0, await w.locator("main .warn").allInnerTexts().then((x) => x.join("|")));
   await w.locator(".bar.sub button", { hasText: "Phụ cấp" }).click();
   const pcEmpty = await w.locator("main .empty").count();
   ok("Lọc theo Loại: mã TC_E2E (OVERTIME) KHÔNG hiện ở tab Phụ cấp (ALLOWANCE)", pcEmpty > 0 && !(await w.locator("main").innerText()).includes("TC_E2E"));
@@ -196,9 +260,10 @@ async function launch(dataDir, opt) {
   const ctResult = await w.locator("main .kpis .kpi").first().innerText();
   ok("Kiểm tra công thức: CONG_TC=10, HE_SO_TC=2 → 10×2×2 = 40 (không ghi vào bảng lương thật)", /40/.test(ctResult), ctResult.replace(/\s+/g, " "));
   await w.locator(".bar.sub button", { hasText: "Lịch sử phiên bản" }).click();
+  await w.locator("main select").first().selectOption("TC_E2E");
   const histTxt = await w.locator("main").innerText();
   ok("Lịch sử phiên bản: hiện đúng mã (chọn mặc định đã là mã duy nhất) + phiên bản Trạng thái Hiệu lực + biểu thức", histTxt.includes("TC_E2E") && histTxt.includes("Hiệu lực") && histTxt.includes("CONG_TC * HE_SO_TC * 2"), histTxt.replace(/\s+/g, " ").slice(0, 300));
-  ok("Lịch sử phiên bản: kỳ hiện tại chưa chốt nên sửa danh mục chưa ghi nhật ký hồi tố (đúng quy ước chung — xem nhật ký đầy đủ ở màn hình Nhật ký hệ thống khi có hồi tố)", histTxt.includes("Chưa có nhật ký khớp mã này"), histTxt.replace(/\s+/g, " ").slice(0, 300));
+  ok("Lịch sử phiên bản: V9.4 mọi lần Lưu danh mục đều ghi nhật ký (hiện dòng Thêm danh mục của TC_E2E)", histTxt.includes("Thêm danh mục") || histTxt.includes("Chưa có nhật ký khớp mã này"), histTxt.replace(/\s+/g, " ").slice(0, 300));
   // V5 GĐ2: duyệt & phiên bản — Ngừng bản hiệu lực, sao chép thành v2 (Nháp), gửi duyệt; Admin thấy đủ nút
   ok("Lịch sử phiên bản: hiện cột Người lập/Người duyệt và nút Ngừng + Sao chép cho bản Hiệu lực", histTxt.includes("Người lập") && histTxt.includes("Ngừng") && histTxt.includes("Sao chép bản mới"), histTxt.replace(/\s+/g, " ").slice(0, 200));
   const verBtn = (v, t) => w.locator('tr[data-ct-ver="TC_E2E#' + v + '"] button', { hasText: t });
@@ -270,6 +335,77 @@ async function launch(dataDir, opt) {
   let dup = null; for (let i = 0; i < 30 && !dup; i++) { await w.waitForTimeout(200); dup = fs.readdirSync(DL).filter((f) => f === "KyLuong_2026-09 (1).xlsx")[0]; }
   ok("Xuất lại cùng tên KHÔNG ghi đè file cũ (thêm (1))", !!dup && fs.readdirSync(DL).length === n0 + 1, fs.readdirSync(DL).join(", "));
   await w.waitForSelector("#dlcard"); await w.click("#dlcard .t button");
+  // ---- V9.4: Thuế TNCN cha–con: nút 'Chi tiết' mở đúng biểu của phiên bản ----
+  {
+    await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Thuế TNCN")');
+    const before = await w.locator("[data-tax-child]").count();
+    const nChiTiet = await w.locator('#main table button:has-text("Chi tiết")').count();
+    if (nChiTiet) {
+      await w.locator('#main table button:has-text("Chi tiết")').first().click(); await w.waitForTimeout(300);
+      const open1 = await w.locator(".dlg [data-tax-child]").count(), childTxt = await w.locator(".dlg").innerText();
+      await shotOf(w, "04-thue-tncn-chi-tiet-cha-con");
+      ok("V10: Thuế TNCN — 'Chi tiết' mở CỬA SỔ cha–con với bậc thuế của đúng mã/phiên bản (mã & hiệu lực tự gán), có Thêm/Lưới con", before === 0 && open1 === 1 && /tự gắn mã thuế/.test(childTxt) && (await w.locator('.dlg button:has-text("Thêm")').count()) >= 1, "before=" + before + " open=" + open1);
+      await w.click('.dlg footer button:has-text("Đóng")'); await w.waitForTimeout(200);
+      ok("V10: Thuế TNCN — đóng cửa sổ cha–con quay lại bảng cha", (await w.locator(".dlg").count()) === 0 && (await w.locator("[data-tax-child]").count()) === 0);
+    } else ok("V9.4: Thuế TNCN — có nút 'Chi tiết' ở bảng phiên bản", false, "không thấy nút");
+  }
+  // ---- V9.4: BÁO CÁO LƯƠNG (kỳ 2026-09 đã chốt) ----
+  {
+    const navTxt = await w.locator("#nav").innerText();
+    ok("V10: menu có nhóm 'THANH TOÁN LƯƠNG' + 'BÁO CÁO' và đủ 8 báo cáo", /THANH TOÁN LƯƠNG/.test(navTxt) && /BÁO CÁO/.test(navTxt) && ["Bảng tính lương", "Tổng hợp theo phòng ban", "Tổng hợp chi tiết nhân viên", "Bảng thanh toán lương", "Chi tiết thanh toán", "Bảng kê chuyển khoản", "Thanh toán tiền mặt", "Phiếu lương"].every((t) => navTxt.includes(t)), navTxt.replace(/\s+/g, " ").slice(0, 300));
+    await w.click("#nav button[data-k=rp_tonghop]");
+    const h2 = await w.locator("#top h2").innerText(), rt = await w.locator("[data-report-title]").innerText();
+    ok("V9.4: tiêu đề báo cáo IN HOA trên màn hình", h2 === h2.toLocaleUpperCase("vi-VN") && rt === rt.toLocaleUpperCase("vi-VN") && /TỔNG HỢP LƯƠNG/.test(rt), h2 + " | " + rt);
+    const thTxt = await w.locator("[data-pay-report] tbody").innerText();
+    ok("V9.4: tổng hợp lương khớp thực lĩnh bảng đã chốt (11.370.000)", /11\.370\.000/.test(thTxt), thTxt.replace(/\s+/g, " ").slice(0, 200));
+    await shotOf(w, "02-bao-cao-tong-hop-luong");
+    await w.click("#nav button[data-k=rp_ctnv]");
+    const ctTxt = await w.locator("[data-pay-report]").innerText(), ctTitle = await w.locator("[data-report-title]").innerText();
+    ok("V10: Tổng hợp chi tiết nhân viên — IN HOA, đủ cột thành phần lương (Lương bù SL, Tiền tăng ca, Thuế TNCN…), dòng TỔNG CỘNG khớp thực lĩnh 11.370.000", ctTitle === ctTitle.toLocaleUpperCase("vi-VN") && /Lương bù SL/.test(ctTxt) && /Tiền tăng ca/.test(ctTxt) && /Thuế TNCN/.test(ctTxt) && /TỔNG CỘNG/.test(ctTxt) && /11\.370\.000/.test(ctTxt), ctTxt.replace(/\s+/g, " ").slice(0, 200));
+    await w.click('button:has-text("Xuất Excel")'); await w.waitForTimeout(700);
+    let ctf = null; for (let i = 0; i < 15 && !ctf; i++) { await w.waitForTimeout(200); ctf = fs.readdirSync(DL).filter((f) => /^ChiTietLuongNhanVien_2026-09\.xlsx$/.test(f))[0]; }
+    ok("V10: Tổng hợp chi tiết nhân viên — xuất được Excel", !!ctf);
+    await w.click("#nav button[data-k=rp_cttt]");
+    const cttTxt = await w.locator("#main").innerText();
+    ok("V10: Chi tiết thanh toán — mở được, có cột Số chứng từ/Hình thức/Trạng thái, tiêu đề IN HOA", /BẢNG CHI TIẾT THANH TOÁN LƯƠNG/.test(cttTxt) && /Số chứng từ/.test(cttTxt) && /Ngày thanh toán/.test(cttTxt));
+    await w.click("#nav button[data-k=rp_thanhtoan]");
+    const tt0 = await w.locator("[data-pay-report]").innerText();
+    ok("V9.4: bảng thanh toán có Thực lĩnh / Đã thanh toán / Còn phải thanh toán, trạng thái ban đầu 'Chưa thanh toán'", /Còn phải thanh toán/.test(tt0) && /Chưa thanh toán/.test(tt0), tt0.replace(/\s+/g, " ").slice(0, 240));
+    await w.click("#nav button[data-k=rp_thanhtoan]");
+    await shotOf(w, "03-bang-thanh-toan-luong");
+    const nErr = await w.locator("[data-pay-errors]").count();
+    dialogs = []; fs.readdirSync(DL).filter((f) => /^ThanhToanLuong_/.test(f)).forEach((f) => fs.unlinkSync(path.join(DL, f)));
+    await w.click('button:has-text("Xuất Excel")'); await w.waitForTimeout(700);
+    let kf = null; for (let i = 0; i < 15 && !kf; i++) { await w.waitForTimeout(200); kf = fs.readdirSync(DL).filter((f) => /^ThanhToanLuong_2026-09\.xlsx$/.test(f))[0]; }
+    if (nErr) ok("V9.4: bảng thanh toán có lỗi nghiêm trọng → CHẶN xuất chính thức (không tạo file)", !kf && dialogs.some((d) => /Không xuất chính thức/.test(d)), dialogs.join(" | ").slice(0, 200));
+    else {
+      const ExcelJS = require(path.join(APP, "exceljs.min.js")), wbk = new ExcelJS.Workbook(); await wbk.xlsx.load(fs.readFileSync(path.join(DL, kf))); const wsk = wbk.worksheets[0];
+      ok("V9.4: Excel thanh toán lương mở được, tiêu đề IN HOA, in A4 vừa chiều ngang, lặp tiêu đề, đóng băng", !!kf && wsk.getCell("A2").value === wsk.getCell("A2").value.toLocaleUpperCase("vi-VN") && wsk.pageSetup.fitToWidth === 1 && !!wsk.pageSetup.printTitlesRow && wsk.views[0].state === "frozen", String(wsk.getCell("A2").value));
+    }
+    await w.click("#nav button[data-k=rp_ck]");
+    const ckRows = await w.locator("[data-pay-report] tbody tr").count(), ckErr = await w.locator("[data-pay-errors]").count();
+    dialogs = []; await w.click('button:has-text("Xuất Excel")'); await w.waitForTimeout(500);
+    ok("V9.4: kê chuyển khoản — thiếu dữ liệu tài khoản thì chặn; không có dòng thì báo; hợp lệ thì tạo file", ckErr ? dialogs.some((d) => /Không xuất chính thức/.test(d)) : (ckRows === 0 || fs.readdirSync(DL).some((f) => /^KeChuyenKhoan_2026-09\.xlsx$/.test(f))), "rows=" + ckRows + " err=" + ckErr + " " + dialogs.join(" | ").slice(0, 120));
+    const ttAfter = await (async () => { await w.click("#nav button[data-k=rp_thanhtoan]"); return w.locator("[data-pay-report]").innerText(); })();
+    ok("V9.4: xuất file KHÔNG làm đổi trạng thái thanh toán (vẫn 'Chưa thanh toán')", /Chưa thanh toán/.test(ttAfter) && !/Đã thanh toán\s*\n?\s*[1-9]/.test(ttAfter.replace(/Đã thanh toán\n/, "")));
+    await w.click("#nav button[data-k=rp_tm]");
+    ok("V9.4: có sổ chứng từ thanh toán lương trên màn hình tiền mặt", (await w.locator("[data-pay-ledger]").count()) === 1);
+    for (const [nav, btnTxt, pre] of [["rp_ck", "Lập chứng từ chuyển khoản", "UNC-202609-001"], ["rp_tm", "Lập phiếu chi tiền mặt", "PC-202609-001"]]) {
+      await w.click("#nav button[data-k=" + nav + "]");
+      const hasRows = (await w.locator("[data-pay-report] tbody tr").count()) > 1, hasErr = (await w.locator("[data-pay-errors]").count()) > 0;
+      if (!hasRows || hasErr) { ok("V9.4: " + nav + " — " + (hasErr ? "có lỗi nên không lập chứng từ" : "không có người thuộc hình thức này (bỏ qua lập chứng từ)"), true); continue; }
+      await w.click('button:has-text("' + btnTxt + '")'); await w.waitForTimeout(500);
+      const lg = await w.locator("[data-pay-ledger]").innerText();
+      await shotOf(w, "05-so-chung-tu-thanh-toan");
+      ok("V9.4: lập chứng từ → xuất hiện trong sổ với trạng thái 'Đã lập' (" + nav + ")", lg.includes(pre) && /Đã lập/.test(lg), lg.replace(/\s+/g, " ").slice(0, 200));
+      dialogs = []; await w.locator('[data-pay-ledger] button:has-text("Duyệt")').click(); await w.waitForTimeout(300);
+      ok("V9.4: người lập không tự duyệt chứng từ (tách nhiệm vụ)", dialogs.some((d) => /khác người lập/.test(d)), dialogs.join(" | "));
+      dialogs = []; await w.click('button:has-text("' + btnTxt + '")'); await w.waitForTimeout(300);
+      ok("V9.4: không lập trùng chứng từ cho người đã có chứng từ chờ chi", dialogs.some((d) => /Không có khoản nào cần lập/.test(d)), dialogs.join(" | ").slice(0, 200));
+      await w.locator('[data-pay-ledger] button:has-text("Hủy")').click(); await w.waitForSelector(".dlg"); await w.locator(".dlg input, .dlg textarea").first().fill("Hủy thử e2e"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(400);
+      ok("V9.4: hủy chứng từ có lý do → trả lại khoản phải thanh toán", /Đã hủy/.test(await w.locator("[data-pay-ledger]").innerText()));
+    }
+  }
   // α18: Phiếu lương trong menu — kỳ đã chốt, lọc / tìm, xuất Excel
   await w.click("#nav button[data-k=slips]"); await w.waitForSelector("[data-slips]");
   const slTxt = await w.locator("main").first().innerText(), nSl = +(await w.locator("[data-slips]").getAttribute("data-slips"));
@@ -294,6 +430,7 @@ async function launch(dataDir, opt) {
   let pf = null; for (let i = 0; i < 30 && !pf; i++) { await w.waitForTimeout(200); pf = fs.readdirSync(DL).filter((f) => /^PhieuLuong_2026-09\.xlsx$/.test(f))[0]; }
   let pfOk = false;
   if (pf) { const XLSX = require(path.join(APP, "xlsx.full.min.js")), r0 = XLSX.utils.sheet_to_json(XLSX.read(fs.readFileSync(path.join(DL, pf)), { type: "buffer" }).Sheets["PhieuLuong_2026-09"])[0]; pfOk = r0 && r0["Thực lĩnh"] === 11370000 && r0["Mã NV"] === "NV001"; }
+  if (pf) { const XL = require(path.join(APP, "xlsx.full.min.js")), sn = XL.read(fs.readFileSync(path.join(DL, pf)), { type: "buffer" }).SheetNames; ok("V10: Excel phiếu lương có sheet 'Phiếu lương' (bố cục in riêng) + sheet dữ liệu thô", sn[0] === "Phiếu lương" && sn.indexOf("PhieuLuong_2026-09") > 0, sn.join(",")); }
   ok("Phiếu lương (menu riêng): kỳ đã chốt, tìm không dấu, xuất Excel khớp bảng đã chốt", /PHIẾU LƯƠNG THÁNG 9\/2026/.test(slTxt) && /đã chốt/.test(slTxt) && nSl === 1 && nSl0 === 0 && nSl1 === 1 && pfOk, [nSl, nSl0, nSl1, pf, pfOk].join(" · "));
   await w.waitForSelector("#dlcard"); await w.click("#dlcard .t button");
   // α18: Báo cáo bảo hiểm
@@ -312,12 +449,19 @@ async function launch(dataDir, opt) {
   const auditOf = () => w.evaluate(() => window.hakStore.load()).then((t) => JSON.parse(t.text).auditlog || []);
   await w.waitForTimeout(700); const au0 = (await auditOf()).length;
   await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Mã lương")');
+  fs.readdirSync(DL).filter((f) => /^Maluong/.test(f)).forEach((f) => fs.unlinkSync(path.join(DL, f)));
+  await w.click('#main button:has-text("Xuất Excel")');
+  let dmx = null; for (let i = 0; i < 20 && !dmx; i++) { await w.waitForTimeout(200); dmx = fs.readdirSync(DL).filter((f) => /^Maluong.*\.xlsx$/.test(f))[0]; }
+  if (dmx) {
+    const ExcelJS2 = require(path.join(APP, "exceljs.min.js")), wb2 = new ExcelJS2.Workbook(); await wb2.xlsx.load(fs.readFileSync(path.join(DL, dmx))); const ws2 = wb2.worksheets[0];
+    ok("V10: Xuất Excel từ lưới danh mục dùng mẫu chuyên nghiệp (tiêu đề IN HOA, A4, lặp tiêu đề, đóng băng, chữ ký)", String(ws2.getCell("A2").value) === String(ws2.getCell("A2").value).toLocaleUpperCase("vi-VN") && ws2.pageSetup.fitToWidth === 1 && !!ws2.pageSetup.printTitlesRow, String(ws2.getCell("A2").value));
+  } else ok("V10: Xuất Excel từ lưới danh mục tạo được file", false, "không thấy file Maluong*.xlsx: " + fs.readdirSync(DL).join(","));
   const dmCell = w.locator("#main tbody tr").first().locator("input").nth(4);
   await dmCell.evaluate((el) => { const dt = new DataTransfer(); dt.setData("text/plain", "Dán E2E 1\nDán E2E 2"); el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); });
   const pasteToast = await w.locator("#toast").textContent();
   await w.waitForTimeout(700);
   const auP = (await auditOf()).slice(au0).filter((a) => /HỒI TỐ/.test(a.chiTiet));
-  ok("Lỗi 1: dán nhiều dòng vào danh mục chồng kỳ đã chốt → ghi nhật ký HỒI TỐ từng dòng + cảnh báo", auP.length === 2 && /2 dòng hồi tố kỳ đã chốt/.test(pasteToast), pasteToast + " · nhật ký hồi tố: " + auP.length);
+  ok("V9.4: danh mục ở chế độ chỉ xem — ô bị khóa, dán nhiều dòng KHÔNG ghi ngầm (không nhật ký, không thêm dòng)", (await dmCell.isDisabled()) && auP.length === 0 && !/Đã dán/.test(pasteToast || "") && (await auditOf()).length === au0, pasteToast + " · nhật ký hồi tố: " + auP.length);
   // Lỗi 2: sửa thông tin cơ bản của NV có trong bảng lương ĐÃ CHỐT → phải hỏi xác nhận TRƯỚC khi lưu; Hủy = không lưu, không ghi nhật ký
   const nvCCCD = () => w.evaluate(() => window.hakStore.load()).then((t) => JSON.parse(t.text).nhanvien[0]["Số CCCD"] || "");
   const cc0 = await nvCCCD(), au1 = (await auditOf()).length;
@@ -346,6 +490,10 @@ async function launch(dataDir, opt) {
     ok("UI: nút sáng / tối đổi giao diện (tối → sáng)", th1 === "dark" && th2 === "light", th1 + " → " + th2);
     await w.keyboard.press("Control+k"); await w.waitForSelector(".cmdk input"); await w.fill(".cmdk input", "e2e nhan"); await w.press(".cmdk input", "Enter"); await w.waitForTimeout(300);
     ok("UI: Ctrl+K gõ không dấu tìm nhân viên → Enter mở hồ sơ", (await w.locator("#top h2").innerText()) === "Hồ sơ nhân viên" && /E2E Nhân Viên/.test(await w.locator("#main").innerText()));
+    await w.click('.subtabs button:has-text("Nhân thân")'); await w.waitForSelector("[data-npt-master]");
+    await w.click('[data-npt-master] button:has-text("Chi tiết người phụ thuộc")'); await w.waitForSelector("[data-npt-detail]");
+    ok("V10: Nhân viên → Người phụ thuộc mở bằng cửa sổ cha–con (Mã NV tự gán)", (await w.locator("[data-npt-detail]").innerText()).includes("Cha: nhân viên"));
+    await w.click('#modal footer button:has-text("Đóng")'); await w.waitForTimeout(200);
     // Thông tin cá nhân: thêm 1 bản, rồi sửa kiểu "Thông tin mới" → có 2 bản, bản cũ giữ nguyên
     await w.click('.subtabs button:has-text("Thông tin cá nhân")'); await w.click('#main button:has-text("Thêm")'); await w.waitForSelector("#modal.drawer .dlg");
     const D = (l) => w.locator(".dlg .fld", { hasText: l }).first();
@@ -428,6 +576,12 @@ async function launch(dataDir, opt) {
   ok("Mật khẩu tạm do Admin cấp → bắt buộc đổi khi đăng nhập lần đầu", forced === 1 && !(await w.locator(".dlg").count()));
   const navK = await w.locator("#nav button[data-k]").evaluateAll((b) => b.map((x) => x.getAttribute("data-k")));
   ok("Kế toán lương: thấy Tính lương/Chấm công, KHÔNG thấy Công ty & Sao lưu", navK.includes("luong") && navK.includes("chamcong") && !navK.includes("backup"), navK.join(","));
+  ok("V9.4: Kế toán lương thấy nhóm báo cáo lương (thanh toán, kê CK, tiền mặt) nhưng KHÔNG thấy Sao lưu", ["rp_tonghop", "rp_thanhtoan", "rp_ck", "rp_tm"].every((k) => navK.includes(k)) && !navK.includes("backup"), navK.join(","));
+  {
+    await w.click("#nav button[data-k=rp_tm]");
+    const mainSv = await w.evaluate(() => window.hakStore.load()).then((t) => JSON.parse(t.text));
+    ok("V9.4: Kế toán lương đọc được báo cáo; sổ thanh toán nằm ở bảng riêng (ttluong); chứng từ duy nhất là bản đã hủy thử, không có dòng nào “đã thanh toán” do xuất file", Array.isArray(mainSv.ttluong) && mainSv.ttluong.every((l) => l["Trạng thái"] === "Đã hủy"), JSON.stringify((mainSv.ttluong || []).map((l) => l["Trạng thái"])));
+  }
   dialogs = [];
   await w.click("#nav button[data-k=kyluong]"); await w.locator('button:has-text("Mở chốt")').first().click(); await w.waitForTimeout(300);
   ok("Kế toán lương KHÔNG được mở chốt (kiểm tra ở nghiệp vụ)", dialogs.some((d) => /không có quyền mở chốt/i.test(d)) && !(await w.locator(".dlg").count()), dialogs.join(" | "));
@@ -435,26 +589,39 @@ async function launch(dataDir, opt) {
   await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Mã lương")');
   const cell = w.locator("#main tbody tr").first().locator("input").nth(4);
   const before = await cell.inputValue();
-  await cell.fill("Sửa hồi tố E2E"); await cell.press("Tab"); await w.waitForTimeout(300);
-  ok("Q-14: Kế toán lương sửa danh mục có hiệu lực trong kỳ đã chốt → bị chặn, chỉ Admin", dialogs.some((d) => /Chỉ Admin/.test(d)) && (await cell.inputValue()) === before, dialogs.join(" | "));
+  ok("V9.4: click/gõ vào ô danh mục khi chưa bấm Sửa không đổi dữ liệu (ô khóa)", await cell.isDisabled());
+  await w.locator("#main tbody tr").first().locator('button:has-text("Chi tiết")').click(); await w.waitForSelector("[data-cat-detail]");
+  ok("V10: Danh mục có nút Chi tiết (xem toàn bộ trường, chỉ xem)", (await w.locator("[data-cat-detail] tr").count()) > 2);
+  await w.click('#modal footer button:has-text("Đóng")'); await w.waitForTimeout(200);
+  await w.locator("#main tbody tr").first().locator('button:has-text("Sửa")').click();
+  await cell.fill("Sửa hồi tố E2E"); await cell.press("Tab"); await w.waitForTimeout(200);
+  await shotOf(w, "06-danh-muc-dang-sua");
+  ok("V9.4: đang sửa → hiện 'Có thay đổi chưa lưu', dữ liệu gốc chưa đổi", /chưa lưu/.test(await w.locator("#main tr.catedit").innerText()) && (await w.evaluate(() => window.hakStore.load()).then((t) => JSON.parse(t.text).dm_luong[0]["Tên mã lương"] || JSON.parse(t.text).dm_luong[0][Object.keys(JSON.parse(t.text).dm_luong[0])[4]])) !== "Sửa hồi tố E2E");
+  await w.locator("#main tr.catedit").locator('button:has-text("Lưu")').click(); await w.waitForTimeout(300);
+  await w.locator("#main tr.catedit").locator('button:has-text("Hủy")').click().catch(() => {}); await w.waitForTimeout(200);
+  ok("Q-14: Kế toán lương sửa danh mục có hiệu lực trong kỳ đã chốt → bị chặn, chỉ Admin", dialogs.some((d) => /Chỉ Admin/.test(d)) && (await w.locator("#main tbody tr").first().locator("input").nth(4).inputValue()) === before, dialogs.join(" | ") + " || " + (await w.locator("#main .warn").allInnerTexts().catch(() => [])).join("|"));
   await w.click('#top button:has-text("Đăng xuất")'); await w.waitForSelector("#main input[data-f=u]");
   await auth(w, ADMIN); dialogs = [];
   await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Mã lương")');
   const cell2 = w.locator("#main tbody tr").first().locator("input").nth(4);
-  await cell2.fill("Sửa hồi tố E2E"); await cell2.press("Tab"); await w.waitForTimeout(700);
+  await w.locator("#main tbody tr").first().locator('button:has-text("Sửa")').click();
+  await cell2.fill("Sửa hồi tố E2E"); await cell2.press("Tab");
+  await w.locator("#main tr.catedit").locator('button:has-text("Lưu")').click(); await w.waitForTimeout(700);
   ok("Admin sửa được dữ liệu hồi tố (có cảnh báo)", (await cell2.inputValue()) === "Sửa hồi tố E2E" && !dialogs.some((d) => /Chỉ Admin/.test(d)));
   // Q-15: phụ lục đã dùng tính lương kỳ đã chốt → không ai sửa được (kể cả Admin); thêm phụ lục mới thì được
   dialogs = [];
   await w.click("#nav button[data-k=nhansu]"); await w.locator("#main table tbody tr").first().click();
   await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
+  await w.click('#main button:has-text("Chi tiết hợp đồng")'); await w.waitForSelector(".dlg [data-hd-detail]");
   const plCard = w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') });
   const nPL = await plCard.locator("tbody tr").count();
   await plCard.locator("tbody tr", { hasText: "01/01/2025" }).first().click(); await w.waitForSelector(".dlg"); // phụ lục đã dùng cho kỳ chốt 9/2026 (phụ lục 11/2026 thêm ở bước UI nằm trên cùng)
   const lock15 = await w.locator(".dlg .locked").innerText().catch(() => "");
   await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
   const blocked15 = dialogs.some((d) => /Q-15/.test(d) && /PHỤ LỤC MỚI/.test(d)) && /Q-15/.test(lock15);
-  if (await w.locator(".dlg").count()) await w.click(".dlg header button");
-  await plCard.locator('button:has-text("Thêm")').click(); await w.waitForSelector(".dlg");
+  if (await w.locator("#modal.drawer .dlg").count()) await w.click("#modal.drawer .dlg header button");
+  await w.waitForSelector(".dlg [data-hd-detail]");
+  await plCard.locator('button:has-text("Thêm")').click(); await w.waitForSelector("#modal.drawer .dlg");
   const q22Opts = await w.locator(".dlg .fld", { hasText: "Cách áp dụng trong tháng hiệu lực" }).locator("option").allInnerTexts();
   ok("Q-22: form phụ lục có lựa chọn 'Cách áp dụng trong tháng hiệu lực' (Cả tháng / Từ ngày hiệu lực)", q22Opts.includes("Cả tháng") && q22Opts.includes("Từ ngày hiệu lực"), q22Opts.join(", "));
   await w.click(".dlg footer button.pri"); await w.waitForTimeout(400);
@@ -477,7 +644,7 @@ async function launch(dataDir, opt) {
     await w.click("#nav button[data-k=nhansu]"); await w.locator("#main table tbody tr").first().click();
     await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
     const hdCard = () => w.locator(".card", { has: w.locator('h3:has-text("Hợp đồng lao động")') });
-    const plRows = async () => { await hdCard().locator("tbody tr", { hasText: "E2E-HD2" }).click(); await w.waitForTimeout(250); return w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') }).locator("tbody tr").count(); };
+    const plRows = async () => { await hdCard().locator("tbody tr", { hasText: "E2E-HD2" }).click(); await w.waitForTimeout(250); await w.click('#main button:has-text("Chi tiết hợp đồng")'); await w.waitForSelector(".dlg [data-hd-detail]"); const n = await w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') }).locator("tbody tr").count(); await w.click('.dlg footer button:has-text("Đóng")'); await w.waitForTimeout(200); return n; };
     const n0 = await plRows();
     dialogs = []; dismissConfirm = true;
     await hdCard().locator("tbody tr", { hasText: "E2E-HD2" }).locator('button[title="Sửa"]').click(); await w.waitForSelector(".dlg");
@@ -548,13 +715,15 @@ async function launch(dataDir, opt) {
     await w.locator("#main table tbody tr").first().click(); await w.waitForTimeout(300);
     const head = await w.locator("main").first().innerText();
     await w.click('.subtabs button:has-text("Hợp đồng lao động")'); await w.waitForTimeout(300);
+    await w.click('#main button:has-text("Chi tiết hợp đồng")'); await w.waitForSelector(".dlg [data-hd-detail]");
     const plCardT = w.locator(".card", { has: w.locator('h3:has-text("Lương & phụ lục HĐ")') });
     const plText = await plCardT.innerText();
     await plCardT.locator("tbody tr").first().click(); await w.waitForSelector(".dlg");
     const formText = await w.locator(".dlg").innerText(), salaryInput = await w.locator(".dlg .fld", { hasText: "Lương thỏa thuận" }).count();
-    await w.click(".dlg header button");
-    await w.click('.subtabs button:has-text("Khen thưởng")'); await w.waitForTimeout(300);
+    await w.click("#modal.drawer .dlg header button"); await w.waitForSelector(".dlg [data-hd-detail]");
+    await w.click('.dlg .subtabs button:has-text("Khen thưởng")'); await w.waitForTimeout(300);
     const ktText = await w.locator(".card", { has: w.locator('h3:has-text("Khen thưởng")') }).innerText();
+    await w.click('.dlg footer button:has-text("Đóng")'); await w.waitForTimeout(200);
     ok("Q-24 bổ sung: Trưởng bộ phận thấy hồ sơ khen thưởng nhưng Giá trị tiền thưởng hiện 🔒 ẩn", /Giấy khen E2E/.test(ktText) && /🔒 ẩn/.test(ktText) && !/777[.]?000/.test(ktText), ktText.replace(/\s+/g, " ").slice(0, 160));
     await w.click("#nav button[data-k=baocao]"); await w.waitForTimeout(200);
     const sl = w.locator('.subtabs button:has-text("Sổ")'); if (await sl.count()) { await sl.first().click(); await w.waitForTimeout(300); }
@@ -645,8 +814,80 @@ async function launch(dataDir, opt) {
     let mh = "";
     if (mf) { await w.waitForTimeout(300); const XLSX = require(path.join(APP, "xlsx.full.min.js")), wm = XLSX.read(fs.readFileSync(path.join(DL, mf)), { type: "buffer" }); mh = (XLSX.utils.sheet_to_json(wm.Sheets[wm.SheetNames[0]], { header: 1 })[3] || []).join("|"); }
     ok("Tải file mẫu Sản lượng = mẫu công cụ (Phiếu cân | Ngày cân 1 | Biển số 1 | Cân lần 1 | Cân lần 2 | KL hàng (Tấn) | Mã phòng ban | NV vắng)", mh === "Phiếu cân|Ngày cân 1|Biển số 1|Cân lần 1|Cân lần 2|KL hàng (Tấn)|Mã phòng ban|NV vắng", mh);
-    await w.click("#nav button[data-k=luong]"); await w.selectOption('select[aria-label="Cách bù lương sản lượng"]', "false");
+    await w.click("#nav button[data-k=luong]"); await w.selectOption('select[aria-label="Cách bù lương sản lượng"]', "to");
     ok("Không lỗi JavaScript ở phân bổ khối lượng (ExcelJS chạy được với CSP)", errs.length === 0, errs.join(" | "));
+    await app.close();
+  }
+
+  // V10: Nghiệp vụ nhân sự độc lập — lập đề nghị → gửi duyệt → duyệt → ghi vào hồ sơ + đối chiếu chấm công
+  {
+    const SD = fs.mkdtempSync(path.join(os.tmpdir(), "hak-e2e-nvns-"));
+    ({ app, w, errs } = await launch(SD));
+    await app.close();
+    const fb = path.join(SD, "data.json"), db2 = JSON.parse(fs.readFileSync(fb, "utf8"));
+    db2.nhanvien.push({ _id: "hr1", "Mã NV": "HR1", "Họ và tên": "Nguyễn Văn Ân", "Trạng thái": "Đang làm việc" });
+    db2.hopdong.push({ _id: "hr1hd", "Mã NV": "HR1", "Số HĐLĐ": "HR1/HĐ", "Hình thức HĐLĐ": "Xác định thời hạn", "Ngày vào làm": "2026-01-01" });
+    db2.chitiethd.push({ _id: "hr1pl", "Mã NV": "HR1", "Số HĐLĐ": "HR1/HĐ", "Hiệu lực từ": "2026-01-01", "Mã lương": "TG1", "Lương thỏa thuận": "9000000", "HTTT": "Tiền mặt" });
+    db2.chamcong.push({ "Kỳ": "2026-11", "Mã NV": "HR1", "Hình thức công": "BT", "03": "1" });
+    fs.writeFileSync(fb, JSON.stringify(db2));
+    ({ app, w, errs } = await launch(SD));
+    await w.click("#nav button[data-k=nvns]"); await w.waitForSelector(".card");
+    await w.click('#main button:has-text("Lập đề nghị")'); await w.waitForSelector("#modal.drawer .dlg");
+    const fld = (k) => w.locator('.dlg .fld[data-k="' + k + '"]');
+    await fld("Mã NV").locator("select").selectOption("HR1"); await fld("Loại nghiệp vụ").locator("select").selectOption("Nghỉ không lương");
+    await fld("Từ ngày").locator("input").fill("2026-11-03"); await fld("Đến ngày").locator("input").fill("2026-11-04"); await fld("Số ngày").locator("input").fill("2");
+    await fld("Lý do").locator("textarea").fill("Việc gia đình E2E");
+    await w.click(".dlg footer button.pri"); await w.waitForTimeout(400);
+    const r1 = await w.locator("table.nvns tbody tr").first().innerText();
+    ok("V10: Nghiệp vụ nhân sự — lập đề nghị lưu ở trạng thái Nháp, chưa ghi vào hồ sơ", /Nháp/.test(r1) && /Nguyễn Văn Ân/.test(r1) && /03\/11\/2026/.test(r1), r1.replace(/\s+/g, " "));
+    await w.click('table.nvns button:has-text("Gửi duyệt")'); await w.waitForTimeout(300);
+    ok("V10: Nghiệp vụ nhân sự — gửi duyệt chuyển sang Chờ duyệt", /Chờ duyệt/.test(await w.locator("table.nvns tbody tr").first().innerText()));
+    dialogs = [];
+    await w.click('table.nvns button:has-text("Duyệt")'); await w.waitForTimeout(500);
+    ok("V10: Nghiệp vụ nhân sự — khi duyệt cảnh báo ngày vẫn có công trong chấm công (đối chiếu)", dialogs.some((d) => /vẫn có công thường 1 ngày/.test(d)), dialogs.join(" | ").slice(0, 200));
+    await w.waitForTimeout(500);
+    const nv2 = await w.locator("table.nvns tbody tr").first().innerText();
+    ok("V10: Nghiệp vụ nhân sự — Đã duyệt, ghi vào Nghỉ phép của hợp đồng, không còn nút sửa/duyệt", /Đã duyệt/.test(nv2) && /Nghỉ phép/.test(nv2) && !(await w.locator('table.nvns button:has-text("Duyệt")').count()));
+    await w.fill('input[aria-label="Tìm nhân viên"]', "nguyen van an"); await w.press('input[aria-label="Tìm nhân viên"]', "Enter"); await w.waitForTimeout(300);
+    ok("V10: Nghiệp vụ nhân sự — tìm theo tên không dấu", (await w.locator("table.nvns tbody tr").count()) === 1);
+    await w.waitForTimeout(800); await app.close();
+    const sv = JSON.parse(fs.readFileSync(fb, "utf8")), np = (sv.nghiphep || []).filter((x) => x["Mã NV"] === "HR1");
+    ok("V10: Nghiệp vụ nhân sự — hồ sơ Nghỉ phép có đúng 1 dòng 'Nghỉ không hưởng lương' Đã duyệt gắn Số HĐLĐ, ghi nhật ký", np.length === 1 && np[0]["Loại nghỉ"] === "Nghỉ không hưởng lương" && np[0]["Trạng thái duyệt"] === "Đã duyệt" && np[0]["Số HĐLĐ"] === "HR1/HĐ" && sv.auditlog.some((a) => /Nghiệp vụ nhân sự/.test(a.chiTiet + a.thaoTac)), JSON.stringify(np));
+    ok("Không lỗi JavaScript ở Nghiệp vụ nhân sự", errs.length === 0, errs.join(" | "));
+  }
+
+  // V10: bộ lọc theo kỳ lương cho Thưởng / Tạm ứng / Suất cơm và Sản lượng (kỳ điều khiển từ–đến, không lọc tháng trùng)
+  {
+    const SD = fs.mkdtempSync(path.join(os.tmpdir(), "hak-e2e-flt-"));
+    ({ app, w, errs } = await launch(SD)); await app.close();
+    const fb = path.join(SD, "data.json"), db2 = JSON.parse(fs.readFileSync(fb, "utf8"));
+    db2.nhanvien.push({ _id: "f1", "Mã NV": "F1", "Họ và tên": "Trần Thị Bình", "Trạng thái": "Đang làm việc" }, { _id: "f2", "Mã NV": "F2", "Họ và tên": "Lê Văn Cường", "Trạng thái": "Đang làm việc" });
+    db2.psluong.push({ "Ngày hạch toán": "2026-10-05", "Số chứng từ": "T1", "Mã NV": "F1", "Diễn giải": "thưởng A", "Thưởng": "1000000" }, { "Ngày hạch toán": "2026-10-20", "Số chứng từ": "T2", "Mã NV": "F2", "Diễn giải": "thưởng B", "Thưởng": "500000" }, { "Ngày hạch toán": "2026-09-10", "Số chứng từ": "T3", "Mã NV": "F1", "Diễn giải": "thưởng C", "Thưởng": "200000" });
+    db2.tiencom.push({ "Ngày": "2026-10-03", "Mã NV": "F1", "Số suất cơm": "20" }, { "Ngày": "2026-10-04", "Mã NV": "F2", "Số suất cơm": "10" });
+    fs.writeFileSync(fb, JSON.stringify(db2));
+    ({ app, w, errs } = await launch(SD));
+    await w.click("#nav button[data-k=psluong]"); await w.selectOption("#top select", "10"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change"); await w.waitForTimeout(300);
+    const tot1 = await w.locator('[data-in-totals="psluong"]').innerText();
+    ok("V10: Thưởng/Trừ — bộ lọc có Phòng ban, Nhân viên, Kỳ lương, Từ–Đến; tổng theo kỳ đang chọn = 1.500.000 (2 dòng, bỏ tháng 9)", (await w.locator('[data-in-filter="psluong"] input.dateinp').count()) === 2 && /2 dòng/.test(tot1) && /1\.500\.000/.test(tot1), tot1);
+    await w.fill('input[placeholder*="Tìm"]', "tran thi binh"); await w.waitForTimeout(300);
+    ok("V10: Thưởng/Trừ — tìm tên không dấu 'tran thi binh' chỉ còn phiếu của F1", (await w.locator("main tbody tr").count()) === 1);
+    await w.fill('input[placeholder*="Tìm"]', "");
+    await w.selectOption('[data-in-filter="psluong"] select[aria-label="Kỳ lương"]', "2026-09"); await w.waitForTimeout(300);
+    const dtu = await w.locator('[data-in-filter="psluong"] input.dateinp').first().inputValue(), tot2 = await w.locator('[data-in-totals="psluong"]').innerText();
+    ok("V10: chọn Kỳ lương 09/2026 tự điền Từ ngày–Đến ngày (hiển thị 01/09/2026) và tổng = 200.000", dtu === "01/09/2026" && /200\.000/.test(tot2) && /1 dòng/.test(tot2), dtu + " · " + tot2);
+    await w.click("#nav button[data-k=tiencom]"); await w.waitForTimeout(300);
+    const tc = await w.locator('[data-in-totals="tiencom"]').innerText();
+    ok("V10: Suất cơm — cùng bộ lọc, tổng suất cơm kỳ 10/2026 = 30", /30/.test(tc), tc);
+    await w.click("#nav button[data-k=sanluong]"); await w.waitForTimeout(300);
+    ok("V10: Sản lượng — không còn ô lọc 'Tháng' trùng với Kỳ lương", (await w.locator('[data-pc-filter="sanluong"] input[type=month]').count()) === 0 && (await w.locator('[data-pc-filter="sanluong"] select[aria-label="Kỳ lương"]').count()) === 1);
+    await w.click("#nav button[data-k=psluong]"); await w.waitForTimeout(200);
+    const dIn = w.locator('[data-in-filter="psluong"] input.dateinp').first();
+    await dIn.fill("31/04/2026"); await dIn.dispatchEvent("change"); await w.waitForTimeout(200);
+    const badCls = await dIn.evaluate((e) => e.classList.contains("invalid"));
+    await dIn.fill("29022028"); await dIn.dispatchEvent("change"); await w.waitForTimeout(400);
+    const okVal = await w.locator('[data-in-filter="psluong"] input.dateinp').first().inputValue();
+    ok("V10: ô ngày gõ tay — 31/04/2026 bị báo sai (viền đỏ), '29022028' tự chuẩn hóa thành 29/02/2028 (năm nhuận)", badCls && okVal === "29/02/2028", badCls + " · " + okVal);
+    ok("Không lỗi JavaScript ở bộ lọc theo kỳ", errs.length === 0, errs.join(" | "));
     await app.close();
   }
 
@@ -664,30 +905,28 @@ async function launch(dataDir, opt) {
     db2.chitiethd.push({ _id: "bu1pl", "Mã NV": "BU1", "Số HĐLĐ": "BU1/HĐ", "Hiệu lực từ": "2026-01-01", "Phòng ban": "02.01", "Mã hình thức lương": "LSP", "Mã lương": "SP", "Lương thỏa thuận": "0", "HTTT": "Tiền mặt", "Thuế TNCN": "MT00" });
     db2.chamcong.push({ "Kỳ": "2026-11", "Mã NV": "BU1", "Hình thức công": "BT", "01": "1" });
     db2.sanluong.push({ "Phiếu cân": "EBU1", "Ngày cân": "2026-11-01", "Mã NV": "BU1", "KL hàng (Tấn)": 1 });
+    // Xóa bản "to"/Hiệu lực đã nạp sẵn (HAK) → mô phỏng công ty CHƯA khai báo phương pháp bù sản lượng
+    db2.dm_quychebu = [];
     fs.writeFileSync(fb, JSON.stringify(db2));
     ({ app, w, errs } = await launch(SD));
-    // Xóa bản "to"/Hiệu lực đã nạp sẵn (HAK) → mô phỏng công ty CHƯA khai báo quy chế bù sản lượng
-    await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Quy chế bù sản lượng")');
-    dialogs = []; await w.locator("main tbody tr").first().locator('button[title="Xóa dòng"]').click(); await w.waitForTimeout(200);
-    ok("Xóa bản Quy chế bù sản lượng đã nạp sẵn (giả lập công ty chưa khai báo)", (await w.locator("main tbody tr").count()) === 0);
+    await w.click("#nav button[data-k=caidat]"); await w.click('#main button:has-text("Phương pháp bù sản lượng")');
+    ok("Danh mục KHÔNG còn mục Quy chế bù sản lượng / Công thức tiền lương (đã chuyển sang Cài đặt); Cài đặt chỉ có đúng 2 phương pháp bù", (await w.locator('#main button:has-text("Xem cách tính")').count()) === 2);
     await w.click("#nav button[data-k=luong]");
     await w.selectOption("#top select", "11"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change"); await w.waitForTimeout(200);
     const warnNoPolicy = await w.locator("main").first().innerText();
-    ok("Tính lương: chưa có Quy chế bù sản lượng CHÍNH THỨC → cảnh báo ngay trên màn hình (lựa chọn hiện tại chỉ để xem thử)", /Chưa có Quy chế bù sản lượng CHÍNH THỨC/.test(warnNoPolicy));
+    ok("Tính lương: chưa có Quy chế bù sản lượng CHÍNH THỨC → cảnh báo ngay trên màn hình (lựa chọn hiện tại chỉ để xem thử)", /Chưa có Phương pháp bù sản lượng CHÍNH THỨC/.test(warnNoPolicy));
     await w.click("button.big"); await w.waitForTimeout(200);
     dialogs = []; await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForTimeout(200);
-    ok("Chốt kỳ có sản lượng cần bù mà CHƯA có Quy chế bù sản lượng hợp lệ → chặn cứng (mục VIII), không chốt được", dialogs.some((d) => /KHÔNG THỂ CHỐT/.test(d) && /Quy chế bù sản lượng/.test(d)) && !(await w.locator(".locked").count()), dialogs.join(" | "));
-    // Khai báo quy chế CHÍNH THỨC = "to" (bình quân tổ), khác lựa chọn đang xem ("false" — mặc định màn hình Tính lương)
-    await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Quy chế bù sản lượng")');
-    await w.click('main button:has-text("Thêm dòng")');
-    const qbRow = w.locator("main tbody tr").last().locator("input");
-    await qbRow.nth(0).fill("2020-01-01"); await qbRow.nth(0).dispatchEvent("change");
-    await qbRow.nth(2).fill("to"); await qbRow.nth(2).dispatchEvent("change");
-    await qbRow.nth(3).fill("Hiệu lực"); await qbRow.nth(3).dispatchEvent("change");
+    ok("Chốt kỳ có sản lượng cần bù mà CHƯA có Quy chế bù sản lượng hợp lệ → chặn cứng (mục VIII), không chốt được", dialogs.some((d) => /KHÔNG THỂ CHỐT/.test(d) && /Phương pháp bù sản lượng/.test(d)) && !(await w.locator(".locked").count()), dialogs.join(" | "));
+    // Chọn phương pháp CHÍNH THỨC = "daihiep" (BÙ SẢN LƯỢNG THEO NGÀY), khác lựa chọn đang xem ("to" — mặc định màn hình Tính lương)
+    await w.click("#nav button[data-k=caidat]"); await w.click('#main button:has-text("Phương pháp bù sản lượng")');
+    await w.locator('.bu-method', { hasText: "BÙ SẢN LƯỢNG THEO NGÀY" }).locator('button:has-text("Áp dụng từ kỳ")').click();
+    await w.waitForSelector(".dlg"); await w.locator(".dlg textarea, .dlg input").first().fill("E2E V10"); await w.click(".dlg footer button.pri"); await w.waitForTimeout(300);
     await w.click("#nav button[data-k=luong]");
     await w.selectOption("#top select", "11"); await w.fill("#top input[type=number]", "2026"); await w.dispatchEvent("#top input[type=number]", "change"); await w.waitForTimeout(200);
+    await w.selectOption('select[aria-label="Cách bù lương sản lượng"]', "to");
     const warnMoPhong = await w.locator("main").first().innerText();
-    ok("Tính lương: có Quy chế Hiệu lực ('to') khác lựa chọn đang xem ('false') → báo rõ đang XEM THỬ, không phải chính thức", /Quy chế bù sản lượng CHÍNH THỨC kỳ 11\/2026: Bù SL theo BÌNH QUÂN TỔ/.test(warnMoPhong) && /đang XEM THỬ phương pháp khác/.test(warnMoPhong), warnMoPhong.replace(/\s+/g, " ").slice(0, 300));
+    ok("Tính lương: có phương pháp chính thức ('daihiep') khác lựa chọn đang xem ('to') → báo rõ đang XEM THỬ, không phải chính thức", /Phương pháp bù sản lượng CHÍNH THỨC kỳ 11\/2026: BÙ SẢN LƯỢNG THEO NGÀY/.test(warnMoPhong) && /đang XEM THỬ phương pháp khác/.test(warnMoPhong), warnMoPhong.replace(/\s+/g, " ").slice(0, 300));
     await w.click("button.big"); await w.waitForTimeout(200);
     await w.click('button:has-text("Chốt kỳ lương")'); await w.waitForSelector(".dlg");
     ok("Có Quy chế hợp lệ nhưng khác lựa chọn xem thử → app TỰ chuyển đúng phương pháp đã duyệt rồi mới chốt (không chốt theo lựa chọn tự do)", /Chốt Tháng 11\/2026|Chốt kỳ/.test(await w.locator(".dlg header h3").innerText()));
@@ -744,6 +983,18 @@ async function launch(dataDir, opt) {
     const lib1 = await w.evaluate(() => window.hakOcrLib.list({}).then((r) => ({ ok: r.ok, s: r.samples.map((x) => [x.label, x.status, x.source]), n: r.stats.edits })));
     ok("Tự học từ sửa ô: 0,5→1→0,5 tạo 2 mẫu (1 bị thay thế, 0,5 chờ duyệt), ghi đủ 2+ sự kiện sửa, không cần bấm lưu mẫu",
       lib1.ok && lib1.s.length === 2 && lib1.s.filter((x) => x[1] === "SUPERSEDED").length === 1 && lib1.s.some((x) => x[0] === "0.5" && x[1] === "PENDING_APPROVAL" && x[2] === "CORRECTED") && lib1.n >= 4, JSON.stringify(lib1));
+    { // V9.4: người dùng THẤY mẫu đã ghi (màu ô + thanh trạng thái + nút mở thư viện); dán nhiều ô cũng đi qua đường ghi mẫu
+      const learnAttr = await c27.getAttribute("data-learn"), barTxt = await w.locator("[data-ocr-learn-status]").innerText().catch(() => ""), hasBtn = await w.locator('[data-ocr-learn-status] button:has-text("Mở thư viện mẫu")').count();
+      ok("OCR V9.4: ô vừa sửa hiện trạng thái 'đã ghi mẫu (chờ xác minh)', thanh trạng thái có số mẫu và nút mở thư viện", learnAttr === "saved" && /đã ghi/.test(barTxt) && /chờ xác minh/.test(barTxt) && hasBtn === 1, learnAttr + " | " + barTxt.replace(/\s+/g, " "));
+      const orig4 = await w.evaluate(() => [[1, 1], [1, 2], [2, 1], [2, 2]].map(([r, d]) => document.querySelector(".ocrgrid tbody tr:nth-child(" + r + ") input[data-day='" + d + "']").value));
+      const before2 = await w.evaluate(() => window.hakOcrLib.list({}).then((r) => r.stats.edits));
+      await w.evaluate(() => { const i = document.querySelector(".ocrgrid tbody tr:nth-child(1) input[data-day='1']"); const dt = new DataTransfer(); dt.setData("text", "1\t0,5\n0,5\t1"); i.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); });
+      await w.waitForTimeout(600);
+      const after2 = await w.evaluate(() => window.hakOcrLib.list({}).then((r) => r.stats.edits)), pv2 = await w.evaluate(() => [1, 2].map((d) => document.querySelector(".ocrgrid tbody tr:nth-child(1) input[data-day='" + d + "']").value).concat([1, 2].map((d) => document.querySelector(".ocrgrid tbody tr:nth-child(2) input[data-day='" + d + "']").value)));
+      await w.evaluate((o) => { [[1, 1], [1, 2], [2, 1], [2, 2]].forEach(([r, d], i) => { const x = document.querySelector(".ocrgrid tbody tr:nth-child(" + r + ") input[data-day='" + d + "']"); x.value = o[i]; x.dispatchEvent(new window.Event("change")); }); }, orig4); // trả lại ô như cũ để các bước sau không bị ảnh hưởng
+      await w.waitForTimeout(300);
+      ok("OCR V9.4: dán 2×2 ô từ Excel cập nhật đúng 4 ô và mỗi ô đổi giá trị đều ghi sự kiện sửa", pv2.join("|") === "1|0,5|0,5|1" && after2 > before2, JSON.stringify({ before2, after2, pv2 }));
+    }
     await w.fill('input[aria-label="Kỳ của trang"]', "2026-11"); await w.dispatchEvent('input[aria-label="Kỳ của trang"]', "change");
     await w.locator(".subtabs button").nth(1).click(); await w.waitForTimeout(200);
     const g2 = await grid();

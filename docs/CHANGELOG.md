@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [2.0.0-alpha.25] — pre-release V9.4 (chưa phải bản ổn định; chưa nghiệm thu thực địa trên Windows → `WINDOWS_UAT_PENDING`)
+### Chức năng mới / thay đổi
+- **OCR chấm công tự ghi mẫu sửa**: mỗi ô sửa/dán hiện trạng thái lưu (đã lưu chờ duyệt / hàng đợi / lỗi) ngay trên ô và ở thanh trạng thái; dòng chưa ghép nhân viên có khóa mẫu riêng (không trùng nhau); dán nhiều ô được ghi mẫu.
+- **Bộ lọc dùng chung**: một popover duy nhất (đóng nhóm cũ khi mở nhóm mới), lựa chọn nháp + **Áp dụng/Hủy**, nhãn “Nhóm: Tất cả / Nhóm (n)”, chip điều kiện + “Xóa tất cả”, định vị trong cửa sổ (mở lên trên khi gần mép dưới), Escape/bấm ngoài đóng; tick checkbox không render lại ứng dụng. Áp dụng cho Báo cáo lương, Chấm công, Sản lượng, Bơm dăm. Bản tính lương tạm được nhớ theo phiên bản dữ liệu nên đổi bộ lọc **không tính lại engine**.
+- **Danh mục chỉ xem mặc định**: Thêm mới / Sửa → **Lưu / Hủy**, không tự lưu khi gõ; hỏi khi rời có thay đổi chưa lưu; Sao chép, Lịch sử, **Xóa chỉ khi chưa dùng, đã dùng → Ngừng hiệu lực**; main từ chối xóa mã đã nằm trong bản chốt kỳ lương.
+- **Thuế TNCN cha–con**: nút **Chi tiết** ở từng phiên bản của mã cha mở đúng các bậc con (mã + hiệu lực tự gán); kiểm tra bậc **chồng** → `TAX_CONFIG_CONFLICT`, **hở/tỷ lệ sai** → `TAX_CONFIG_ERROR` (chặn chốt/xuất, kể cả ở main).
+- **Ba chỉ tiêu thuế tách riêng** (Thu nhập chịu thuế / Thu nhập tính thuế / Thuế khấu trừ) và nút **XEM CHI TIẾT TÍNH THUẾ** (hồ sơ, NPT, giảm trừ, bậc áp dụng, đối chiếu thuế tính lại).
+- **Nhóm menu BÁO CÁO LƯƠNG**: Bảng tính lương, Bảng tổng hợp lương, Bảng thanh toán lương, Bảng kê chuyển khoản, Thanh toán tiền mặt, Phiếu lương, Báo cáo lương khác. Tiêu đề báo cáo **IN HOA** trên màn hình, PDF, Excel.
+- **Sổ chứng từ thanh toán lương** (`ttluong`): lập → duyệt (người duyệt ≠ người lập) → ghi nhận đã chi; hủy cần lý do; chống lập trùng; số tiền lấy từ *còn phải thanh toán* (thực lĩnh − đã chi − đang chờ), không từ tổng thu nhập; trạng thái thanh toán chỉ đổi theo nghiệp vụ, **không đổi khi xuất file**; quyền mới `payment.record`; dòng “Đã thanh toán” bất biến ở main.
+- **Excel chuyên nghiệp** (ExcelJS): khối tiêu đề + phạm vi lọc + đơn vị + ngày, tổng, chữ ký, A4 ngang (A3 khi > 14 cột), vừa chiều ngang, lặp dòng tiêu đề, vùng in, đóng băng, AutoFilter; Mã NV/STK dạng chữ.
+- Không xuất chính thức khi còn lỗi nghiêm trọng (thiếu STK/ngân hàng, thiếu HTTT, blocker bảng lương); bảng thanh toán/kê chỉ xuất từ kỳ đã chốt.
+### Sửa lỗi
+- Lưu danh mục bị chặn hồi tố nay hiện thông báo rõ thay vì chỉ ghi vào dòng; `isPayrollFile` nhận thêm tên “KeChuyenKhoan”.
+### Chưa làm / không đạt (xem docs/V9_4_AUDIT_RELEASE.md)
+Mã hóa dữ liệu trên đĩa; thanh tiến độ khi chuyển thư mục dữ liệu; đối chiếu workbook nguồn (`BLOCKED_SOURCE_DATA`); thử với bản scan thật; chạy trên Windows thật; các báo cáo “Lương 12 tháng / Thu nhập năm / Thuế TNCN năm” chưa được thiết kế lại sang Excel chuyên nghiệp (vẫn là bản V9.2).
+
 ## [2.0.0-alpha.24] — pre-release V9.2 (chưa phải bản ổn định; chưa nghiệm thu thực địa trên Windows)
 ### Chức năng mới
 - **Thuế TNCN cha–con**: `DM_TNCN` (mã thuế, phương pháp, hiệu lực, trạng thái) + `DM_TNCN_BIEUTHUE` (bậc). Tra theo Mã thuế trên HĐLĐ, theo kỳ và phiên bản hiệu lực; Nháp không được dùng; Ngừng bị chặn. Giao diện: thêm dòng, sao chép phiên bản, duyệt, ngừng, kiểm tra chồng/hở bậc, thử tính, lịch sử. Thuế **luôn** trừ vào thực lĩnh theo kết quả công thức (không có công tắc tắt).
