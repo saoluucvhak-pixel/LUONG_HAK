@@ -15,12 +15,17 @@
     { loai: "ALLOWANCE", ten: "Tỷ lệ, trừ lễ+phép khi dưới ngưỡng", bieuThuc: "IF(CONG_TINH_LUONG - CONG_LE - CONG_PHEP >= CONG_CHUAN - NGUONG_PHU_CAP, MUC_PHU_CAP, ROUND(MUC_PHU_CAP / CONG_CHUAN * (CONG_TINH_LUONG - CONG_LE - CONG_PHEP)))", moTa: "Giống kiểu TYLE_TRU_LE_PHEP cũ — đối chiếu M thật HAK_DN." },
     { loai: "ALLOWANCE", ten: "Tỷ lệ, trừ phép+tăng ca khi dưới ngưỡng", bieuThuc: "IF(CONG_TINH_LUONG - CONG_PHEP - CONG_TC >= CONG_CHUAN - NGUONG_PHU_CAP, MUC_PHU_CAP, ROUND(MUC_PHU_CAP / CONG_CHUAN * (CONG_TINH_LUONG - CONG_PHEP - CONG_TC)))", moTa: "Giống kiểu TYLE_TRU_PHEP_TANGCA cũ — quy chế 2026/C6." },
     { loai: "ALLOWANCE", ten: "Cố định, không tính theo công", bieuThuc: "MUC_PHU_CAP", moTa: "Luôn trả đủ mức phụ cấp, không trừ gì theo công." },
+    { loai: "ALLOWANCE", ten: "Phụ cấp công tác theo ngày (QC, ĐH, QS, ĐN)", bieuThuc: "MUC_PHU_CAP * CONG_HUONG_PHU_CAP", moTa: "Số tiền × số ngày có nhãn công tác đó trong kỳ. Khai ở Danh mục phụ cấp, cột 'Loại công thức' của mã (ví dụ QC)." },
+    { loai: "ALLOWANCE", ten: "Phụ cấp công tác theo ngày, tối đa N ngày (N = cột 'Tham chiếu')", bieuThuc: "MUC_PHU_CAP * MIN(CONG_HUONG_PHU_CAP, NGUONG_PHU_CAP)", moTa: "Số tiền × số ngày có nhãn, nhưng không quá số ngày ghi ở cột 'Tham chiếu' của mã phụ cấp." },
+    { loai: "ALLOWANCE", ten: "Phụ cấp công tác 1 lần/kỳ (DQ: có ít nhất 1 công BT có nhãn)", bieuThuc: "MUC_PHU_CAP", moTa: "Trả đúng một mức trong kỳ, không nhân số ngày. Dùng cho mã có 'Công chuẩn 2' (DQ) — chỉ tính khi có ít nhất 1 công BT mang nhãn." },
     { loai: "SUPPORT", ten: "Theo ngày / lượt được hưởng", bieuThuc: "SO_NGAY_DUOC_HUONG * MUC_HO_TRO", moTa: "Số ngày (hoặc lượt) được hưởng × đơn giá hỗ trợ." },
     { loai: "SUPPORT", ten: "Bù thiếu công chuẩn (như HT_THIEU_CHUAN)", bieuThuc: "IF(CONG_CHUAN > 0 AND CONG_THUC_TE <= CONG_CHUAN, (CONG_CHUAN - CONG_THUC_TE) * MUC_HO_TRO, 0)", moTa: "Chỉ trả khi công thực tế chưa đạt công chuẩn — bù đúng phần còn thiếu." },
-    { loai: "SUPPORT", ten: "Theo xe / đơn vị hợp lệ", bieuThuc: "SO_XE_HOP_LE * DON_GIA_HO_TRO", moTa: "Số xe (hoặc đơn vị) hợp lệ × đơn giá hỗ trợ theo xe." },
-    { loai: "SUPPORT", ten: "Gấp đôi khi đủ điều kiện", bieuThuc: "IF(DU_DIEU_KIEN_HO_TRO = 1, SO_NGAY_DUOC_HUONG * MUC_HO_TRO * 2, SO_NGAY_DUOC_HUONG * MUC_HO_TRO)", moTa: "Đủ điều kiện (biến 0/1) → hưởng gấp đôi mức thường." }
+    { loai: "SUPPORT", chuaKetNoi: true, ten: "Theo xe / đơn vị hợp lệ (CHƯA kết nối engine — không dùng được)", bieuThuc: "SO_XE_HOP_LE * DON_GIA_HO_TRO", moTa: "Số xe (hoặc đơn vị) hợp lệ × đơn giá hỗ trợ theo xe." },
+    { loai: "SUPPORT", chuaKetNoi: true, ten: "Gấp đôi khi đủ điều kiện (CHƯA kết nối engine — không dùng được)", bieuThuc: "IF(DU_DIEU_KIEN_HO_TRO = 1, SO_NGAY_DUOC_HUONG * MUC_HO_TRO * 2, SO_NGAY_DUOC_HUONG * MUC_HO_TRO)", moTa: "Đủ điều kiện (biến 0/1) → hưởng gấp đôi mức thường." }
   ];
-  var api = { TEMPLATES: TEMPLATES, ofType: function (loai) { return TEMPLATES.filter(function (x) { return x.loai === loai; }); } };
+  var api = { TEMPLATES: TEMPLATES, ofType: function (loai) { return TEMPLATES.filter(function (x) { return x.loai === loai; }); },
+    // mẫu dùng được = chỉ gồm biến mà ENGINE thực sự cấp cho loại đó (xem formula-approval.SCOPE); mẫu chuaKetNoi bị loại
+    usable: function (loai) { return TEMPLATES.filter(function (x) { return x.loai === loai && !x.chuaKetNoi; }); } };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.HAKCore = root.HAKCore || {}; root.HAKCore.formulaTemplates = api; }
 })(typeof window !== "undefined" ? window : this);

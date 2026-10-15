@@ -23,7 +23,7 @@ async function auth(w, who) {
   who = who || ADMIN;
   const t = await w.locator("#top h2").innerText();
   if (/Thiết lập/.test(t)) {
-    for (const [k, v] of [["u", who.u], ["n", who.n], ["p", who.p], ["p2", who.p]]) await w.fill("#main input[data-f=" + k + "]", v);
+    for (const [k, v] of [["cty", "Công ty E2E"], ["ma", "E2E"], ["u", who.u], ["n", who.n], ["p", who.p], ["p2", who.p]]) await w.fill("#main input[data-f=" + k + "]", v);
     await w.click("#main button.big"); await w.waitForSelector("[data-recovery]");
     const code = await w.locator("[data-recovery]").innerText();
     await w.click(".dlg footer button.pri"); await w.waitForSelector("#nav button[data-k=home]");
@@ -129,7 +129,10 @@ async function launch(dataDir, opt) {
   { // V9.4: bộ lọc mới — một popover tại một thời điểm, Áp dụng/Hủy, Escape, chip, Đặt lại; không lỗi JS
     const errs0 = errs.length, keys = await w.locator("[data-rf] button.fbtn").evaluateAll((bs) => bs.map((b) => b.getAttribute("data-fkey")));
     const pops = () => w.locator("[data-fpop]").count();
-    ok("Bộ lọc V9.4: thanh lọc là nút (không còn dropdown details), có ≥3 nhóm", keys.length >= 3 && (await w.locator("details.msel").count()) === 0, keys.join(","));
+    // V10.3: thanh nhanh chỉ giữ 2–4 điều kiện thường dùng; các nhóm còn lại nằm trong bộ lọc nâng cao (ngăn kéo) — kiểm cả hai
+    await w.locator("[data-sf-adv]").click(); await w.waitForSelector("[data-sf-drawer]");
+    const advGroups = await w.locator("[data-sf-drawer] .sfm").count(); await w.locator("[data-sf-drawer] button:has-text('Hủy')").click();
+    ok("Bộ lọc V9.4/V10.3: thanh nhanh là nút (không còn dropdown details) ≥2 nhóm; bộ lọc nâng cao có ≥3 nhóm", keys.length >= 2 && advGroups >= 3 && (await w.locator("details.msel").count()) === 0, keys.join(",") + " · nâng cao=" + advGroups);
     await w.locator('[data-fkey="' + keys[0] + '"]').click(); const p1 = await pops();
     await w.locator('[data-fkey="' + keys[1] + '"]').click(); const p2 = await pops(), id2 = await w.locator("[data-fpop]").getAttribute("data-fpop");
     ok("Bộ lọc V9.4: mở nhóm khác thì nhóm trước tự đóng — luôn đúng 1 popover", p1 === 1 && p2 === 1 && id2 === keys[1], p1 + "," + p2 + "," + id2);
@@ -204,7 +207,7 @@ async function launch(dataDir, opt) {
     await w.click("#nav button[data-k=chamcong]");
     const nAll = await w.locator("main table tbody tr").count();
     await w.locator("[data-rf-key=tuKhoa]").fill("zzzkhongco"); await w.locator("[data-rf-key=tuKhoa]").dispatchEvent("change");
-    const nNone = await w.locator("main table tbody tr").count(), hasOld = await w.locator("main input.search").count();
+    const nNone = await w.locator("main table tbody tr").count(), hasOld = await w.locator("main input.search:not([data-rf-key=tuKhoa])").count();
     await w.locator("[data-rf-key=tuKhoa]").fill(""); await w.locator("[data-rf-key=tuKhoa]").dispatchEvent("change");
     const nBack = await w.locator("main table tbody tr").count();
     ok("Chấm công: dùng thanh lọc chung (từ khóa, phòng ban), không còn ô tìm riêng; lọc không khớp → hết dòng, xóa lọc → hiện lại", nAll > 0 && nNone === 0 && nBack === nAll && hasOld === 0, [nAll, nNone, nBack, hasOld].join("/"));
@@ -231,12 +234,19 @@ async function launch(dataDir, opt) {
   await w.click("#nav button[data-k=caidat]");
   const ctTabs = await w.locator(".bar.sub button").allInnerTexts();
   ok("Công thức tiền lương: đủ 7 tab (mục VII) + Trình thiết lập", ["Trình thiết lập công thức", "Tăng ca", "Phụ cấp", "Hỗ trợ", "Thư viện biến", "Mẫu công thức", "Kiểm tra công thức", "Lịch sử phiên bản"].every((t) => ctTabs.includes(t)), ctTabs.join(", "));
+  ok("Trình thiết lập: mẫu KHÔNG bắt buộc — mặc định không dùng mẫu, ô biểu thức trống, tự viết được", (await w.locator('[data-ct-wizard] select[aria-label="Điền sẵn từ mẫu"]').inputValue()) === "-1" && (await w.locator("[data-ct-wizard-expr]").inputValue()) === "");
+  await w.fill("[data-ct-wizard-expr]", "ROUND(CONG_TC * HE_SO_TC)"); await w.dispatchEvent("[data-ct-wizard-expr]", "change"); await w.waitForTimeout(150);
+  ok("Trình thiết lập: tự viết biểu thức → có giải thích bằng số, không cần chọn mẫu", (await w.locator("[data-ct-wizard-explain]").count()) === 1);
+  await w.selectOption('[data-ct-wizard] select[aria-label="Điền sẵn từ mẫu"]', "0"); await w.waitForTimeout(150);
   const wzTxt = await w.locator("[data-ct-wizard]").innerText();
   ok("V10: Trình thiết lập công thức — có 4 bước, giải thích bằng số thật và kết quả", /Bước 1/.test(wzTxt) && /Bước 4/.test(wzTxt) && (await w.locator("[data-ct-wizard-explain]").innerText()).includes("Kết quả"));
   await w.fill('[data-ct-wizard] input[aria-label="Mã công thức"]', "WZ_E2E"); await w.dispatchEvent('[data-ct-wizard] input[aria-label="Mã công thức"]', "change");
   await w.click('[data-ct-wizard] button:has-text("Lưu thành Nháp")'); await w.waitForTimeout(300);
   await w.locator(".bar.sub button", { hasText: "Tăng ca" }).click();
-  ok("V10.2: tab Tăng ca của Cài đặt chỉ trỏ sang Danh mục tăng ca (không còn lưới Excel) và vẫn liệt kê công thức chưa gắn mã cha (WZ_E2E)", (await w.locator("[data-ct-ot-pointer]").count()) === 1 && (await w.locator("[data-ct-ot-unlinked]").innerText()).includes("WZ_E2E") && (await w.locator("main tbody tr.catedit").count()) === 0);
+  ok("Tab Tăng ca của Cài đặt là THƯ VIỆN công thức (nơi duy nhất tạo/sửa/duyệt) và liệt kê công thức WZ_E2E vừa tạo", (await w.locator('[data-ct-library="OVERTIME"]').count()) === 1 && (await w.locator('[data-ct-library="OVERTIME"]').innerText()).includes("WZ_E2E") && (await w.locator("[data-ct-lib-new]").count()) === 1);
+  ok("Thư viện: bản Nháp chưa áp dụng có nút Xóa", (await w.locator('tr[data-ct-ver="WZ_E2E#1"] [data-ct-del]').count()) === 1);
+  await w.locator('tr[data-ct-ver="WZ_E2E#1"] [data-ct-del]').click(); await w.waitForTimeout(500);
+  ok("Xóa công thức Nháp chưa áp dụng: dòng biến mất khỏi thư viện", (await w.locator('tr[data-ct-ver="WZ_E2E#1"]').count()) === 0);
   // V10.2: tạo mã tăng ca TC_E2E (cha) rồi tạo công thức con ngay trong Form Modal Master–Detail
   await w.click("#nav button[data-k=dm]"); await w.click('#main button:has-text("Tăng ca")');
   ok("V10.2: Danh mục tăng ca là danh sách Master (không phải bảng nhập Excel)", (await w.locator("[data-ot-master]").count()) === 1 && (await w.locator("[data-ot-table]").count()) === 1 && (await w.locator("main tr.catedit").count()) === 0);
@@ -245,19 +255,25 @@ async function launch(dataDir, opt) {
   await otFill("ma", "TC_E2E"); await otFill("ten", "Tăng ca kiểm thử E2E"); await otFill("heSo", "1.5"); await otFill("tu", "01/01/2020");
   await w.click("[data-ot-save-info]"); await w.waitForTimeout(300);
   ok("V10.2: lưu mã tăng ca mới trong modal → header hiện mã, chuyển sang chế độ chỉ xem", (await w.locator(".ot-dlg header h3").innerText()).includes("TC_E2E") && (await w.locator("[data-ot-edit-info]").count()) === 1);
-  await w.click('[data-ot-tab="ct"]'); await w.click("[data-ot-new-ver]"); await w.waitForSelector("[data-ot-designer=edit]");
-  ok("V10.2: trình thiết kế hiện thư viện biến lấy từ formula-variables (CONG_CHU_NHAT, HE_SO_TC…)", (await w.locator("[data-ot-vars]").innerText()).includes("CONG_CHU_NHAT") && (await w.locator("[data-ot-vars]").innerText()).includes("HE_SO_TC"));
-  await w.click('[data-ot-mode="adv"]');
-  await w.fill('[data-ot-designer] [data-ot-fd="tu"]', "01/01/2020"); await w.dispatchEvent('[data-ot-designer] [data-ot-fd="tu"]', "change");
-  await w.fill("[data-ot-expr]", "CONG_TC * HE_SO_TC * 2");
-  ok("V10.2: biểu thức hợp lệ được kiểm bằng cùng validator + có giải thích tiếng Việt", (await w.locator("[data-ot-syntax=ok]").count()) === 1 && (await w.locator("[data-ot-explain]").innerText()).includes("Công tăng ca"), await w.locator("[data-ot-explain]").innerText());
-  await w.click("[data-ot-save-formula]"); await w.waitForTimeout(300);
-  ok("V10.2: công thức con mới lưu ở trạng thái Nháp, hiện trong danh sách phiên bản của đúng mã cha", (await w.locator('tr[data-ot-ver="TC_E2E#1"]').innerText()).includes("Nháp"));
+  await w.click('[data-ot-tab="ct"]');
+  ok("Danh mục: tab 'Công thức tính' chỉ để XEM — không có nút tạo / sửa / sao chép / duyệt", (await w.locator("[data-ot-new-ver]").count()) === 0 && (await w.locator("[data-ot-readonly]").count()) === 1 && (await w.locator("[data-ot-ver] button:has-text('Sửa nháp')").count()) === 0);
   await w.click('[data-ot-close]'); await w.waitForTimeout(200);
-  await w.click("#nav button[data-k=caidat]");
+  // Tạo công thức TC_E2E (cùng mã với mã tăng ca) ở Cài đặt → Trình thiết lập, KHÔNG dùng mẫu
+  await w.click("#nav button[data-k=caidat]"); await w.locator(".bar.sub button", { hasText: "Trình thiết lập" }).click();
+  await w.fill("[data-ct-wizard-expr]", "CONG_TC * HE_SO_TC * 2"); await w.dispatchEvent("[data-ct-wizard-expr]", "change"); await w.waitForTimeout(150);
+  ok("Trình thiết lập: biểu thức hợp lệ → có giải thích bằng số", (await w.locator("[data-ct-wizard-explain]").count()) === 1);
+  await w.fill('[data-ct-wizard] input[aria-label="Mã công thức"]', "TC_E2E"); await w.dispatchEvent('[data-ct-wizard] input[aria-label="Mã công thức"]', "change");
+  await w.fill('[data-ct-wizard] input[aria-label="Hiệu lực từ"]', "01/01/2020"); await w.dispatchEvent('[data-ct-wizard] input[aria-label="Hiệu lực từ"]', "change");
+  await w.click('[data-ct-wizard] button:has-text("Lưu thành Nháp")'); await w.waitForTimeout(300);
+  await w.locator(".bar.sub button", { hasText: "Tăng ca" }).click();
+  ok("Công thức mới tạo ở Cài đặt ở trạng thái Nháp, hiện trong thư viện", (await w.locator('tr[data-ct-ver="TC_E2E#1"]').innerText()).includes("Nháp"));
+  await w.locator('tr[data-ct-ver="TC_E2E#1"] button', { hasText: "Sửa nháp" }).click(); await w.waitForSelector("[data-ct-edit-expr]");
+  await w.fill("[data-ct-edit-expr]", "CONG_TC * HE_SO_TC * 2 + 0"); await w.click('.dlg footer button:has-text("Lưu nháp")'); await w.waitForTimeout(300);
+  ok("Sửa nháp ở thư viện: biểu thức được lưu", (await w.locator('tr[data-ct-ver="TC_E2E#1"]').innerText()).includes("CONG_TC * HE_SO_TC * 2 + 0"));
+  await w.locator('tr[data-ct-ver="TC_E2E#1"] button', { hasText: "Sửa nháp" }).click(); await w.waitForSelector("[data-ct-edit-expr]");
+  await w.fill("[data-ct-edit-expr]", "CONG_TC * HE_SO_TC * 2"); await w.click('.dlg footer button:has-text("Lưu nháp")'); await w.waitForTimeout(300);
   await w.locator(".bar.sub button", { hasText: "Phụ cấp" }).click();
-  const pcEmpty = await w.locator("main .empty").count();
-  ok("Lọc theo Loại: mã TC_E2E (OVERTIME) KHÔNG hiện ở tab Phụ cấp (ALLOWANCE)", pcEmpty > 0 && !(await w.locator("main").innerText()).includes("TC_E2E"));
+  ok("Lọc theo Loại: mã TC_E2E (OVERTIME) KHÔNG hiện ở tab Phụ cấp (ALLOWANCE)", (await w.locator('[data-ct-library="ALLOWANCE"]').count()) === 1 && !(await w.locator('[data-ct-library="ALLOWANCE"]').innerText()).includes("TC_E2E"));
   await w.locator(".bar.sub button", { hasText: "Thư viện biến" }).click();
   const varsTxt = await w.locator("main").innerText();
   ok("Tab Thư viện biến: liệt kê biến đã khai báo (CONG_TC, HE_SO_TC…)", varsTxt.includes("CONG_TC") && varsTxt.includes("HE_SO_TC") && varsTxt.includes("Công tăng ca"));
@@ -570,7 +586,7 @@ async function launch(dataDir, opt) {
     ok("UI: Lịch sử nhân viên có quá trình lương + dòng thời gian thay đổi (trước → sau)", /Quá trình lương/.test(ls) && /Biến động: Tăng lương/.test(ls) && /0905000999/.test(ls), ls.slice(0, 200).replace(/\n/g, " "));
     await w.click('.dlg footer button:has-text("Đóng")');
     await w.click("#nav button[data-k=baocao]"); await w.click('#main button:has-text("Biến động nhân sự")');
-    await w.locator('#main input[type=month]').nth(1).fill("2026-12"); await w.locator('#main input[type=month]').nth(1).dispatchEvent("change"); await w.waitForTimeout(300);
+    await w.locator("#main select[aria-label='Kỳ lương']").nth(1).selectOption("2026-12"); await w.waitForTimeout(300);
     const bd = await w.locator("#main").innerText();
     ok("UI: Báo cáo biến động nhân sự liệt kê tăng lương 12.000.000 → 13.200.000", /Tăng lương/.test(bd) && /13\.200\.000|13200000/.test(bd), bd.slice(0, 160).replace(/\n/g, " "));
   }

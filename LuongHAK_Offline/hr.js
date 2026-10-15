@@ -423,12 +423,12 @@
         ["BD", "LSP", "Lương ban dăm", 10000, "Nhân với sản lượng", N]]).map(function (o) { // α21 (R-68): Ngày giảm trừ của công chuẩn — như danh mục Power Query của CNHAK
         var g = { TG3: 4, TG4: 2, CN2: 4 }[o["Mã lương"]]; if (g) o["Số ngày giảm trừ"] = g; return o;
       }),
-      dm_phucap: r(["Mã phụ cấp", "Tên phụ cấp", "Số tiền", "Tỷ lệ", "Tham chiếu", "Cách tính", "Hiệu lực từ"], [
+      dm_phucap: r(["Mã phụ cấp", "Tên phụ cấp", "Số tiền", "Tỷ lệ", "Tham chiếu", "Cách tính", "Hiệu lực từ", "Công chuẩn 2"], [
         ["TN.01", "Phụ cấp trách nhiệm BP Cơ khí", 300000, 0, 0, "Tổng công >= công chuẩn tính đủ 300k, nhỏ hơn =300k/công chuẩn*tổng công", N],
         ["TN.02", "Phụ cấp trách nhiệm BP SX", 200000, 0, 5, "Tổng công >= (công chuẩn-5) tính đủ 200k , nhỏ hơn =200k/công chuẩn*tổng công", N],
         ["TN.03", "Phụ cấp trách nhiệm Quản lý", 1000000, 0, 0, "Cố định hàng tháng", N], ["TN.04", "Phụ cấp trách nhiệm BP Kinh doanh", 570000, 0, 0, "Cố định hàng tháng", N],
         ["QC", "Phụ cấp công tác HAKQN", 100000, 0, 0, "", N], ["QS", "Phụ cấp công tác CNHAK", 120000, 0, 0, "", N], ["ĐH", "Phụ cấp công tác ĐH", 30000, 0, 0, "", N],
-        ["ĐN", "Phụ cấp công tác Đà Nẵng", 120000, 0, 0, "", N], ["DQ", "Phụ cấp công tác DQ", 500000, 0, 0, "Phụ cấp công tác", N], ["SX", "Phụ cấp sửa xe", 200000, 0, 0, "Phụ cấp sửa xe", N]]),
+        ["ĐN", "Phụ cấp công tác Đà Nẵng", 120000, 0, 0, "", N], ["DQ", "Phụ cấp công tác DQ", 500000, 0, 0, "Phụ cấp công tác", N, 40], ["SX", "Phụ cấp sửa xe", 200000, 0, 0, "Phụ cấp sửa xe", N]]),
       dm_tangca: r(["Mã tăng ca", "Nội dung tăng ca", "Hệ số tăng ca", "Tiền tăng ca (nếu tính cố định)", "Cách tính", "Hiệu lực từ"], [
         ["TC1", "Tăng ca tính theo tháng loại 1", 0.5, 0, "(Công tính lương- Công lễ- công trung chuyển-ngày phép-công tăng ca-công chuẩn)*hệ số tăng ca+công tăng ca*hệ số tăng ca", N],
         ["TC2", "Tăng ca tính theo tháng loại 2", 0.5, 0, "(Công tính lương- Công lễ- công trung chuyển-ngày phép-công tăng ca-công di chuyển-công chuẩn)*hệ số tăng ca+công tăng ca*hệ số tăng ca", N],
@@ -474,6 +474,10 @@
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function migrate(db) {
     var msg = [];
+    // 0) v10.4: Danh mục phụ cấp có cột "Công chuẩn 2" — DQ cũ (hardcode 40) được giữ bằng cách điền 40 cho dòng DQ, chỉ khi cột chưa có
+    (db.dm_phucap || []).forEach(function (r) {
+      if (String(r["Mã phụ cấp"] || "").trim() === "DQ" && r["Công chuẩn 2"] === undefined) { r["Công chuẩn 2"] = 40; msg.push("Phụ cấp DQ: đã thêm Công chuẩn 2 = 40 (như trước)"); }
+    });
     // 1) Biểu thuế cũ (dm_tncn dạng bậc) -> dm_bacthue
     if ((db.dm_tncn || []).some(function (r) { return r["Bậc"] !== undefined && r["Bậc"] !== ""; })) {
       if (!db.dm_bacthue || !db.dm_bacthue.length) {
@@ -703,7 +707,16 @@
     };
   }
 
+  // Khởi tạo dữ liệu MỚI cho một công ty (màn thiết lập lần đầu): ghi thông tin công ty + nạp danh mục chuẩn cho bảng còn trống.
+  // Không đụng bảng đã có dữ liệu. Trả về danh sách bảng danh mục đã nạp.
+  function khoiTaoMoi(db, tenCongTy, maCongTy) {
+    var sd = seedDanhMuc(), seeded = [];
+    db.congty = [{ "Mã công ty": String(maCongTy || "").trim(), "Tên công ty": String(tenCongTy || "").trim() }];
+    Object.keys(sd).forEach(function (k) { if (!Array.isArray(db[k]) || !db[k].length) { db[k] = sd[k]; seeded.push(k); } });
+    return seeded;
+  }
+
   var api = { dsNguoiPhuThuoc: dsNguoiPhuThuoc, HR: HR, BIEN_DONG: BIEN_DONG, NV_TABS: NV_TABS, HD_TABS: HD_TABS, REFS: REFS, refName: refName, hienHanh: hienHanh, buildIndex: buildIndex, isPayField: isPayField, PAY_HIDDEN: PAY_HIDDEN, staffForPayroll: staffForPayroll, sanLuongKy: sanLuongKy, nghiNgay: nghiNgay, leaveCheck: leaveCheck, LEAVE_TAG: LEAVE_TAG,
-    seedDanhMuc: seedDanhMuc, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
+    seedDanhMuc: seedDanhMuc, khoiTaoMoi: khoiTaoMoi, migrate: migrate, reports: reports, uid: uid, today: today, split: split, activeHD: activeHD };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.HRM = api;
 })(typeof window !== "undefined" ? window : this);

@@ -45,13 +45,13 @@ test("U-CT-02 không có Số chứng từ → như cũ (dòng giống hệt b�
   assert.equal(IMP.keyOf("psluong", { "Mã NV": "NV001" }), null);
 });
 
-test("U-CT-03 Kiểm tra dữ liệu: cùng Số chứng từ + NV nhiều dòng → High (đang cộng nhiều lần); giống hệt không có số → Medium; không tự xóa", () => {
+test("U-CT-03 Kiểm tra dữ liệu: cùng Số chứng từ + NV nhiều dòng → Medium (chỉ cảnh báo, không chặn chốt kỳ: 1 UNC theo bảng kê); giống hệt không có số → Medium; không tự xóa", () => {
   const db = mkDb();
   db.ungluong.push({ "Ngày hạch toán": "2026-09-05", "Số chứng từ": "PC-7", "Mã NV": "NV001", "Tạm ứng": "1000000" }, { "Ngày hạch toán": "2026-09-06", "Số chứng từ": "PC-7", "Mã NV": "NV001", "Tạm ứng": "1000000" });
   db.psluong.push({ "Ngày hạch toán": "2026-09-28", "Mã NV": "NV002", "Thưởng": "300000" }, { "Ngày hạch toán": "2026-09-28", "Mã NV": "NV002", "Thưởng": "300000" });
   const snap = JSON.stringify(db), w = INT.check(db);
   assert.equal(JSON.stringify(db), snap);
-  assert.ok(w.some((x) => x.level === "High" && x.area === "ungluong" && /PC-7 · NV001/.test(x.msg)), JSON.stringify(w));
+  assert.ok(w.some((x) => x.level === "Medium" && x.area === "ungluong" && /PC-7 · NV001/.test(x.msg)), JSON.stringify(w));
   assert.ok(w.some((x) => x.level === "Medium" && x.area === "psluong" && /chưa có Số chứng từ/.test(x.msg)));
 });
 

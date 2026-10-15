@@ -47,8 +47,7 @@ test("U-TC2-02: có nhãn DQ → TC2 dùng Công chuẩn 2 = 40 thay Công chu�
   const db = dbCo(true);
   const kq = E.tinhBangLuong(db, 2026, 9, false);
   const r = kq.bangluong[0];
-  const cChuan = 30 - soCN(2026, 9);
-  const donGiaTG = 9000000 / cChuan; // đơn giá công vẫn tính theo Công chuẩn thường (chỉ ngưỡng vượt chuẩn TC2 đổi)
+  const donGiaTG = 9000000 / 40; // v10.4: người có nhãn DQ (công BT) → Công chuẩn = Công chuẩn 2 = 40 (cả đơn giá ngày)
   const cCTL = 30 + 3;
   const d2 = cCTL - 0 - 0 - 0 - 3 - 0 - 40; // dùng 40 thay cChuan → 33-3-40 = -10 ≤ 0, hết vượt chuẩn
   const heSo = 0.5;
@@ -64,8 +63,7 @@ test("U-TC2-03: nhãn DQ không phải mã tăng ca TC2 (ví dụ TC4) → khôn
   db.nhansu[0]["Mã tăng ca"] = "TC4";
   const kq = E.tinhBangLuong(db, 2026, 9, false);
   const r = kq.bangluong[0];
-  const cChuan = 30 - soCN(2026, 9);
-  const donGiaTG = 9000000 / cChuan;
+  const donGiaTG = 9000000 / 40; // v10.4: người có nhãn DQ → Công chuẩn 2 = 40
   // TC4 = công tăng ca * hệ số, không liên quan Công chuẩn/Công chuẩn 2
   assert.equal(r["Tiền tăng ca"], Math.round(donGiaTG * 3 * 0.5));
 });

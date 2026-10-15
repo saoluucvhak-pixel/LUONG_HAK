@@ -1,0 +1,91 @@
+{
+ "soNV": 300,
+ "soKy": 3,
+ "soDongLuong": 874,
+ "soCotSoSanh": 20,
+ "soOSoSanh": 17480,
+ "soChenhLech": 0,
+ "chenhLech": [],
+ "tong": {
+  "Lương thời gian": {
+   "truoc": 12332776803,
+   "sau": 12332776803
+  },
+  "Lương phụ": {
+   "truoc": 0,
+   "sau": 0
+  },
+  "Lương sản lượng": {
+   "truoc": 35707200,
+   "sau": 35707200
+  },
+  "Lương bù SL": {
+   "truoc": 261923778,
+   "sau": 261923778
+  },
+  "Lương bơm dăm": {
+   "truoc": 1010000,
+   "sau": 1010000
+  },
+  "Tiền tăng ca": {
+   "truoc": 300426217,
+   "sau": 300426217
+  },
+  "Phụ cấp": {
+   "truoc": 294783356,
+   "sau": 294783356
+  },
+  "Phụ cấp công tác": {
+   "truoc": 38400000,
+   "sau": 38400000
+  },
+  "Lương hỗ trợ": {
+   "truoc": 127650000,
+   "sau": 127650000
+  },
+  "Tiền cơm": {
+   "truoc": 61600000,
+   "sau": 61600000
+  },
+  "Thưởng": {
+   "truoc": 116600000,
+   "sau": 116600000
+  },
+  "Thu nhập khác": {
+   "truoc": 0,
+   "sau": 0
+  },
+  "Tổng thu nhập": {
+   "truoc": 13570877354,
+   "sau": 13570877354
+  },
+  "BH trừ NLĐ": {
+   "truoc": 389757900,
+   "sau": 389757900
+  },
+  "KPCĐ trừ NLĐ": {
+   "truoc": 0,
+   "sau": 0
+  },
+  "Truy thu BH": {
+   "truoc": 9132100,
+   "sau": 9132100
+  },
+  "Thuế TNCN": {
+   "truoc": 319314967,
+   "sau": 319314967
+  },
+  "Trừ khác": {
+   "truoc": 4300000,
+   "sau": 4300000
+  },
+  "Tạm ứng": {
+   "truoc": 240900000,
+   "sau": 240900000
+  },
+  "Thực lĩnh": {
+   "truoc": 12612860000,
+   "sau": 12612860000
+  }
+ }
+}

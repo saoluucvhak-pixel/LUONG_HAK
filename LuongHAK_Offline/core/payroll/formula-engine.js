@@ -14,7 +14,15 @@
   var DEF = isNode ? require("./formula-defaults.js") : root.HAKCore.formulaDefaults;
   var FN = isNode ? require("./formula-functions.js") : root.HAKCore.formulaFunctions;
 
+  /** Danh sách biến (không phải hàm) xuất hiện trong biểu thức — dùng kiểm tra phạm vi biến theo loại công thức. Biểu thức lỗi cú pháp → []. */
+  function variablesIn(expr) {
+    var toks; try { toks = P.tokenize(String(expr || "")); } catch (e) { return []; }
+    var out = [];
+    toks.forEach(function (k, i) { if (k.t === "IDENT" && !(toks[i + 1] && toks[i + 1].t === "(") && out.indexOf(k.v) < 0) out.push(k.v); });
+    return out;
+  }
   var api = {
+    variablesIn: variablesIn,
     parse: P.parse,
     validate: VALIDATOR.validate,
     evaluate: EVAL.evaluate,

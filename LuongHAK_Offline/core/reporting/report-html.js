@@ -25,13 +25,13 @@
     if (vm.loc && vm.loc.length) h += "<div class=\"loc\"><b>Bộ lọc:</b> " + vm.loc.map(esc).join(" · ") + " — hiển thị " + vm.soDong + "/" + vm.soDongGoc + " dòng</div>";
     if (vm.kiemTra && vm.kiemTra.lech && vm.kiemTra.lech.length) h += "<div class=\"warn\">⚠ " + vm.kiemTra.lech.length + " dòng có tổng các khoản ≠ Tổng thu nhập của engine: " + vm.kiemTra.lech.slice(0, 5).map(function (x) { return esc(x.maNV); }).join(", ") + (vm.kiemTra.lech.length > 5 ? "…" : "") + "</div>";
     h += "<table><thead><tr>" + vm.cols.map(function (c) { return "<th" + (c.strong ? " class=\"s\"" : "") + ">" + esc(c.label) + "</th>"; }).join("") + "</tr></thead><tbody>";
-    var span = vm.cols.length;
+    var span = vm.cols.length, ni = Math.max(1, vm.cols.map(function (c) { return c.key; }).indexOf("Họ và tên")); // cột đặt nhãn "Cộng …"
     vm.groups.forEach(function (g) {
       h += "<tr class=\"sub\"><td colspan=\"" + span + "\">" + esc(g.ten) + " (" + g.rows.length + " người)</td></tr>";
       g.rows.forEach(function (r) { h += "<tr>" + vm.cols.map(function (c) { return "<td class=\"" + (c.kind === "money" ? "m" : c.kind === "qty" ? "q" : "t") + (c.strong ? " s" : "") + "\">" + cell(c, r[c.key]) + "</td>"; }).join("") + "</tr>"; });
-      h += "<tr class=\"sub\">" + vm.cols.map(function (c, i) { return i === 1 ? "<td class=\"t\">Cộng " + esc(g.ten) + "</td>" : "<td class=\"" + (c.kind === "money" ? "m" : "q") + "\">" + (g.tong[c.key] != null ? cell(c, g.tong[c.key]) : "") + "</td>"; }).join("") + "</tr>";
+      h += "<tr class=\"sub\">" + vm.cols.map(function (c, i) { return i === ni ? "<td class=\"t\">Cộng " + esc(g.ten) + "</td>" : "<td class=\"" + (c.kind === "money" ? "m" : "q") + "\">" + (g.tong[c.key] != null ? cell(c, g.tong[c.key]) : "") + "</td>"; }).join("") + "</tr>";
     });
-    h += "<tr class=\"tot\">" + vm.cols.map(function (c, i) { return i === 1 ? "<td class=\"t\">TỔNG CỘNG (" + vm.soDong + " người)</td>" : "<td class=\"" + (c.kind === "money" ? "m" : "q") + "\">" + (vm.tong[c.key] != null ? cell(c, vm.tong[c.key]) : "") + "</td>"; }).join("") + "</tr></tbody></table>";
+    h += "<tr class=\"tot\">" + vm.cols.map(function (c, i) { return i === ni ? "<td class=\"t\">TỔNG CỘNG (" + vm.soDong + " người)</td>" : "<td class=\"" + (c.kind === "money" ? "m" : "q") + "\">" + (vm.tong[c.key] != null ? cell(c, vm.tong[c.key]) : "") + "</td>"; }).join("") + "</tr></tbody></table>";
     if (opt.chuKy && opt.chuKy.length) h += "<div class=\"sign\">" + opt.chuKy.map(function (x) { return "<div><b>" + esc(x) + "</b><br><i>(Ký, ghi rõ họ tên)</i></div>"; }).join("") + "</div>";
     return h + "</body></html>";
   }

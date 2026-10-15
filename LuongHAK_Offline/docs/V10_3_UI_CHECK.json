@@ -1,0 +1,800 @@
+{
+ "generated": "2026-10-14T13:44:28.395Z",
+ "sizes": [
+  "1366x768",
+  "1600x900",
+  "1920x1080"
+ ],
+ "checks": [
+  {
+   "name": "[1366x768] Nhân sự: thanh lọc nhanh có ô tìm, phòng ban, trạng thái, nút nâng cao, đặt lại",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Nhân sự: tìm không dấu 'nguyen van' ra 'Nguyễn Văn Ánh', ô tìm giữ tiêu điểm khi gõ",
+   "pass": true,
+   "extra": "1 dòng"
+  },
+  {
+   "name": "[1366x768] Nhân sự: dòng kết quả 'Hiển thị 1 / 12' và chip 'Tìm: …'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Nhân sự: xóa từ khóa → về đủ dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] ngăn kéo bộ lọc nâng cao nằm trọn trong màn hình",
+   "pass": true,
+   "extra": "{\"l\":946,\"r\":1366,\"t\":0,\"b\":768,\"vw\":1366,\"vh\":768}"
+  },
+  {
+   "name": "[1366x768] tiêu điểm chuyển vào ngăn kéo",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] nâng cao có ≥3 nhóm chọn nhiều (phòng ban, chức vụ, loại HĐ)",
+   "pass": true,
+   "extra": "3"
+  },
+  {
+   "name": "[1366x768] tìm không dấu trong danh sách chọn ('van phong' → Văn phòng)",
+   "pass": true,
+   "extra": " Văn phòng"
+  },
+  {
+   "name": "[1366x768] Hủy: không đổi gì, ngăn kéo đóng, tiêu điểm về nút nâng cao",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Escape đóng ngăn kéo",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Tab xoay vòng trong ngăn kéo (40 lần Tab không ra ngoài)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Áp dụng: bảng, dòng kết quả và chip cùng một tập dòng",
+   "pass": true,
+   "extra": "Hiển thị 0 / 12 dòng Phạm vi: Trạng thái: Đang làm việc · Phòng ban: (không có)"
+  },
+  {
+   "name": "[1366x768] lưu bộ lọc đã lưu (hộp tên hiện trên ngăn kéo)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Đặt lại: hết chip, đủ dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] mở lại bộ lọc đã lưu → đúng tập dòng như lúc lưu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] bộ lọc đã lưu của Nhân sự KHÔNG hiện ở Chấm công (riêng từng màn hình)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] quay lại Nhân sự: điều kiện vẫn còn (không mất khi đổi màn hình)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Nhân sự: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1366,\"iw\":1366,\"mw\":1102,\"mc\":1102}"
+  },
+  {
+   "name": "[1366x768] Chấm công: lọc theo mã NV; dòng kết quả khớp số dòng bảng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Chấm công: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1366,\"iw\":1366,\"mw\":1102,\"mc\":1102}"
+  },
+  {
+   "name": "[1366x768] Chấm công: đặt lại → đủ 11 dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Sản lượng: chọn kỳ → Từ/Đến ngày tự điền dd/MM/yyyy",
+   "pass": true,
+   "extra": "01/10/2026 → 31/10/2026"
+  },
+  {
+   "name": "[1366x768] sửa tay ngày → ô kỳ chuyển 'tùy chọn ngày'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] tổng theo bộ lọc (phiếu) = số dòng hiển thị; còn giữ đã phân bổ / chờ phân bổ",
+   "pass": true,
+   "extra": "Tổng theo bộ lọc (2026-10-01 → 2026-10-15): 116 phiếu · 1.506 tấn · đã phân bổ 1.506 · chờ phân bổ 0 Theo ngày — 2026-10-01: 91 · 2026-10-02: 102 · 20"
+  },
+  {
+   "name": "[1366x768] từ ngày > đến ngày: báo lỗi, không dòng nào khớp (không tự đổi chỗ)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] ngày không tồn tại (31/02) bị từ chối",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Bảng tính lương: lọc 1 NV → 1 dòng, dòng kết quả khớp; lọc KHÔNG gọi lại tính lương",
+   "pass": true,
+   "extra": "dòng 12→1 · số lần tính lại=0"
+  },
+  {
+   "name": "[1366x768] Bảng tính lương: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1366,\"iw\":1366,\"mw\":1102,\"mc\":1102}"
+  },
+  {
+   "name": "[1366x768] Bảng tính lương: đặt lại → số dòng và tổng như ban đầu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] không lỗi JavaScript (bộ lọc)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Phụ cấp: danh sách Master có mã PA kèm cách tính đang áp dụng",
+   "pass": true,
+   "extra": "PA Phụ cấp chuyên cần (tỷ lệ theo công) 1.000.000 — 2 công PC_TYLE_A Đang hiệu lực 01/01/2024 → không giới hạn v1 · PC_TYLE_A 2 Xem chi tiết"
+  },
+  {
+   "name": "[1366x768] Phụ cấp — Thông tin: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] Phụ cấp: tab Thông tin hiện trường thật của danh mục (không trường tăng ca)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Phụ cấp: tab Công thức chỉ có phiên bản của đúng khóa công thức (v1 Hiệu lực + v2 Nháp)",
+   "pass": true,
+   "extra": "2"
+  },
+  {
+   "name": "[1366x768] Phụ cấp — Công thức: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] Phụ cấp: tab Kiểm thử có danh sách nhân viên thật đang dùng mã",
+   "pass": true,
+   "extra": "7"
+  },
+  {
+   "name": "[1366x768] Phụ cấp: kiểm thử lấy biến từ bảng lương thật, so sánh hiện tại/thử, có chênh lệch",
+   "pass": true,
+   "extra": "Chọn kỳ, nhân viên và phiên bản cần thử. Các biến (công chuẩn, công hưởng phụ cấp, công lễ/phép/tăng ca, ngưỡng, mức phụ cấp…) tự lấy từ kết quả tính lương thật của kỳ — không nhập tay. Chạy thử KHÔNG"
+  },
+  {
+   "name": "[1366x768] Phụ cấp — Kiểm thử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] Phụ cấp: tab Lịch sử liệt kê v1, v2 kèm người lập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Phụ cấp — Lịch sử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ: danh sách Master có mã HC kèm cách tính đang áp dụng",
+   "pass": true,
+   "extra": "HC Hỗ trợ tùy chỉnh (thiếu công) 10.000 HT_TUY_CHINH Đang hiệu lực 01/01/2024 → không giới hạn v1 · HT_TUY_CHINH 2 Xem chi tiếtChỉnh sửaNgừn"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ — Thông tin: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ: tab Thông tin hiện trường thật của danh mục (không trường tăng ca)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Hỗ trợ: tab Công thức chỉ có phiên bản của đúng khóa công thức (v1 Hiệu lực + v2 Nháp)",
+   "pass": true,
+   "extra": "2"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ — Công thức: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ: tab Kiểm thử có danh sách nhân viên thật đang dùng mã",
+   "pass": true,
+   "extra": "5"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ: kiểm thử lấy biến từ bảng lương thật, so sánh hiện tại/thử, có chênh lệch",
+   "pass": true,
+   "extra": "Chọn kỳ, nhân viên và phiên bản cần thử. Các biến (công chuẩn, công thực tế, số ngày cơm, mức hỗ trợ…) tự lấy từ kết quả tính lương thật của kỳ — không nhập tay. Chạy thử KHÔNG ghi dữ liệu và không đổ"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ — Kiểm thử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] Hỗ trợ: tab Lịch sử liệt kê v1, v2 kèm người lập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1366x768] Hỗ trợ — Lịch sử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":30.71875,\"b\":737.265625,\"l\":93,\"r\":1273,\"vw\":1366,\"vh\":768,\"sw\":1366}"
+  },
+  {
+   "name": "[1366x768] không lỗi JavaScript (toàn luồng)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Nhân sự: thanh lọc nhanh có ô tìm, phòng ban, trạng thái, nút nâng cao, đặt lại",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Nhân sự: tìm không dấu 'nguyen van' ra 'Nguyễn Văn Ánh', ô tìm giữ tiêu điểm khi gõ",
+   "pass": true,
+   "extra": "1 dòng"
+  },
+  {
+   "name": "[1600x900] Nhân sự: dòng kết quả 'Hiển thị 1 / 12' và chip 'Tìm: …'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Nhân sự: xóa từ khóa → về đủ dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] ngăn kéo bộ lọc nâng cao nằm trọn trong màn hình",
+   "pass": true,
+   "extra": "{\"l\":1180,\"r\":1600,\"t\":0,\"b\":900,\"vw\":1600,\"vh\":900}"
+  },
+  {
+   "name": "[1600x900] tiêu điểm chuyển vào ngăn kéo",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] nâng cao có ≥3 nhóm chọn nhiều (phòng ban, chức vụ, loại HĐ)",
+   "pass": true,
+   "extra": "3"
+  },
+  {
+   "name": "[1600x900] tìm không dấu trong danh sách chọn ('van phong' → Văn phòng)",
+   "pass": true,
+   "extra": " Văn phòng"
+  },
+  {
+   "name": "[1600x900] Hủy: không đổi gì, ngăn kéo đóng, tiêu điểm về nút nâng cao",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Escape đóng ngăn kéo",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Tab xoay vòng trong ngăn kéo (40 lần Tab không ra ngoài)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Áp dụng: bảng, dòng kết quả và chip cùng một tập dòng",
+   "pass": true,
+   "extra": "Hiển thị 0 / 12 dòng Phạm vi: Trạng thái: Đang làm việc · Phòng ban: (không có)"
+  },
+  {
+   "name": "[1600x900] lưu bộ lọc đã lưu (hộp tên hiện trên ngăn kéo)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Đặt lại: hết chip, đủ dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] mở lại bộ lọc đã lưu → đúng tập dòng như lúc lưu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] bộ lọc đã lưu của Nhân sự KHÔNG hiện ở Chấm công (riêng từng màn hình)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] quay lại Nhân sự: điều kiện vẫn còn (không mất khi đổi màn hình)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Nhân sự: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1600,\"iw\":1600,\"mw\":1336,\"mc\":1336}"
+  },
+  {
+   "name": "[1600x900] Chấm công: lọc theo mã NV; dòng kết quả khớp số dòng bảng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Chấm công: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1600,\"iw\":1600,\"mw\":1336,\"mc\":1336}"
+  },
+  {
+   "name": "[1600x900] Chấm công: đặt lại → đủ 11 dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Sản lượng: chọn kỳ → Từ/Đến ngày tự điền dd/MM/yyyy",
+   "pass": true,
+   "extra": "01/10/2026 → 31/10/2026"
+  },
+  {
+   "name": "[1600x900] sửa tay ngày → ô kỳ chuyển 'tùy chọn ngày'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] tổng theo bộ lọc (phiếu) = số dòng hiển thị; còn giữ đã phân bổ / chờ phân bổ",
+   "pass": true,
+   "extra": "Tổng theo bộ lọc (2026-10-01 → 2026-10-15): 116 phiếu · 1.506 tấn · đã phân bổ 1.506 · chờ phân bổ 0 Theo ngày — 2026-10-01: 91 · 2026-10-02: 102 · 20"
+  },
+  {
+   "name": "[1600x900] từ ngày > đến ngày: báo lỗi, không dòng nào khớp (không tự đổi chỗ)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] ngày không tồn tại (31/02) bị từ chối",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Bảng tính lương: lọc 1 NV → 1 dòng, dòng kết quả khớp; lọc KHÔNG gọi lại tính lương",
+   "pass": true,
+   "extra": "dòng 12→1 · số lần tính lại=0"
+  },
+  {
+   "name": "[1600x900] Bảng tính lương: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1600,\"iw\":1600,\"mw\":1336,\"mc\":1336}"
+  },
+  {
+   "name": "[1600x900] Bảng tính lương: đặt lại → số dòng và tổng như ban đầu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] không lỗi JavaScript (bộ lọc)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Phụ cấp: danh sách Master có mã PA kèm cách tính đang áp dụng",
+   "pass": true,
+   "extra": "PA Phụ cấp chuyên cần (tỷ lệ theo công) 1.000.000 — 2 công PC_TYLE_A Đang hiệu lực 01/01/2024 → không giới hạn v1 · PC_TYLE_A 2 Xem chi tiết"
+  },
+  {
+   "name": "[1600x900] Phụ cấp — Thông tin: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] Phụ cấp: tab Thông tin hiện trường thật của danh mục (không trường tăng ca)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Phụ cấp: tab Công thức chỉ có phiên bản của đúng khóa công thức (v1 Hiệu lực + v2 Nháp)",
+   "pass": true,
+   "extra": "2"
+  },
+  {
+   "name": "[1600x900] Phụ cấp — Công thức: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] Phụ cấp: tab Kiểm thử có danh sách nhân viên thật đang dùng mã",
+   "pass": true,
+   "extra": "7"
+  },
+  {
+   "name": "[1600x900] Phụ cấp: kiểm thử lấy biến từ bảng lương thật, so sánh hiện tại/thử, có chênh lệch",
+   "pass": true,
+   "extra": "Chọn kỳ, nhân viên và phiên bản cần thử. Các biến (công chuẩn, công hưởng phụ cấp, công lễ/phép/tăng ca, ngưỡng, mức phụ cấp…) tự lấy từ kết quả tính lương thật của kỳ — không nhập tay. Chạy thử KHÔNG"
+  },
+  {
+   "name": "[1600x900] Phụ cấp — Kiểm thử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] Phụ cấp: tab Lịch sử liệt kê v1, v2 kèm người lập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Phụ cấp — Lịch sử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ: danh sách Master có mã HC kèm cách tính đang áp dụng",
+   "pass": true,
+   "extra": "HC Hỗ trợ tùy chỉnh (thiếu công) 10.000 HT_TUY_CHINH Đang hiệu lực 01/01/2024 → không giới hạn v1 · HT_TUY_CHINH 2 Xem chi tiếtChỉnh sửaNgừn"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ — Thông tin: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ: tab Thông tin hiện trường thật của danh mục (không trường tăng ca)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Hỗ trợ: tab Công thức chỉ có phiên bản của đúng khóa công thức (v1 Hiệu lực + v2 Nháp)",
+   "pass": true,
+   "extra": "2"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ — Công thức: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ: tab Kiểm thử có danh sách nhân viên thật đang dùng mã",
+   "pass": true,
+   "extra": "5"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ: kiểm thử lấy biến từ bảng lương thật, so sánh hiện tại/thử, có chênh lệch",
+   "pass": true,
+   "extra": "Chọn kỳ, nhân viên và phiên bản cần thử. Các biến (công chuẩn, công thực tế, số ngày cơm, mức hỗ trợ…) tự lấy từ kết quả tính lương thật của kỳ — không nhập tay. Chạy thử KHÔNG ghi dữ liệu và không đổ"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ — Kiểm thử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] Hỗ trợ: tab Lịch sử liệt kê v1, v2 kèm người lập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1600x900] Hỗ trợ — Lịch sử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":36,\"b\":864,\"l\":210,\"r\":1390,\"vw\":1600,\"vh\":900,\"sw\":1600}"
+  },
+  {
+   "name": "[1600x900] không lỗi JavaScript (toàn luồng)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Nhân sự: thanh lọc nhanh có ô tìm, phòng ban, trạng thái, nút nâng cao, đặt lại",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Nhân sự: tìm không dấu 'nguyen van' ra 'Nguyễn Văn Ánh', ô tìm giữ tiêu điểm khi gõ",
+   "pass": true,
+   "extra": "1 dòng"
+  },
+  {
+   "name": "[1920x1080] Nhân sự: dòng kết quả 'Hiển thị 1 / 12' và chip 'Tìm: …'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Nhân sự: xóa từ khóa → về đủ dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] ngăn kéo bộ lọc nâng cao nằm trọn trong màn hình",
+   "pass": true,
+   "extra": "{\"l\":1500,\"r\":1920,\"t\":0,\"b\":1080,\"vw\":1920,\"vh\":1080}"
+  },
+  {
+   "name": "[1920x1080] tiêu điểm chuyển vào ngăn kéo",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] nâng cao có ≥3 nhóm chọn nhiều (phòng ban, chức vụ, loại HĐ)",
+   "pass": true,
+   "extra": "3"
+  },
+  {
+   "name": "[1920x1080] tìm không dấu trong danh sách chọn ('van phong' → Văn phòng)",
+   "pass": true,
+   "extra": " Văn phòng"
+  },
+  {
+   "name": "[1920x1080] Hủy: không đổi gì, ngăn kéo đóng, tiêu điểm về nút nâng cao",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Escape đóng ngăn kéo",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Tab xoay vòng trong ngăn kéo (40 lần Tab không ra ngoài)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Áp dụng: bảng, dòng kết quả và chip cùng một tập dòng",
+   "pass": true,
+   "extra": "Hiển thị 0 / 12 dòng Phạm vi: Trạng thái: Đang làm việc · Phòng ban: (không có)"
+  },
+  {
+   "name": "[1920x1080] lưu bộ lọc đã lưu (hộp tên hiện trên ngăn kéo)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Đặt lại: hết chip, đủ dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] mở lại bộ lọc đã lưu → đúng tập dòng như lúc lưu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] bộ lọc đã lưu của Nhân sự KHÔNG hiện ở Chấm công (riêng từng màn hình)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] quay lại Nhân sự: điều kiện vẫn còn (không mất khi đổi màn hình)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Nhân sự: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1920,\"iw\":1920,\"mw\":1656,\"mc\":1656}"
+  },
+  {
+   "name": "[1920x1080] Chấm công: lọc theo mã NV; dòng kết quả khớp số dòng bảng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Chấm công: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1920,\"iw\":1920,\"mw\":1656,\"mc\":1656}"
+  },
+  {
+   "name": "[1920x1080] Chấm công: đặt lại → đủ 11 dòng",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Sản lượng: chọn kỳ → Từ/Đến ngày tự điền dd/MM/yyyy",
+   "pass": true,
+   "extra": "01/10/2026 → 31/10/2026"
+  },
+  {
+   "name": "[1920x1080] sửa tay ngày → ô kỳ chuyển 'tùy chọn ngày'",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] tổng theo bộ lọc (phiếu) = số dòng hiển thị; còn giữ đã phân bổ / chờ phân bổ",
+   "pass": true,
+   "extra": "Tổng theo bộ lọc (2026-10-01 → 2026-10-15): 116 phiếu · 1.506 tấn · đã phân bổ 1.506 · chờ phân bổ 0 Theo ngày — 2026-10-01: 91 · 2026-10-02: 102 · 20"
+  },
+  {
+   "name": "[1920x1080] từ ngày > đến ngày: báo lỗi, không dòng nào khớp (không tự đổi chỗ)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] ngày không tồn tại (31/02) bị từ chối",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Bảng tính lương: lọc 1 NV → 1 dòng, dòng kết quả khớp; lọc KHÔNG gọi lại tính lương",
+   "pass": true,
+   "extra": "dòng 12→1 · số lần tính lại=0"
+  },
+  {
+   "name": "[1920x1080] Bảng tính lương: trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"sw\":1920,\"iw\":1920,\"mw\":1656,\"mc\":1656}"
+  },
+  {
+   "name": "[1920x1080] Bảng tính lương: đặt lại → số dòng và tổng như ban đầu",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] không lỗi JavaScript (bộ lọc)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Phụ cấp: danh sách Master có mã PA kèm cách tính đang áp dụng",
+   "pass": true,
+   "extra": "PA Phụ cấp chuyên cần (tỷ lệ theo công) 1.000.000 — 2 công PC_TYLE_A Đang hiệu lực 01/01/2024 → không giới hạn v1 · PC_TYLE_A 2 Xem chi tiết"
+  },
+  {
+   "name": "[1920x1080] Phụ cấp — Thông tin: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] Phụ cấp: tab Thông tin hiện trường thật của danh mục (không trường tăng ca)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Phụ cấp: tab Công thức chỉ có phiên bản của đúng khóa công thức (v1 Hiệu lực + v2 Nháp)",
+   "pass": true,
+   "extra": "2"
+  },
+  {
+   "name": "[1920x1080] Phụ cấp — Công thức: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] Phụ cấp: tab Kiểm thử có danh sách nhân viên thật đang dùng mã",
+   "pass": true,
+   "extra": "7"
+  },
+  {
+   "name": "[1920x1080] Phụ cấp: kiểm thử lấy biến từ bảng lương thật, so sánh hiện tại/thử, có chênh lệch",
+   "pass": true,
+   "extra": "Chọn kỳ, nhân viên và phiên bản cần thử. Các biến (công chuẩn, công hưởng phụ cấp, công lễ/phép/tăng ca, ngưỡng, mức phụ cấp…) tự lấy từ kết quả tính lương thật của kỳ — không nhập tay. Chạy thử KHÔNG"
+  },
+  {
+   "name": "[1920x1080] Phụ cấp — Kiểm thử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] Phụ cấp: tab Lịch sử liệt kê v1, v2 kèm người lập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Phụ cấp — Lịch sử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ: danh sách Master có mã HC kèm cách tính đang áp dụng",
+   "pass": true,
+   "extra": "HC Hỗ trợ tùy chỉnh (thiếu công) 10.000 HT_TUY_CHINH Đang hiệu lực 01/01/2024 → không giới hạn v1 · HT_TUY_CHINH 2 Xem chi tiếtChỉnh sửaNgừn"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ — Thông tin: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ: tab Thông tin hiện trường thật của danh mục (không trường tăng ca)",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ: tab Công thức chỉ có phiên bản của đúng khóa công thức (v1 Hiệu lực + v2 Nháp)",
+   "pass": true,
+   "extra": "2"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ — Công thức: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ: tab Kiểm thử có danh sách nhân viên thật đang dùng mã",
+   "pass": true,
+   "extra": "5"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ: kiểm thử lấy biến từ bảng lương thật, so sánh hiện tại/thử, có chênh lệch",
+   "pass": true,
+   "extra": "Chọn kỳ, nhân viên và phiên bản cần thử. Các biến (công chuẩn, công thực tế, số ngày cơm, mức hỗ trợ…) tự lấy từ kết quả tính lương thật của kỳ — không nhập tay. Chạy thử KHÔNG ghi dữ liệu và không đổ"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ — Kiểm thử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ: tab Lịch sử liệt kê v1, v2 kèm người lập",
+   "pass": true,
+   "extra": ""
+  },
+  {
+   "name": "[1920x1080] Hỗ trợ — Lịch sử: modal nằm trọn trong màn hình, trang không cuộn ngang",
+   "pass": true,
+   "extra": "{\"t\":110,\"b\":970,\"l\":370,\"r\":1550,\"vw\":1920,\"vh\":1080,\"sw\":1920}"
+  },
+  {
+   "name": "[1920x1080] không lỗi JavaScript (toàn luồng)",
+   "pass": true,
+   "extra": ""
+  }
+ ],
+ "perf": {
+  "loc_phieu_can_ms_tru_250ms_debounce": {
+   "100": {
+    "loc_tu_khoa_ms": 66,
+    "bo_loc_ms": 57,
+    "loc_hep_ms": 27
+   },
+   "1000": {
+    "loc_tu_khoa_ms": 58,
+    "bo_loc_ms": 57,
+    "loc_hep_ms": 23
+   },
+   "10000": {
+    "loc_tu_khoa_ms": 80,
+    "bo_loc_ms": 73,
+    "loc_hep_ms": 45
+   }
+  }
+ },
+ "summary": {
+  "total": 153,
+  "pass": 153,
+  "fail": 0,
+  "jsErrors": 0
+ }
+}

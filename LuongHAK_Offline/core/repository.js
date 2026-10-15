@@ -104,7 +104,7 @@
       }
       // 5. kỳ đã chốt / hồi tố — công thức chưa "Hiệu lực" (nháp/chờ duyệt/đã duyệt/ngừng) không ảnh hưởng kỳ nào
       var fHL = function (r) { return r && String(r["Trạng thái"] || "") === "Hiệu lực"; };
-      var onlyLink = table === FA.TABLE && op === "update" && Object.keys(after).concat(Object.keys(before)).every(function (k) { return k === FA.LINK || k === "Liên kết lúc" || JSON.stringify(before[k]) === JSON.stringify(after[k]); }); // V10.2: chỉ gán/xóa liên kết cha — không đổi cách tính nên không phải hồi tố
+      var onlyLink = table === FA.TABLE && op === "update" && Object.keys(after).concat(Object.keys(before)).every(function (k) { return FA.LINKS.indexOf(k) >= 0 || k === "Liên kết lúc" || JSON.stringify(before[k]) === JSON.stringify(after[k]); }); // V10.2: chỉ gán/xóa liên kết cha — không đổi cách tính nên không phải hồi tố
       var imp = table === FA.TABLE && (onlyLink || (!fHL(before) && !fHL(after))) ? { kind: "none", periods: [] } : GRD.impactChange(db, table, before, after);
       if (imp.kind === "locked") return deny("locked", "Không thể " + what + ": dữ liệu thuộc kỳ " + labels(imp.periods) + " đã chốt lương. Hãy mở chốt trước.", { impact: imp });
       if (imp.kind === "retro" && !ctx.can("retro.edit"))

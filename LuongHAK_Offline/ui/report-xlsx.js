@@ -65,7 +65,7 @@
     r++;
     var q3 = function (c) { return c.kind === "qty3"; };
     var decCols = vm.cols.map(function (c) { return c.kind === "qty" && vm.rows.some(function (row) { var x = +row[c.key]; return isFinite(x) && Math.abs(x - Math.round(x)) > 1e-9; }); });
-    vm.rows.forEach(function (row) {
+    var writeRow = function (row) {
       vm.cols.forEach(function (c, i) {
         var cell = ws.getCell(r, i + 1), v = row[c.key];
         if (/^Ngày/.test(c.label) && isoToDate(v)) { cell.value = isoToDate(v); cell.numFmt = "dd/mm/yyyy"; cell.alignment = { horizontal: "center", vertical: "middle" }; }
@@ -75,7 +75,22 @@
         cell.border = { top: BORDER, left: BORDER, bottom: BORDER, right: BORDER };
       });
       r++;
-    });
+    };
+    var FILL_G = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEAF1EC" } }, FILL_S = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF4F4F4" } };
+    if (vm.nhom && vm.nhom.length) { // báo cáo nhóm theo phòng ban: dòng tiêu đề nhóm → các nhân viên → dòng cộng nhóm
+      var iName = Math.max(0, vm.cols.map(function (c) { return c.key; }).indexOf("Họ và tên"));
+      vm.nhom.forEach(function (g) {
+        if (nc > 1) ws.mergeCells(r, 1, r, nc);
+        var gc = ws.getCell(r, 1); gc.value = g.ten + " (" + g.rows.length + " người)"; gc.font = { bold: true }; gc.fill = FILL_G; gc.border = { top: BORDER, left: BORDER, bottom: BORDER, right: BORDER }; r++;
+        g.rows.forEach(writeRow);
+        vm.cols.forEach(function (c, i) {
+          var cell = ws.getCell(r, i + 1);
+          if (i === iName) cell.value = "Cộng " + g.ten; else if (g.tong && g.tong[c.key] != null) { cell.value = +g.tong[c.key]; cell.numFmt = "#,##0;[Red]-#,##0"; }
+          cell.font = { bold: true }; cell.fill = FILL_S; cell.border = { top: BORDER, left: BORDER, bottom: BORDER, right: BORDER };
+        });
+        r++;
+      });
+    } else vm.rows.forEach(writeRow);
     var lastData = r - 1;
     if (vm.rows.length) {
       vm.cols.forEach(function (c, i) {
@@ -111,7 +126,7 @@
     ws.pageSetup.printArea = "A1:" + last + sigEnd;
     ws.headerFooter = { oddFooter: "&L" + (vm.congTy || "") + " · " + vm.title + "&RTrang &P / &N" };
     ws.views = [{ state: "frozen", xSplit: nc > 8 && idName >= 0 ? idName + 1 : 0, ySplit: hr, topLeftCell: "A" + (hr + 1) }];
-    if (vm.rows.length) ws.autoFilter = { from: { row: hr, column: 1 }, to: { row: lastData - (vm.rows.length ? 1 : 0), column: nc } };
+    if (vm.rows.length && !(vm.nhom && vm.nhom.length)) ws.autoFilter = { from: { row: hr, column: 1 }, to: { row: lastData - (vm.rows.length ? 1 : 0), column: nc } };
     ws.properties.defaultRowHeight = 18;
     return ws;
   }

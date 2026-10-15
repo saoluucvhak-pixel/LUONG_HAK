@@ -33,7 +33,8 @@
     var e = String(rec["Biểu thức"] || "").trim();
     if (!e) return "Biểu thức để trống";
     var v = FML.validate(e);
-    return v.ok ? "" : v.errors.map(function (x) { return x.message; }).join("; ");
+    if (!v.ok) return v.errors.map(function (x) { return x.message; }).join("; ");
+    return scopeProblem(String(rec["Loại"] || ""), e);
   }
   function conflictWith(db, rec) {
     var key = REG.normCompany(rec["Công ty"]);
@@ -43,6 +44,31 @@
     });
   }
   var LINK = "Mã tăng ca cha"; // V10.2: khóa cha = "Mã tăng ca" của DM_TANGCA (khóa ổn định; DM_TANGCA nhiều dòng cùng mã = các phiên bản hiệu lực của mã đó)
+  // V10.3: mô hình cha–con dùng chung. Mỗi LOẠI công thức có bảng cha, cột mã cha, cột liên kết riêng, và quy tắc "khóa công thức" mà ENGINE dùng để tra.
+  //   OVERTIME : khóa = "Loại công thức" || Mã tăng ca (engine còn có công thức mặc định TC1–TC6)
+  //   ALLOWANCE/SUPPORT : khóa = "Loại công thức" của dòng cha (để trống = cách tính lịch sử của engine, KHÔNG có công thức con)
+  var PARENT = {
+    OVERTIME: { table: "dm_tangca", code: "Mã tăng ca", link: "Mã tăng ca cha", noun: "mã tăng ca", fallbackToCode: true },
+    ALLOWANCE: { table: "dm_phucap", code: "Mã phụ cấp", link: "Mã phụ cấp cha", noun: "mã phụ cấp", fallbackToCode: false },
+    SUPPORT: { table: "dm_hotro", code: "Mã hỗ trợ", link: "Mã hỗ trợ cha", noun: "mã hỗ trợ", fallbackToCode: false }
+  };
+  var LINKS = Object.keys(PARENT).map(function (k) { return PARENT[k].link; });
+  function keyOfParent(type, row) {
+    var P = PARENT[type]; if (!P || !row) return "";
+    var k = String(row["Loại công thức"] == null ? "" : row["Loại công thức"]).trim();
+    return k || (P.fallbackToCode ? String(row[P.code] == null ? "" : row[P.code]).trim() : "");
+  }
+  // Biến mà ENGINE thực sự cấp cho từng loại khi tính (engine.js khối Phụ cấp / Hỗ trợ). Biến khác dù có trong thư viện sẽ lỗi lúc tính → chặn từ khi duyệt.
+  var SCOPE = {
+    ALLOWANCE: ["MUC_PHU_CAP", "CONG_CHUAN", "CONG_HUONG_PHU_CAP", "NGUONG_PHU_CAP", "CONG_TINH_LUONG", "CONG_LE", "CONG_PHEP", "CONG_TC"],
+    SUPPORT: ["MUC_HO_TRO", "CONG_CHUAN", "CONG_THUC_TE", "SO_NGAY_COM", "SO_NGAY_DUOC_HUONG"]
+  };
+  function scopeProblem(type, expr) {
+    var sc = SCOPE[type]; if (!sc) return "";
+    var used = FML.variablesIn ? FML.variablesIn(expr) : [];
+    var bad = used.filter(function (v) { return sc.indexOf(v) < 0; });
+    return bad.length ? "Biến " + bad.join(", ") + " chưa được engine cấp cho công thức " + (type === "ALLOWANCE" ? "phụ cấp" : "hỗ trợ") + " (chỉ dùng: " + sc.join(", ") + ")" : "";
+  }
   function dnum(s) { return REG.dateNum(s); }
   /** Hai khoảng [tu, den] (rỗng = không giới hạn) có giao nhau không. */
   function rangesOverlap(a, b) {
@@ -76,14 +102,18 @@
     });
     return out;
   }
-  /** Mã cha có tồn tại trong DM_TANGCA và khớp khóa công thức (Loại công thức || Mã tăng ca) không. "" = hợp lệ. */
+  /** Mã cha có tồn tại trong bảng cha của LOẠI công thức và khớp khóa công thức của dòng cha không. "" = hợp lệ. */
   function linkProblem(db, rec) {
-    var p = String(rec[LINK] == null ? "" : rec[LINK]).trim();
-    if (!p || String(rec["Loại"] || "") !== "OVERTIME") return "";
-    var rows = (db.dm_tangca || []).filter(function (r) { return same(r["Mã tăng ca"], p); });
-    if (!rows.length) return "Mã tăng ca cha '" + p + "' không có trong Danh mục tăng ca";
-    var ok = rows.some(function (r) { return same(String(r["Loại công thức"] || "").trim() || String(r["Mã tăng ca"] || "").trim(), rec["Mã công thức"]); });
-    return ok ? "" : "Mã công thức '" + (rec["Mã công thức"] || "") + "' không phải công thức của mã tăng ca '" + p + "' (mã tăng ca này dùng công thức '" + (String(rows[0]["Loại công thức"] || "").trim() || p) + "')";
+    var type = String(rec["Loại"] || ""), P = PARENT[type];
+    // liên kết đặt nhầm cột của loại khác
+    for (var i = 0; i < LINKS.length; i++) if ((!P || LINKS[i] !== P.link) && String(rec[LINKS[i]] == null ? "" : rec[LINKS[i]]).trim()) return "Cột '" + LINKS[i] + "' không dùng cho công thức loại " + (type || "(trống)");
+    if (!P) return "";
+    var p = String(rec[P.link] == null ? "" : rec[P.link]).trim();
+    if (!p) return "";
+    var rows = (db[P.table] || []).filter(function (r) { return same(r[P.code], p); });
+    if (!rows.length) return "Mã cha '" + p + "' không có trong danh mục (" + P.table + ")";
+    var ok = rows.some(function (r) { var k = keyOfParent(type, r); return k && same(k, rec["Mã công thức"]); });
+    return ok ? "" : "Mã công thức '" + (rec["Mã công thức"] || "") + "' không phải công thức của " + P.noun + " '" + p + "' (" + P.noun + " này dùng khóa công thức '" + (keyOfParent(type, rows[0]) || "(để trống — cách tính lịch sử)") + "')";
   }
   function nextVersion(db, code, type) {
     var mx = 0; (db[TABLE] || []).forEach(function (r) { if (same(r["Mã công thức"], code) && same(r["Loại"], type)) mx = Math.max(mx, +r["Phiên bản"] || 1); });
@@ -111,14 +141,17 @@
     }
     var from = st(before);
     if (op === "remove") {
-      if (from !== S.NHAP) return deny("formula-keep", "Không xóa công thức đã gửi duyệt/đã duyệt/đang hiệu lực — chuyển sang 'Ngừng' để giữ lịch sử phiên bản.");
+      // Chưa từng áp dụng vào lương (Nháp / Chờ duyệt / Đã duyệt) thì được xóa; Hiệu lực / Ngừng đã (hoặc có thể đã) tính lương → giữ lịch sử.
+      if (from === S.HL || from === S.NGUNG) return deny("formula-keep", "Không xóa công thức đang hiệu lực hoặc đã ngừng (đã từng áp dụng) — chuyển sang 'Ngừng' để giữ lịch sử phiên bản. Chỉ xóa được bản Nháp / Chờ duyệt / Đã duyệt chưa áp dụng.");
       return { ok: true, patch: patch };
     }
     var to = st(after), changed = CONTENT.filter(function (c) { return !same(before[c], after[c]); });
     if (STAMP.some(function (c) { return !same(before[c], after[c]); }) && !env.internal) return deny("formula-stamp", "Không sửa trực tiếp các cột người lập/người duyệt/thời điểm — hệ thống tự ghi.");
-    if (!same(before[LINK], after[LINK])) {
+    var linkChanged = LINKS.some(function (c) { return !same(before[c], after[c]); });
+    if (linkChanged) {
       // liên kết cha: Nháp sửa tự do (có kiểm khớp); các trạng thái khác chỉ được GÁN khi đang trống (liên kết bổ sung/migration), không đổi cha đã gán
-      if (from !== S.NHAP && String(before[LINK] == null ? "" : before[LINK]).trim() !== "" && !env.internal && !env.can("system.admin")) return deny("formula-link", "Công thức đã gửi duyệt trở đi không được đổi mã tăng ca cha — hãy sao chép thành phiên bản mới.");
+      var hadLink = LINKS.some(function (c) { return String(before[c] == null ? "" : before[c]).trim() !== ""; });
+      if (from !== S.NHAP && hadLink && !env.internal && !env.can("system.admin")) return deny("formula-link", "Công thức đã gửi duyệt trở đi không được đổi mã cha — hãy sao chép thành phiên bản mới.");
       var lp1 = linkProblem(db, after); if (lp1) return deny("formula-link", lp1);
     }
     if (from === to) {
@@ -171,6 +204,6 @@
   }
 
   var api = { STATES: S, TABLE: TABLE, check: check, actionsFor: actionsFor, copyAsDraft: copyAsDraft, conflictWith: conflictWith, nextVersion: nextVersion,
-    LINK: LINK, overlapWith: overlapWith, activationPlan: activationPlan, linkProblem: linkProblem, rangesOverlap: rangesOverlap, prevDay: prevDay };
+    LINK: LINK, LINKS: LINKS, PARENT: PARENT, SCOPE: SCOPE, keyOfParent: keyOfParent, scopeProblem: scopeProblem, overlapWith: overlapWith, activationPlan: activationPlan, linkProblem: linkProblem, rangesOverlap: rangesOverlap, prevDay: prevDay };
   if (isNode) module.exports = api; else { root.HAKCore = root.HAKCore || {}; root.HAKCore.formulaApproval = api; }
 })(typeof window !== "undefined" ? window : this);

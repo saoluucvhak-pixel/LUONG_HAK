@@ -30,6 +30,9 @@
       r++;
       var stt = 0;
       (s.lines || []).forEach(function (l) {
+        if (l.sec) { // tiêu đề phần: I. THU NHẬP · II. KHẤU TRỪ · III. TẠM ỨNG
+          var sc = put(r, 1, l.sec, { font: { bold: true }, border: BORDER }); ws.mergeCells("A" + r + ":D" + r); sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9E7DD" } }; stt = 0; r++; return;
+        }
         var tot = !!l.tot;
         if (!tot) stt++;
         var a = put(r, 1, tot ? "" : stt, { alignment: { horizontal: "center" }, border: BORDER });

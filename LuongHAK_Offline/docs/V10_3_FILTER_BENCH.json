@@ -1,0 +1,21 @@
+{
+ "may": "Intel(R) Xeon(R) Processor @ 2.30GHz ×2",
+ "node": "v22.22.0",
+ "ketQuaMs": {
+  "100": {
+   "tìm không dấu": 0.15,
+   "nhiều điều kiện": 0.17,
+   "không lọc": 0
+  },
+  "1000": {
+   "tìm không dấu": 0.88,
+   "nhiều điều kiện": 1.47,
+   "không lọc": 0
+  },
+  "10000": {
+   "tìm không dấu": 7.86,
+   "nhiều điều kiện": 14.12,
+   "không lọc": 0
+  }
+ }
+}

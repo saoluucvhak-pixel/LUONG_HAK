@@ -22,6 +22,34 @@ color-scheme:light}
 --hero:radial-gradient(1200px 300px at 90% -20%,rgba(255,255,255,.10),transparent 60%),linear-gradient(120deg,#0a1826,#0e5f68);
 --we:#1a2633;--c1:rgba(33,181,192,.18);--c1f:#7fdbe2;--cH:#223142;--cHf:#e3eaf2;--cP:#1e2c45;--cPf:#a9c3ef;--cO:#33281a;--cOf:#f0cf8f;--cTC:#2a2340;--cTCf:#c7b8ff;
 --deep:#0a1826;color-scheme:dark}
+/* ---------- Kiểu "Sang trọng": xanh navy đậm + vàng champagne, nền ngà, tiêu đề chữ serif. Chỉ đổi biến màu/kiểu chữ — bố cục giữ nguyên. Chọn ở chân menu. ---------- */
+[data-skin="luxe"]{
+--brand:#1d3a63;--brand2:#2d5388;--brandH:#142b4b;--brandA:#0e203a;--brandSoft:rgba(29,58,99,.10);--onBrand:#fff;
+--bg:#f5f2ec;--card:#fffefb;--ink:#1a2130;--mut:#756f63;--line:#e5dfd1;--line2:#eee9dc;--ctl:#d5cdbb;--th:#f1ece0;--hover:#f6f1e5;--field:#fff;
+--sb:linear-gradient(180deg,#0f1b33 0%,#0a1220 100%);--sbText:#c8cfdc;--sbMut:#8d97aa;--sbLine:rgba(214,178,106,.18);
+--warnBg:#faf3e3;--warnBd:#e6d3a3;--warnFg:#6b4a10;--okBg:#e8eef7;--okFg:#1d3a63;
+--infoBg:#eef1f7;--infoBd:#cdd5e6;--infoFg:#22345a;--edit:#b8903f;--editBg:#fdf8ec;--focus:rgba(184,144,63,.30);
+--shadow:0 1px 2px rgba(26,33,48,.05),0 8px 22px rgba(26,33,48,.07);--shadowH:0 12px 28px rgba(29,58,99,.16);--r:12px;
+--hero:radial-gradient(1200px 300px at 90% -20%,rgba(214,178,106,.22),transparent 60%),linear-gradient(120deg,#0f1b33,#1d3a63);
+--c1:#e8eef7;--c1f:#1d3a63;--deep:#0f1b33;--champ:#b8903f;--champL:#e6cf9b;--gold:#c9a45c}
+[data-skin="luxe"][data-theme="dark"]{
+--brand:#d4b06a;--brand2:#e3c88f;--brandH:#e3c88f;--brandA:#efd9a8;--brandSoft:rgba(212,176,106,.16);--onBrand:#1b1405;
+--bg:#0b101a;--card:#121926;--ink:#e8e6df;--mut:#9aa0ad;--line:#232c3d;--line2:#1b2434;--ctl:#344058;--th:#18202f;--hover:#19222f;--field:#0e1420;
+--sb:linear-gradient(180deg,#090e19 0%,#060a12 100%);
+--okBg:rgba(212,176,106,.14);--okFg:#e3c88f;--focus:rgba(212,176,106,.32);--edit:#d4b06a;--editBg:#251f12;
+--hero:radial-gradient(1200px 300px at 90% -20%,rgba(212,176,106,.14),transparent 60%),linear-gradient(120deg,#090e19,#1a2b49);
+--c1:rgba(212,176,106,.16);--c1f:#e3c88f;--deep:#090e19}
+[data-skin="luxe"] #top h2,[data-skin="luxe"] .card>h3,[data-skin="luxe"] .dlg h3,[data-skin="luxe"] .brand b{font-family:"HAK Serif",Georgia,"Times New Roman","Noto Serif",serif;letter-spacing:.2px}
+[data-skin="luxe"] .logo{background:linear-gradient(135deg,#d9b974,#a07c34);color:#1a1405;box-shadow:0 4px 14px rgba(201,164,92,.45)}
+[data-skin="luxe"] .brand b{color:#f1dfb4}
+[data-skin="luxe"] .grp{color:#c9a45c}
+[data-skin="luxe"] #nav button.on{background:linear-gradient(90deg,rgba(201,164,92,.28),rgba(201,164,92,.06));box-shadow:inset 3px 0 0 #c9a45c}
+[data-skin="luxe"] #nav button.on .ic{color:#e3c88f}
+[data-skin="luxe"] #nav button:focus-visible{outline-color:#c9a45c}
+[data-skin="luxe"] button.pri{box-shadow:0 6px 16px -8px rgba(15,27,51,.7);letter-spacing:.2px}
+[data-skin="luxe"] .card{border-color:var(--line)}
+[data-skin="luxe"] #top{border-bottom:1px solid var(--line);box-shadow:0 1px 0 rgba(201,164,92,.25)}
+[data-skin="luxe"] th{letter-spacing:.04em}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;font:14.5px/1.5 "Be Vietnam Pro","Segoe UI",system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
@@ -72,9 +100,12 @@ main>*{max-width:1400px;margin-left:auto;margin-right:auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow)}
 .card h3{margin:0 0 10px;font-size:16px;font-weight:650;display:flex;align-items:center}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+/* Ô "Lý do thay đổi" dùng chung cho mọi thư viện công thức (tăng ca / phụ cấp / hỗ trợ) và phiên bản: cùng nhãn, cùng chiều cao, cùng nền với ô nhập khác */
+.reason-lbl{font-size:13px;font-weight:600;color:var(--mut);white-space:nowrap}
+.bar input.reason-in{flex:1 1 300px;min-width:200px;max-width:640px;width:auto;height:36px;box-sizing:border-box}
 .sp{flex:1}
-button.b,select,input.i,.fld input,.fld select{font:inherit;padding:7px 12px;border:1px solid var(--ctl);border-radius:10px;background:var(--field);color:var(--ink)}
-select:focus,input.i:focus,.fld input:focus,.fld select:focus,.fld textarea:focus{outline:0;border-color:var(--brand);box-shadow:0 0 0 .2rem var(--focus)}
+button.b,select,input.i,input.dateinp,.fld input,.fld select{font:inherit;padding:7px 12px;border:1px solid var(--ctl);border-radius:10px;background:var(--field);color:var(--ink)}
+select:focus,input.i:focus,input.dateinp:focus,.fld input:focus,.fld select:focus,.fld textarea:focus{outline:0;border-color:var(--brand);box-shadow:0 0 0 .2rem var(--focus)}
 button.b{cursor:pointer;font-weight:500;transition:background .15s,border-color .15s,box-shadow .15s;min-height:38px}button.b:hover{border-color:var(--brand)}
 button.b:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 button.pri{background:var(--brand);color:var(--onBrand);border-color:var(--brand);font-weight:600;box-shadow:0 6px 16px -8px rgba(14,124,134,.6)}button.pri:hover{background:var(--brandH);border-color:var(--brandH);color:var(--onBrand)}
@@ -206,6 +237,8 @@ tfoot td{position:sticky;bottom:0;background:var(--okBg);font-weight:700;padding
 .diff.none>div:first-child{color:var(--mut);font-weight:500}
 .slip table td{padding:5px 8px;border-bottom:1px dotted var(--line)}.slip td:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .slip tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+.slip tr.sec td{text-align:left!important;font-weight:700;background:var(--brandSoft);color:var(--ink);padding-top:6px;padding-bottom:6px;border-bottom:0}
+.slip tr.grand td{font-size:1.08em;background:var(--th)}
 .slip .head{margin-bottom:8px}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f2740;color:#fff;padding:11px 18px;border-radius:12px;box-shadow:0 10px 30px -10px rgba(0,0,0,.45);opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:min(560px,90vw)}
 #toast.show{opacity:.97}
@@ -279,7 +312,7 @@ td input:disabled{color:var(--ink);background:transparent}
 .g-doc h1{text-align:center;font-size:19px;margin:18px 0 4px}
 .g-doc-head{display:flex;justify-content:space-between;text-align:center;gap:20px;font-size:14px}
 .g-center{text-align:center}.g-small{font-size:13px;color:var(--mut)}
-.g-warn{background:var(--warnBg);border:1px solid var(--warnBd);border-radius:12px;padding:10px 14px;margin:10px 0}
+.g-warn{background:var(--warnBg);border:1px solid var(--warnBd);color:var(--warnFg);border-radius:12px;padding:10px 14px;margin:10px 0}
 .g-sign{display:flex;justify-content:space-around;text-align:center;margin:30px 0 10px}
 /* Phân trang bảng lớn (2.0-α8) */
 .pager{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 2px;font-size:13px;color:var(--mut)}
@@ -363,11 +396,16 @@ input.oc.lrn-err { box-shadow: inset 0 -3px 0 #c62828; }
 
 /* V9.4 — bộ lọc: popover duy nhất, nút lọc, chip */
 .fbtn.has { border-color: #1565c0; background: #e3f2fd; }
-.fpop { position: fixed; z-index: 1000; background: #fff; border: 1px solid #c9d1dc; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.18); display: flex; flex-direction: column; overflow: hidden; }
+.fpop { position: fixed; z-index: 1000; background: #fff; color: #1f2933; border: 1px solid #c9d1dc; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.18); display: flex; flex-direction: column; overflow: hidden; }
 .fpop-head { padding: 8px; border-bottom: 1px solid #e5e9ef; position: sticky; top: 0; background: #fff; }
 .fpop-head .i { width: 100%; margin: 6px 0; box-sizing: border-box; }
 .fpop-tools { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .fpop-list { overflow: auto; flex: 1 1 auto; padding: 4px 8px; min-height: 60px; }
+/* Nền popover cố định trắng → chữ, ô tìm, nút và gợi ý cũng đặt màu sáng (không kế thừa màu giao diện tối) */
+.fpop .i{background:#fff;color:#1f2933;border-color:#c9d1dc}
+.fpop .hint{color:#5b6573}
+.fpop .btn{background:#fff;color:#1f2933;border-color:#c9d1dc}
+.fpop .btn.pri{background:var(--brand);color:var(--onBrand);border-color:var(--brand)}
 .fpop-row { display: block; padding: 3px 0; white-space: nowrap; cursor: pointer; }
 .fpop-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 8px; border-top: 1px solid #e5e9ef; background: #fff; }
 .fchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 8px; max-height: 64px; overflow: hidden; }
@@ -391,6 +429,7 @@ table.kt td.kt-warning { color: #b54708; }
 table.kt td.kt-info { color: #475467; }
 .dlg.wide{width:min(1180px,100%)}
 input.dateinp{width:112px;text-align:center}
+.fld input.dateinp{width:100%;text-align:left}
 input.dateinp.invalid{border-color:#b42318;background:#fef3f2;color:#b42318}
 td input.money{min-width:110px;font-variant-numeric:tabular-nums}
 table.kt{table-layout:fixed;width:100%}
@@ -428,3 +467,49 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .ot-vars td,.ot-vars th{font-size:12.5px}
 .ot-designer .fld input,.ot-designer .fld textarea{width:100%}
 @media (max-width:1400px){.ot-dlg{height:94vh}.ot-list{max-height:calc(100vh - 300px)}}
+
+/* ===== HAK Smart Filter (V10.3): cao 36–40px · bo góc 8–10px · khoảng cách 4/8/12/16/24 ===== */
+.sf{margin:0 0 8px}
+.sf .sf-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}
+.sf .sf-bar .i,.sf .sf-bar select,.sf .sf-bar .b,.sf .sf-bar .fbtn,.sf .sf-bar .dateinp{min-height:36px;box-sizing:border-box;border-radius:8px}
+.sf .sf-bar .i.search{min-width:200px;flex:1 1 220px;max-width:340px}
+.sf .sf-bar .dateinp{width:112px}
+.sf .sfdr{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.sf .sf-adv.has{border-color:var(--brand);color:var(--brand);font-weight:600}
+.sf .sf-warn,.sfd .sf-warn{color:var(--red)}
+.sf-sum{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:8px 12px;background:var(--th);border:1px solid var(--line);border-radius:8px;font-size:13px}
+.sf-sum .sf-sum-i{white-space:nowrap}
+.sf-sum .sf-act{margin-left:auto;display:inline-flex;gap:8px;flex-wrap:wrap}
+.sfd-mask{position:fixed;inset:0;background:rgba(10,20,30,.35);z-index:1100}
+.sfd{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--card);color:var(--ink);box-shadow:-8px 0 28px rgba(0,0,0,.22);z-index:1101;display:flex;flex-direction:column}
+.sfd-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+.sfd-body{flex:1 1 auto;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.sfd-foot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.sfd-foot .sp{flex:1}
+.sfd-f{display:flex;flex-direction:column;gap:4px}
+.sfd-l{font-size:12px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.sfd select,.sfd .i,.sfd .dateinp{min-height:36px;box-sizing:border-box;border-radius:8px}
+.sfm{border:1px solid var(--ctl);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:8px}
+.sfm .i{width:100%}
+.sfm-list{max-height:190px;overflow:auto}
+.sfm-row{display:block;padding:4px 0;cursor:pointer}
+.sfd-presets{border-top:1px dashed var(--line);padding-top:12px}
+@media (max-width:1100px){.sf .sf-bar .i.search{max-width:none}}
+body.sfd-open #modal{z-index:1200}
+/* nút của popover/chip lọc dùng cùng kiểu với nút ứng dụng */
+.fbtn,.fpop .btn,.fchips .btn,.fpop-foot .btn{font:inherit;padding:7px 12px;border:1px solid var(--ctl);border-radius:8px;background:var(--field);color:var(--ink);cursor:pointer;min-height:36px;box-sizing:border-box}
+.fbtn:hover,.fpop .btn:hover,.fchips .btn:hover{border-color:var(--brand)}
+.fbtn.has{border-color:var(--brand);color:var(--brand);font-weight:600}
+.fpop .btn.pri{background:var(--brand);color:var(--onBrand);border-color:var(--brand)}
+.fpop .btn.ghost,.fchips .btn.ghost{background:transparent;min-height:30px;padding:3px 10px}
+.fchip{color:var(--ink)}
+.sfd-f .i,.sfd-f select{width:100%}
+
+/* Bảng có nhóm/tổng: dùng biến màu để đọc được ở cả giao diện sáng và tối */
+th.th-grp{text-align:center;background:var(--brandSoft);color:var(--ink)}
+td.td-grp{font-weight:700;background:var(--th);color:var(--ink)}
+tr.tr-sum td{font-weight:700;background:var(--hover);color:var(--ink);border-top:1px solid var(--line)}
+td.ot-note{background:var(--th);color:var(--mut)}
+.fld input.rt,.ot-ro.rt{text-align:right}
+.fgrid .fld.span2{grid-column:span 2}
+@media (max-width:900px){.fgrid .fld.span2{grid-column:1/-1}}

@@ -31,6 +31,20 @@
       var insX = Math.max(2, Math.min(wide ? 5 : 99, Math.round(cw * 0.08))), insY = Math.max(2, Math.round(ch * 0.1));
       var inner = { x0: c.x0 + insX, x1: c.x1 - insX, y0: c.y0 + insY, y1: c.y1 - insY };
       var ib = inner.x1 > inner.x0 && inner.y1 > inner.y0 ? G.inkBox(b, w, inner, 0) : { n: 0, box: null };
+      // Ảnh chụp nghiêng / cong: đường kẻ ngang không bị xóa hết, còn sót vệt dài trong ô → hộp mực kéo giãn cả ô, Tesseract đọc "1" thành "2", "4"…
+      // Chỉ giữ các cụm mực KHÔNG giống vệt kẻ (dài ngang, mỏng); hộp mực = hợp của các cụm còn lại.
+      if (ib.box) {
+        var iw = inner.x1 - inner.x0, ih = inner.y1 - inner.y0, all = G.inkComponents(b, w, inner, 8), keep = all.filter(function (k) {
+          var kw = k.x1 - k.x0, kh = k.y1 - k.y0;
+          return !(kw > 4 * kh || kh <= 2 || (kw >= 0.6 * iw && kh <= 0.25 * ih));
+        });
+        // có cụm giống chữ/số thì bỏ các vệt kẻ; chỉ toàn vệt dài (VD ô ghi "-") → giữ nguyên hộp mực cũ
+        if (keep.length && keep.length < all.length) {
+          var ux0 = 1e9, uy0 = 1e9, ux1 = -1, uy1 = -1, un = 0;
+          keep.forEach(function (k) { ux0 = Math.min(ux0, k.x0); uy0 = Math.min(uy0, k.y0); ux1 = Math.max(ux1, k.x1); uy1 = Math.max(uy1, k.y1); un += k.n; });
+          ib = { n: un, box: { x0: ux0, y0: uy0, x1: ux1, y1: uy1 } };
+        }
+      }
       var ink = !!ib.box && ib.n >= Math.max(6, cw * ch * 0.004);
       var bb = ink ? { x0: Math.max(c.x0 + 1, ib.box.x0 - 3), x1: Math.min(c.x1 - 1, ib.box.x1 + 3), y0: Math.max(c.y0 + 1, ib.box.y0 - 3), y1: Math.min(c.y1 - 1, ib.box.y1 + 3) } : null;
       if (bb) { var need = Math.round((bb.y1 - bb.y0) * 0.7) - (bb.x1 - bb.x0); if (need > 0) { bb.x0 = Math.max(c.x0 + 1, bb.x0 - Math.ceil(need / 2)); bb.x1 = Math.min(c.x1 - 1, bb.x1 + Math.ceil(need / 2)); } } // nét "1" mảnh: nới ngang để OCR không báo ảnh quá nhỏ

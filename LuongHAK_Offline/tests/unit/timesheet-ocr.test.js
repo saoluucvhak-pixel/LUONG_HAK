@@ -200,3 +200,15 @@ test("U-OCR-14 ô ngày gộp 2 dòng con (Ngày / Đêm): cộng 2 dòng; cột
   assert.strictEqual(l.sub[1], 2);
   assert.ok(!T.lines.some((x) => x.kind && x !== l), "cột nhãn Ngày / Đêm không thành dòng chấm công");
 });
+
+test("U-OCR-15 ảnh chụp nghiêng: ô các cột lệch ~1/3 dòng so với cột ngày → vẫn ghép theo THỨ TỰ dòng (không lấy nhầm ô dòng trên, mọi giá trị không lệch 1 dòng)", () => {
+  const days = 30, val = (r) => String((r % 3) + 1); // 1,2,3,1,2,3… để lệch dòng là lộ ngay
+  const cells = grid(days + 2, [80, 90, 90], (r, c) => {
+    if (r === 0) return ["Ngày", "Công", "Cơm"][c];
+    if (r === days + 1) return ["TC", "60", "60"][c];
+    return c === 0 ? String(r) : val(r);
+  }, 40);
+  cells.forEach((c) => { if (c.x0 > 100) { const dy = 16 + (c.y0 / 1300) * 8; c.y0 += dy; c.y1 += dy; c.cy += dy; } }); // cột Công / Cơm trôi xuống 16–24 điểm (≈ 40–60% dòng)
+  const T = TP.parse(cells), cong = T.lines.find((l) => l.kind === "Công"), cm = T.lines.find((l) => l.kind === "Cơm");
+  for (let d = 1; d <= days; d++) { assert.strictEqual(cong.values[d], (d % 3) + 1, "Công ngày " + d); assert.strictEqual(cm.values[d], (d % 3) + 1, "Cơm ngày " + d); }
+});

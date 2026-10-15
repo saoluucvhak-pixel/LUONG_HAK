@@ -9,7 +9,9 @@
   var PL = isNode ? require("../payment-ledger.js") : root.HAKCore.payledger;
 
   var TYPES = {
-    TONG_HOP: { title: "BẢNG TỔNG HỢP LƯƠNG", file: "TongHopLuong" },
+    TONG_HOP_NV: { title: "BẢNG TỔNG HỢP LƯƠNG", file: "TongHopLuong" },
+    TONG_HOP: { title: "BẢNG TỔNG HỢP LƯƠNG THEO PHÒNG BAN", file: "TongHopTheoPhongBan" },
+    THUE_TNCN: { title: "BÁO CÁO KHẤU TRỪ THUẾ THU NHẬP CÁ NHÂN", file: "KhauTruThueTNCN" },
     THANH_TOAN: { title: "BẢNG THANH TOÁN LƯƠNG", file: "ThanhToanLuong" },
     CHUYEN_KHOAN: { title: "BẢNG KÊ CHUYỂN KHOẢN LƯƠNG", file: "KeChuyenKhoan" },
     TIEN_MAT: { title: "BẢNG THANH TOÁN LƯƠNG TIỀN MẶT", file: "ThanhToanTienMat" },
@@ -18,7 +20,7 @@
     SO_CHUNG_TU: { title: "SỔ CHỨNG TỪ THANH TOÁN LƯƠNG", file: "SoChungTuThanhToan" }
   };
   /** Báo cáo xem được cả khi kỳ chưa chốt (số tính tạm); các loại còn lại chỉ xuất chính thức từ kỳ đã chốt. */
-  var KHONG_CAN_CHOT = { TONG_HOP: 1, CHI_TIET_NV: 1 };
+  var KHONG_CAN_CHOT = { TONG_HOP: 1, TONG_HOP_NV: 1, THUE_TNCN: 1, CHI_TIET_NV: 1 };
 
   /** V10.1 — BẢNG CHI TIẾT THANH TOÁN TIỀN LƯƠNG: một dòng mỗi nhân viên của kỳ (lấy từ bảng lương, KHÔNG từ sổ chứng từ). Nhóm cột có tiêu đề hai tầng. */
   var CT_TT_GROUPS = [
@@ -57,8 +59,35 @@
     var os = PL.outstanding(f.rows, opt.lines, ky), osBy = {}; os.forEach(function (o) { osBy[o.maNV] = o; });
     var loi = [], canhbao = [];
     (src.blockers || []).forEach(function (b) { loi.push(b.code + " — " + b.ten + " (" + b.count + "): " + (b.items || []).slice(0, 2).join(" | ")); });
-    var cols, rows, groups = null;
-    if (type === "TONG_HOP") {
+    var cols, rows, groups = null, nhom = null;
+    if (type === "TONG_HOP_NV") {
+      // V10.3: mỗi dòng MỘT nhân viên; bật opt.nhomPB để nhóm theo phòng ban (có dòng cộng từng phòng) — màn hình, in và Excel dùng đúng cấu trúc này
+      cols = [["STT", "qty"], ["Mã NV", "text"], ["Họ và tên", "text"], ["Phòng ban", "text"], ["Chức vụ", "text"], ["Tổng thu nhập", "money"], ["BH trừ NLĐ", "money"], ["KPCĐ trừ NLĐ", "money"],
+        ["Truy thu BH", "money"], ["Thuế TNCN", "money"], ["Trừ khác", "money"], ["Tạm ứng", "money"], ["Thực lĩnh", "money", "Thực lĩnh kỳ này"]];
+      var srcRows = f.rows.slice();
+      if (opt.nhomPB) {
+        var gp = {}, ordp = []; srcRows.forEach(function (r) { var p = s(r["Phòng ban"]) || "(Chưa có phòng ban)"; if (!gp[p]) { gp[p] = []; ordp.push(p); } gp[p].push(r); });
+        ordp.sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; }); srcRows = []; ordp.forEach(function (p) { gp[p].forEach(function (r) { srcRows.push(r); }); });
+      }
+      rows = srcRows.map(function (r, i) { var o = { "STT": i + 1 }; cols.forEach(function (c) { if (c[0] !== "STT") o[c[0]] = c[1] === "text" ? s(r[c[0]]) : n(r[c[0]]); }); if (!o["Phòng ban"]) o["Phòng ban"] = "(Chưa có phòng ban)"; return o; });
+      if (opt.nhomPB) {
+        var byP = {}, ordq = []; rows.forEach(function (o) { if (!byP[o["Phòng ban"]]) { byP[o["Phòng ban"]] = []; ordq.push(o["Phòng ban"]); } byP[o["Phòng ban"]].push(o); });
+        nhom = ordq.map(function (p) { var t = {}; cols.forEach(function (c) { if (c[1] === "money") t[c[0]] = Math.round(sumBy(byP[p], c[0])); }); return { ten: p, rows: byP[p], tong: t }; });
+      }
+      if (f.rows.some(function (r) { return !s(r["Phòng ban"]); })) canhbao.push("Có người chưa gán phòng ban — gộp vào '(Chưa có phòng ban)'.");
+    } else if (type === "THUE_TNCN") {
+      // V10.3: báo cáo khấu trừ thuế TNCN — số lấy từ bảng lương engine đã tính (không tính lại); MST lấy hồ sơ nhân viên (opt.nhanVien)
+      cols = [["STT", "qty"], ["Mã số thuế", "text"], ["Họ và tên", "text"], ["Phòng ban", "text"], ["Chức vụ", "text"], ["Mã TNCN", "text"], ["Tổng thu nhập", "money"], ["Tiền cơm", "money", "Phụ cấp ăn ca (tiền cơm)"],
+        ["BH trừ NLĐ", "money", "Khấu trừ bảo hiểm"], ["KPCĐ trừ NLĐ", "money", "Khấu trừ KPCĐ"], ["Giảm trừ phụ thuộc", "money", "Khấu trừ người phụ thuộc"], ["Thuế TNCN", "money", "Thuế TNCN khấu trừ"]];
+      var nvBy = opt.nhanVien || {}, thieuMst = [];
+      rows = f.rows.map(function (r, i) {
+        var ct = r["_ct"] || {}, mst = s((nvBy[r["Mã NV"]] || {})["Mã số thuế"]), thue = n(r["Thuế TNCN"]);
+        if (!mst && thue > 0) thieuMst.push(s(r["Mã NV"]) + " — " + s(r["Họ và tên"]));
+        return { "STT": i + 1, "Mã số thuế": mst, "Họ và tên": s(r["Họ và tên"]), "Phòng ban": s(r["Phòng ban"]), "Chức vụ": s(r["Chức vụ"]), "Mã TNCN": s(ct.maThueTNCN), "Tổng thu nhập": n(r["Tổng thu nhập"]),
+          "Tiền cơm": n(r["Tiền cơm"]), "BH trừ NLĐ": n(r["BH trừ NLĐ"]), "KPCĐ trừ NLĐ": n(r["KPCĐ trừ NLĐ"]), "Giảm trừ phụ thuộc": n(ct.giamTruPhuThuoc), "Thuế TNCN": thue };
+      });
+      if (thieuMst.length) canhbao.push(thieuMst.length + " người có khấu trừ thuế nhưng chưa có mã số thuế: " + thieuMst.slice(0, 5).join("; ") + (thieuMst.length > 5 ? "…" : ""));
+    } else if (type === "TONG_HOP") {
       cols = [["Phòng ban", "text"], ["Số người", "qty"], ["Tổng thu nhập", "money"], ["BH trừ NLĐ", "money"], ["KPCĐ trừ NLĐ", "money"], ["Truy thu BH", "money"], ["Thuế TNCN", "money"], ["Trừ khác", "money"], ["Tạm ứng", "money"], ["Thực lĩnh", "money"]];
       var g = {}, ord = [];
       f.rows.forEach(function (r) { var p = s(r["Phòng ban"]) || "(Chưa có phòng ban)"; if (!g[p]) { g[p] = []; ord.push(p); } g[p].push(r); });
@@ -152,7 +181,7 @@
       type: type, title: upper(T.title), file: T.file, congTy: opt.tenCongTy || "", ky: kyLabel(opt.nam, opt.thang), kyKey: ky,
       kyText: upper("Tháng " + kyLabel(opt.nam, opt.thang)), trangThai: src.chot ? "Kỳ đã chốt" : "Tính tạm — kỳ chưa chốt", chot: !!src.chot,
       loc: RF.describe(opt.filter), phamVi: RF.describe(opt.filter).length ? RF.describe(opt.filter).join("; ") : "Toàn bộ", donVi: "Đồng (VND)",
-      ngayLap: opt.ngay || "", nguoiLap: opt.nguoiLap || "", cols: cols.map(function (c) { return { key: c[0], label: c[0], kind: c[1] }; }), rows: rows, tong: tong, groups: groups ? groupSpans(groups) : null,
+      ngayLap: opt.ngay || "", nguoiLap: opt.nguoiLap || "", cols: cols.map(function (c) { return { key: c[0], label: c[2] || c[0], kind: c[1] }; }), rows: rows, nhom: nhom, nhomPB: !!nhom, tong: tong, groups: groups ? groupSpans(groups) : null,
       soDong: rows.length, soDongGoc: f.total, loi: loi, canhbao: canhbao, choXuatChinhThuc: loi.length === 0 && !!src.chot
     };
   }

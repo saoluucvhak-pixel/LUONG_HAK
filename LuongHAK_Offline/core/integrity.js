@@ -95,7 +95,8 @@
         else { var k2 = [r["Mã NV"], r["Ngày hạch toán"]].concat(tc[1].map(function (c) { return String(r[c] || ""); })).join(" · "); bySame[k2] = (bySame[k2] || 0) + 1; }
       });
       var dupCt = Object.keys(byCt).filter(function (k) { return byCt[k] > 1; });
-      if (dupCt.length) push("High", t, dupCt.length + " số chứng từ bị nhập nhiều dòng cho cùng nhân viên → đang bị CỘNG NHIỀU LẦN (VD " + dupCt.slice(0, 5).join("; ") + "). Xóa dòng thừa.");
+      // Một UNC / phiếu chi theo bảng kê có thể trả nhiều khoản cho cùng một người (hoặc nhập nhiều dòng) → chỉ CẢNH BÁO để đối chiếu, KHÔNG chặn chốt kỳ.
+      if (dupCt.length) push("Medium", t, dupCt.length + " số chứng từ có nhiều dòng cho cùng nhân viên (VD " + dupCt.slice(0, 5).join("; ") + ") — các dòng đều được cộng vào lương. Nếu 1 UNC chi nhiều khoản cho người đó thì đúng; nếu nhập trùng thì xóa dòng thừa.");
       var same = Object.keys(bySame).filter(function (k) { return bySame[k] > 1; });
       if (same.length) push("Medium", t, same.length + " nhóm dòng giống hệt nhau (cùng NV, ngày, số tiền) và chưa có Số chứng từ — kiểm tra có nhập trùng không, nên ghi Số chứng từ (VD " + same.slice(0, 3).join("; ") + ")");
     });

@@ -114,7 +114,12 @@
   }
   /** Các ô của 1 cột nằm trong dòng ngày (ngày chia dòng con Ngày / Đêm, Ca 1 / Ca 2 → nhiều ô) */
   function cellsIn(col, y0, y1) {
-    return col.filter(function (c) { var h = Math.max(1, c.y1 - c.y0); return overlap(c.y0, c.y1, y0, y1) / h >= 0.5; });
+    var share = function (c) { return overlap(c.y0, c.y1, y0, y1) / Math.max(1, c.y1 - c.y0); };
+    var list = col.filter(function (c) { return share(c) >= 0.5; });
+    // Ảnh chụp nghiêng: ô của cột kế bên lệch ~1/3 dòng nên 2 ô liên tiếp cùng chạm vào 1 dòng → lấy nhầm ô dòng trên (mọi giá trị lệch 1 dòng).
+    // Dòng con thật nằm gọn trong dòng (≥ 75% ô); chỉ lệch nhẹ sang dòng kế → bỏ.
+    if (list.length > 1) { var strong = list.filter(function (c) { return share(c) >= 0.75; }); if (strong.length) return strong; }
+    return list;
   }
   /** Giá trị ngày của cột: 1 ô = giá trị ô; nhiều ô (dòng con) = cộng (ô trống bỏ qua, có ô không đọc được → NaN) */
   function dayValue(list) {
@@ -126,7 +131,7 @@
   /** Kiểu B — dòng = ngày, cột = Công / Cơm … */
   function parseB(cells, hdr) {
     var dayChain = hdr.chain, seq = hdr.seq, rows = [];
-    dayChain.forEach(function (c, i) { if (seq.days[i]) rows.push({ day: seq.days[i], cell: c }); });
+    dayChain.forEach(function (c, i) { if (seq.days[i]) rows.push({ day: seq.days[i], cell: c, idx: i }); });
     // dòng cuối "TC" / "Tổng" bị coi nhầm là ngày: số ngày đọc không khớp + giá trị trong dòng > 3,5 (không thể là công 1 ngày)
     var popped = null;
     while (rows.length > 1) {
@@ -146,7 +151,10 @@
     var lines = fields.map(function (f) {
       var role = fieldRole(f.label), line = { name: role.person, nameCell: role.person ? f.head : null, kind: role.kind, label: f.label, skip: role.skip, values: {}, cells: {}, totals: {} };
       rows.forEach(function (r) {
-        var list = cellsIn(f.col, r.cell.y0, r.cell.y1), c = list[0] || cellAt(f.col, r.cell.y0, r.cell.y1);
+        // Cột có đúng bằng số ô của cột ngày (bỏ ô tiêu đề) → ghép theo THỨ TỰ dòng: ảnh chụp nghiêng làm ô các cột lệch nhau về chiều cao,
+        // ghép theo vị trí y sẽ lấy nhầm ô dòng trên / dòng dưới. Không bằng nhau (ô bị gộp / thiếu) → ghép theo vị trí như cũ.
+        var byIdx = f.col.length === dayChain.length - 1 && r.idx >= 1 ? f.col[r.idx - 1] : null;
+        var list = byIdx ? [byIdx] : cellsIn(f.col, r.cell.y0, r.cell.y1), c = list[0] || cellAt(f.col, r.cell.y0, r.cell.y1);
         if (c) { line.values[r.day] = list.length > 1 ? dayValue(list) : vOf(c); line.cells[r.day] = c; if (list.length > 1) line.sub = Object.assign(line.sub || {}, (function (o) { o[r.day] = list.length; return o; })({})); }
       });
       if (foot) { var fc = cellAt(f.col, foot.y0, foot.y1); if (fc) { line.totals[footLabel] = fc.num; line.cells["T:TC"] = fc; } }

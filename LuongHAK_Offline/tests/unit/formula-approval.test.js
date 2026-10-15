@@ -65,8 +65,13 @@ test("biểu thức sai không được gửi duyệt; trùng bản Hiệu lực
   const a = s.run("insert", null, NEW).row; ["Chờ duyệt", "Đã duyệt", "Hiệu lực"].forEach((t) => s.run("update", a, { "Trạng thái": t }));
   const b = s.run("insert", null, NEW).row; ["Chờ duyệt", "Đã duyệt"].forEach((t) => s.run("update", b, { "Trạng thái": t }));
   assert.equal(s.run("update", b, { "Trạng thái": "Hiệu lực" }).code, "formula-conflict");
-  assert.equal(s.run("remove", b).code, "formula-keep");
+  assert.equal(s.run("remove", a).code, "formula-keep", "đang Hiệu lực → không xóa");
+  assert.ok(s.run("remove", b).ok, "Đã duyệt nhưng chưa áp dụng → xóa được");
   assert.ok(s.run("remove", bad).ok);
+  const c = s.run("insert", null, NEW).row; ["Chờ duyệt"].forEach((t) => s.run("update", c, { "Trạng thái": t }));
+  assert.ok(s.run("remove", c).ok, "Chờ duyệt → xóa được");
+  const d = s.run("insert", null, NEW).row; ["Chờ duyệt", "Đã duyệt", "Hiệu lực"].forEach((t) => s.run("update", d, { "Trạng thái": t })); s.run("update", d, { "Trạng thái": "Ngừng" });
+  assert.equal(s.run("remove", d).code, "formula-keep", "đã Ngừng → giữ lịch sử");
 });
 test("kỳ đã chốt: nháp/duyệt không bị coi là hồi tố; kích hoạt bản có hiệu lực từ kỳ đã chốt chỉ Admin (retro.edit)", () => {
   const db = baseDb(); db.kyluong = [{ ky: "2026-09", kq: { bangluong: [] } }];
