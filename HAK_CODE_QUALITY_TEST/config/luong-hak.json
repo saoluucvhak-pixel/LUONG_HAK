@@ -1,0 +1,8 @@
+{
+  "project": "LUONG_HAK shared libraries",
+  "checks": [
+    {"name":"Smart Filter V12 unit tests","command":["node","--test","HAK_SMART_FILTER/tests/query-v12.test.js"],"timeoutSeconds":60},
+    {"name":"Accounting formatting unit tests","command":["node","--test","HAK_ACCOUNTING_REPORT_STANDARD/tests/format.test.js","HAK_ACCOUNTING_REPORT_STANDARD/tests/exact-format.test.js","HAK_ACCOUNTING_REPORT_STANDARD/tests/system-settings.test.js"],"timeoutSeconds":60},
+    {"name":"HAK quality gate self-tests","command":["python","-m","unittest","discover","-s","HAK_CODE_QUALITY_TEST/tests","-p","test_*.py","-v"],"timeoutSeconds":90}
+  ]
+}
