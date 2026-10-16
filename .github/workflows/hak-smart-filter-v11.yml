@@ -1,0 +1,17 @@
+name: HAK Smart Filter V11
+on:
+  push:
+    branches: [feature/hak-smart-filter-shared-skill-v11]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Shared filter adapter tests
+        run: node --test HAK_SMART_FILTER/tests/adapter.test.js
+      - name: Original V10.3 smart filter tests
+        run: node --test LuongHAK_Offline/tests/unit/v103-smart-filter.test.js
