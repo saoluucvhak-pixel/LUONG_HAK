@@ -1,0 +1,59 @@
+name: HAK Quality Observer V2
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/hak-quality-observer-ci-v2
+  pull_request:
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Quality gate
+        id: gate
+        continue-on-error: true
+        run: python HAK_CODE_QUALITY_TEST/quality_gate.py --config HAK_CODE_QUALITY_TEST/config/luong-hak.json --root . --out hak-quality-results.json
+      - name: Security audit
+        id: security
+        continue-on-error: true
+        run: python HAK_CODE_QUALITY_TEST/security_audit.py --root . --out hak-security-results.json
+      - name: Architecture analysis
+        id: architecture
+        continue-on-error: true
+        run: python HAK_CODE_QUALITY_TEST/architecture_analyzer.py --root . --out hak-architecture-results.json
+      - name: Memory and Observer
+        run: |
+          python HAK_CODE_QUALITY_TEST/ci_observer.py --quality hak-quality-results.json --security hak-security-results.json --architecture hak-architecture-results.json --project LUONG_HAK --branch "$GITHUB_REF_NAME" --commit "$GITHUB_SHA" --memory hak-project-memory.jsonl --out hak-skill-proposals.json
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hak-qa-v2-${{ github.run_id }}
+          path: |
+            hak-quality-results.json
+            hak-security-results.json
+            hak-architecture-results.json
+            hak-project-memory.jsonl
+            hak-skill-proposals.json
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Enforce gate
+        if: always()
+        env:
+          GATE: ${{ steps.gate.outcome }}
+          SECURITY: ${{ steps.security.outcome }}
+          ARCHITECTURE: ${{ steps.architecture.outcome }}
+        run: |
+          test "$GATE" = success
+          test "$SECURITY" = success
+          test "$ARCHITECTURE" = success
