@@ -18,5 +18,6 @@ def test_source_build_is_not_misrepresented_as_exe():
 def test_selftest_reports_explicit_runtime_state():
     report=check_packaged_app(require_bundled=True)
     assert 'ok' in report and 'checks' in report
-    assert report['ok'] is False  # Linux source distribution does not contain a Windows executable.
-    assert report['checks']['bundled_tesseract_file'] is False
+    # A Windows build runner may already have bundled OCR runtime during tests.
+    assert report['ok'] == all(report['checks'].get(k, False) for k in report['required_checks'])
+    assert isinstance(report['checks']['bundled_tesseract_file'], bool)

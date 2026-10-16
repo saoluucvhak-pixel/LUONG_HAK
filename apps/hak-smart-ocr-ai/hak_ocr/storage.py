@@ -491,8 +491,11 @@ class Repository:
 
     def backup(self, target: Path):
         target.parent.mkdir(parents=True,exist_ok=True)
-        with sqlite3.connect(str(target)) as destination:
+        destination = sqlite3.connect(str(target))
+        try:
             self.db.backup(destination)
+        finally:
+            destination.close()
 
     def close(self):
         self.db.close()
