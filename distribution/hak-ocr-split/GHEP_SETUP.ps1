@@ -7,6 +7,13 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+function Get-LocalSHA256([string]$FilePath) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $inputFile = [System.IO.File]::OpenRead($FilePath)
+    try { return [System.BitConverter]::ToString($sha.ComputeHash($inputFile)).Replace('-','').ToLowerInvariant() }
+    finally { $inputFile.Dispose(); $sha.Dispose() }
+}
+
 
 if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) { throw "Thieu manifest.json: $ManifestPath" }
 $m = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -44,7 +51,7 @@ try {
         try {
             $info = Get-Item -LiteralPath $partPath
             if ($info.Length -ne [long]$part.size) { throw "Kich thuoc sai: $($part.name)" }
-            $hash = (Get-FileHash -LiteralPath $partPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            $hash = Get-LocalSHA256 $partPath
             if ($hash -ne $part.sha256) { throw "SHA256 khong khop: $($part.name). Hay tai lai phan nay." }
             $partStream = [System.IO.File]::OpenRead($partPath)
             try {
@@ -70,7 +77,7 @@ if ($size -ne [long]$m.size) {
     Remove-Item -LiteralPath $temporary -Force
     throw "Sai kich thuoc file ghep: $size; can $($m.size)"
 }
-$fullHash = (Get-FileHash -LiteralPath $temporary -Algorithm SHA256).Hash.ToLowerInvariant()
+$fullHash = Get-LocalSHA256 $temporary
 if ($fullHash -ne $m.sha256) {
     Remove-Item -LiteralPath $temporary -Force
     throw 'SHA256 file EXE sau khi ghep KHONG KHOP! Khong chay file nay.'
