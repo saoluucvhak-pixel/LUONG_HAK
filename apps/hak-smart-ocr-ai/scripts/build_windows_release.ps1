@@ -75,8 +75,8 @@ if (-not (Test-Path $exe)) { throw "EXE not found: $exe" }
 # the Tesseract binary and whether its language data and native DLLs load.
 $smoke = Join-Path $root 'validation\packaged-check.json'
 if (Test-Path $smoke) { Remove-Item $smoke -Force }
-& $exe --self-test $smoke --require-bundled
-if ($LASTEXITCODE -ne 0) { throw 'Frozen EXE smoke test returned error.' }
+$frozenProcess = Start-Process -FilePath $exe -ArgumentList @('--self-test', $smoke, '--require-bundled') -Wait -PassThru -NoNewWindow
+if ($frozenProcess.ExitCode -ne 0) { throw "Frozen EXE smoke test returned error: $($frozenProcess.ExitCode)" }
 if (-not (Test-Path $smoke)) { throw 'Frozen EXE failed to write diagnostics.' }
 $report = Get-Content $smoke -Raw | ConvertFrom-Json
 if (-not $report.ok -or -not $report.frozen) { throw "Packaged EXE failed: $smoke" }
