@@ -1,0 +1,40 @@
+name: HAK Unified Quality
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/hak-unified-quality-ci-v1
+  pull_request:
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests and quality gate
+        run: python HAK_CODE_QUALITY_TEST/quality_gate.py --config HAK_CODE_QUALITY_TEST/config/luong-hak.json --root . --out hak-quality-results.json
+      - name: Static security audit
+        if: always()
+        run: python HAK_CODE_QUALITY_TEST/security_audit.py --root . --out hak-security-results.json
+      - name: Architecture analysis
+        if: always()
+        run: python HAK_CODE_QUALITY_TEST/architecture_analyzer.py --root . --out hak-architecture-results.json
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hak-quality-evidence
+          path: |
+            hak-quality-results.json
+            hak-security-results.json
+            hak-architecture-results.json
+          if-no-files-found: warn
+          retention-days: 14
