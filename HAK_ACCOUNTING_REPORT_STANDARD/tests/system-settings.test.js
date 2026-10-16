@@ -1,0 +1,3 @@
+'use strict';const test=require('node:test'),assert=require('node:assert/strict');const S=require('../src/system-settings');
+test('four categories and per-column overrides',()=>{const s=S.normalize({groups:{moisture:{mode:'decimal',digits:6}},columns:{BDMT:{category:'quantity',mode:'decimal',digits:4}}});assert.equal(S.format(42.123456,s,'moisture'),'42,123456 %');assert.equal(S.format(1234.56789,s,'quantity','BDMT'),'1.234,5679');assert.equal(S.format(1000,s,'money'),'1.000');});
+test('reject invalid precision',()=>assert.throws(()=>S.normalize({groups:{dryness:{mode:'decimal',digits:7}}})));
