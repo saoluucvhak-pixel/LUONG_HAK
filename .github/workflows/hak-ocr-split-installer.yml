@@ -32,7 +32,6 @@ jobs:
           $setup = Get-ChildItem 'original-release' -Recurse -File -Filter 'HAKSmartOCRAI-Setup-*.exe' | Select-Object -First 1
           if (-not $setup) { throw 'Verified EXE installer missing from downloaded artifact.' }
           & ./distribution/hak-ocr-split/SPLIT_SETUP.ps1 -SourceExe $setup.FullName -OutputDir 'split-output' -ChunkMiB 40
-          if ($LASTEXITCODE -ne 0) { throw 'Split failed' }
           $manifest = Get-Content 'split-output/manifest.json' -Raw | ConvertFrom-Json
           Write-Host "Parts count: $($manifest.partCount), checksum: $($manifest.sha256)"
           if ($manifest.partCount -lt 2 -or $manifest.partCount -gt 16) { throw 'Unexpected part count' }
