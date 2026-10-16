@@ -190,7 +190,7 @@ class MainWindow(QMainWindow):
         self.repo=Repository()
         self.current_id=None;self.current_result=None;self.current_page=0
         self.worker=None;self.htr_worker=None;self.unwarp_worker=None;self.evidence_worker=None;self.table_ref=None
-        self.setWindowTitle('HAK Smart OCR AI 1.1.0 — Hybrid Offline Document Studio')
+        self.setWindowTitle('HAK Smart OCR AI 1.2.1 — Offline OCR Studio (Tesseract mặc định)')
         self.resize(1480,890)
         self.setMinimumSize(980,640)
         self._create_ui()
@@ -888,18 +888,58 @@ class MainWindow(QMainWindow):
         if not self.current_id:
             QMessageBox.information(self,'Chưa chọn file','Hãy nhập và chọn một ảnh hoặc PDF.');return
         doc=self.repo.get(self.current_id)
-        try:check_ocr_ready()
-        except Exception as e:QMessageBox.critical(self,'Chưa sẵn sàng OCR',str(e));return
+        # Preflight optional engines BEFORE changing document status or starting
+        # a worker.  Base Windows installer intentionally ships Tesseract only.
+        selected_engine=self.engine_mode.currentData() or 'tesseract'
+        use_docling=self.docling_box.isChecked()
+        fallback_notes=[]
+        if selected_engine in ('paddle','hybrid') or use_docling:
+            report=engine_report()
+            models=report.get('models',{})
+            libraries=report.get('libraries',{})
+            if selected_engine in ('paddle','hybrid'):
+                missing=[name for name in ('paddle_detection','paddle_recognition') if not models.get(name)]
+                if not libraries.get('paddleocr'):
+                    missing.append('thư viện PaddleOCR')
+                if not libraries.get('paddle'):
+                    missing.append('thư viện PaddlePaddle')
+                if missing:
+                    detail=', '.join(missing)
+                    answer=QMessageBox.question(
+                        self,'Thiếu PaddleOCR offline',
+                        'Bản Windows hiện tại không có đủ bộ PaddleOCR offline: '
+                        +detail+'\\n\\n'
+                        'Chọn Yes để dùng Tesseract tiếng Việt sẵn có, '
+                        'hoặc No để giữ chế độ đang chọn và dừng OCR. '
+                        'Kết quả đã duyệt sẽ không bị thay đổi.',
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.Yes)
+                    if answer!=QMessageBox.StandardButton.Yes:
+                        self.status.showMessage('Đã hủy OCR: thiếu PaddleOCR offline.')
+                        return
+                    selected_engine='tesseract'
+                    self.engine_mode.setCurrentIndex(self.engine_mode.findData('tesseract'))
+                    fallback_notes.append('Đã chuyển PaddleOCR/Hybrid sang Tesseract (thiếu model offline).')
+            if use_docling and (not models.get('docling') or not libraries.get('docling')):
+                self.docling_box.setChecked(False)
+                use_docling=False
+                fallback_notes.append('Đã tắt Docling vì thiếu model/thư viện offline.')
+        try:
+            check_ocr_ready()
+        except Exception as e:
+            QMessageBox.critical(self,'Chưa sẵn sàng OCR',
+                'Không khởi động được Tesseract tiếng Việt/Anh. '+str(e))
+            return
         self.repo.set_status(self.current_id,'PROCESSING')
         self.worker=ProcessWorker(doc['original_path'],doc['id'],doc['sha256'],
             [json.loads(x['spec_json']) for x in self.repo.list_templates()],deep,doc['document_type'],
-            self.engine_mode.currentData(),self.docling_box.isChecked(),self.perspective_box.isChecked())
+            selected_engine,use_docling,self.perspective_box.isChecked())
         self.worker.progress.connect(self.processing_progress)
         self.worker.done.connect(self.finished_ocr)
         self.worker.failed.connect(self.ocr_failed)
         self.progress.setVisible(True);self.progress.setRange(0,0)
         self.worker.start()
-        self.status.showMessage('Đang OCR offline, không sử dụng mạng Internet...')
+        self.status.showMessage((' '.join(fallback_notes)+' ' if fallback_notes else '')+'Đang OCR offline, không sử dụng mạng Internet...')
 
     def processing_progress(self,part,total):
         self.progress.setRange(0,max(1,total));self.progress.setValue(part)
