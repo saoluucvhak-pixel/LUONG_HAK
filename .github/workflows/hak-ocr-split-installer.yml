@@ -46,25 +46,25 @@ jobs:
       - name: Test Windows join CMD in directory with spaces
         shell: pwsh
         run: |
-          $home = Join-Path $env:RUNNER_TEMP 'HAK OCR DOWNLOAD TEST'
-          New-Item -ItemType Directory -Path $home -Force | Out-Null
-          Copy-Item 'distribution/hak-ocr-split/GHEP_SETUP.ps1' $home
-          Copy-Item 'distribution/hak-ocr-split/GHEP_FILE_EXE.cmd' $home
-          Copy-Item 'split-output/manifest.json' $home
+          $testDir = Join-Path $env:RUNNER_TEMP 'HAK OCR DOWNLOAD TEST'
+          New-Item -ItemType Directory -Path $testDir -Force | Out-Null
+          Copy-Item 'distribution/hak-ocr-split/GHEP_SETUP.ps1' $testDir
+          Copy-Item 'distribution/hak-ocr-split/GHEP_FILE_EXE.cmd' $testDir
+          Copy-Item 'split-output/manifest.json' $testDir
           $parts = Get-ChildItem 'split-output/parts' -File | Sort-Object Name
           $i = 0
           foreach ($part in $parts) {
             $i++
             $partId = '{0:d3}' -f $i
             $zipName = 'HAK-OCR-Setup-Part-' + $partId + '.zip'
-            Compress-Archive -LiteralPath $part.FullName -DestinationPath (Join-Path $home $zipName) -CompressionLevel NoCompression
+            Compress-Archive -LiteralPath $part.FullName -DestinationPath (Join-Path $testDir $zipName) -CompressionLevel NoCompression
           }
-          Push-Location $home
+          Push-Location $testDir
           try {
             cmd.exe /d /c "call GHEP_FILE_EXE.cmd < NUL"
             if ($LASTEXITCODE -ne 0) { throw 'CMD join exit status failed' }
             $manifest = Get-Content 'manifest.json' -Raw | ConvertFrom-Json
-            $joined = Join-Path $home $manifest.fileName
+            $joined = Join-Path $testDir $manifest.fileName
             if (-not (Test-Path $joined)) { throw 'Joined EXE missing' }
             if ((Get-FileHash $joined -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.sha256) { throw 'Joined SHA256 mismatch' }
             Write-Host 'END_USER_CMD_JOIN_PASS'
