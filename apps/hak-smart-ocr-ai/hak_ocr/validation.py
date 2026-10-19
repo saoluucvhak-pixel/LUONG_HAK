@@ -8,7 +8,10 @@ def fold_vietnamese(text: str) -> str:
     return ''.join(ch for ch in decomp if unicodedata.category(ch)!='Mn').replace('đ','d').replace('Đ','D').casefold()
 
 
-def parse_attendance_value(text: str):
+def parse_attendance_value(text: str, *, unit: str = 'hours'):
+    """Parse a numeric attendance cell; explicit unit prevents hours/days confusion."""
+    if unit not in ('hours', 'days'):
+        raise ValueError('unit must be hours or days')
     """Only explicit, unambiguous non-negative numeric attendance cells.
 
     Blank is None, NEVER zero. Both comma and dot decimal separators accepted,
@@ -18,11 +21,13 @@ def parse_attendance_value(text: str):
     if not cleaned or cleaned in ('-','—','–'):return None
     if not re.fullmatch(r'\d{1,2}(?:[.,]\d{1,2})?',cleaned):return None
     n=float(cleaned.replace(',','.'))
-    return n if 0<=n<=24 else None
+    return n if 0 <= n <= (24 if unit == 'hours' else 1) else None
 
 
-def validate_attendance_grid(grid: list[list[str]]) -> list[dict]:
+def validate_attendance_grid(grid: list[list[str]], *, unit: str = 'hours') -> list[dict]:
     """Conservative check ONLY if unambiguous day header and total column are present."""
+    if unit not in ('hours', 'days'):
+        raise ValueError('unit must be hours or days')
     if len(grid)<3:return []
     header=None;days=[];total_col=None
     for ri,row in enumerate(grid[:5]):
@@ -41,9 +46,15 @@ def validate_attendance_grid(grid: list[list[str]]) -> list[dict]:
     issues=[]
     for ri,row in enumerate(grid[header+1:],start=header+1):
         if total_col>=len(row):continue
-        total=parse_attendance_value(row[total_col])
-        if total is None:continue
-        values=[parse_attendance_value(row[ci]) for ci in days if ci<len(row)]
+        total=parse_attendance_value(row[total_col], unit='hours')
+        if total is None:
+            try:
+                total = float(str(row[total_col]).strip().replace(',', '.'))
+            except (ValueError, TypeError):
+                continue
+            if not 0 <= total <= 31 * (24 if unit == 'hours' else 1):
+                continue
+        values=[parse_attendance_value(row[ci], unit=unit) for ci in days if ci<len(row)]
         if not any(v is not None for v in values):continue
         computed=sum(v for v in values if v is not None)
         if abs(computed-total)>0.01:
