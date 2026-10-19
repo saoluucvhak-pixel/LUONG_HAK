@@ -20,3 +20,23 @@ def test_monthly_total_can_exceed_single_day_limit():
     assert len(issues) == 1
     assert issues[0]["computed"] == 5
     assert issues[0]["printed"] == 4
+
+
+def test_hourly_monthly_total_above_24_is_valid():
+    grid = [
+        ["Tên", "1", "2", "3", "4", "5", "TC"],
+        ["NV A", "8", "8", "8", "8", "8", "40"],
+        ["NV B", "8", "8", "8", "8", "8", "39"],
+    ]
+    issues = validate_attendance_grid(grid, unit="hours")
+    assert len(issues) == 1
+    assert issues[0]["computed"] == 40
+    assert issues[0]["printed"] == 39
+
+
+def test_malformed_monthly_total_is_not_silently_parsed():
+    grid = [
+        ["Tên", "1", "2", "3", "4", "5", "TC"],
+        ["NV A", "1", "1", "1", "1", "1", "4x"],
+    ]
+    assert validate_attendance_grid(grid, unit="days") == []
