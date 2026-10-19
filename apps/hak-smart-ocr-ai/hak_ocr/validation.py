@@ -9,14 +9,9 @@ def fold_vietnamese(text: str) -> str:
 
 
 def parse_attendance_value(text: str, *, unit: str = 'hours'):
-    """Parse a numeric attendance cell; explicit unit prevents hours/days confusion."""
+    """Parse one numeric attendance cell in hours or days; blanks stay unknown."""
     if unit not in ('hours', 'days'):
         raise ValueError('unit must be hours or days')
-    """Only explicit, unambiguous non-negative numeric attendance cells.
-
-    Blank is None, NEVER zero. Both comma and dot decimal separators accepted,
-    while thousands syntax and OCR artifacts are refused in this context.
-    """
     cleaned=str(text).strip()
     if not cleaned or cleaned in ('-','—','–'):return None
     if not re.fullmatch(r'\d{1,2}(?:[.,]\d{1,2})?',cleaned):return None
@@ -46,14 +41,12 @@ def validate_attendance_grid(grid: list[list[str]], *, unit: str = 'hours') -> l
     issues=[]
     for ri,row in enumerate(grid[header+1:],start=header+1):
         if total_col>=len(row):continue
-        total=parse_attendance_value(row[total_col], unit='hours')
-        if total is None:
-            try:
-                total = float(str(row[total_col]).strip().replace(',', '.'))
-            except (ValueError, TypeError):
-                continue
-            if not 0 <= total <= 31 * (24 if unit == 'hours' else 1):
-                continue
+        raw_total = str(row[total_col]).strip()
+        if not re.fullmatch(r'\d{1,3}(?:[.,]\d{1,2})?', raw_total):
+            continue
+        total = float(raw_total.replace(',', '.'))
+        if not 0 <= total <= len(days) * (24 if unit == 'hours' else 1):
+            continue
         values=[parse_attendance_value(row[ci], unit=unit) for ci in days if ci<len(row)]
         if not any(v is not None for v in values):continue
         computed=sum(v for v in values if v is not None)
